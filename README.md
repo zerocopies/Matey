@@ -56,3 +56,16 @@ matey-profile · matey-vault · matey-session-notes · matey-priority · matey-r
 ## Status
 
 See docs/Matey_App_Comprehensive_Audit.docx for the full architecture audit, design audit, and refactor log.
+
+## Monetization — one-time "Matey ∞" unlock
+
+No subscriptions, no recurring fees. A single **one-time** purchase unlocks Matey ∞:
+
+- Unlimited permanent notes + full recap history (memory)
+- Ask Matey — deep memory retrieval across your vault (recall)
+- Proactive actions — daily brief, priority board, scheduled reminders (agent)
+- Encrypted multi-device sync (sync)
+- BYOK providers + local model support (keys)
+- All themes
+
+Free tier keeps note-taking, the daily brief feed, RSS reading, the default theme, and on-device Whisper. BYOK stays bring-your-own-spend — Matey never resells tokens.
