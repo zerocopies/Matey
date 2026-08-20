@@ -28,6 +28,8 @@ Matey/
 | matey-syntax.js | `**` `##` `//` `??` `!!` parser, vault, KB search |
 | matey-init.js | Chat wiring (syntax + AI), Whisper UI, mic, license, notes |
 | matey-feed.js | Daily personalized brief + live RSS reader |
+| matey-hooks.js | Keyword intelligence monitor (HN/News via Algolia) + AI natural-language recaps |
+| matey-recall.js | Ask Matey — relevance-ranked vault retrieval for `??` |
 | matey-rss.js | RSS fetch (with CORS proxy fallback) + profile filtering |
 | matey-ai.js | On-device behavior learning + insights |
 | matey-tabs.js | Draggable tab reorder (long-press) |

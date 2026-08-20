@@ -50,28 +50,20 @@
       <main class="content" style="display:flex;flex-direction:column;">
         <div class="feed-scroll" id="intel-feed"></div>
         <div class="hook-section">
-          <div class="hook-section-label">Add a Hook</div>
+          <div class="hook-section-label">Follow a keyword</div>
           <form id="hook-form">
             <div class="field">
               <input
-                id="target-url"
-                name="url"
-                type="url"
-                placeholder="Target source / URL"
-                autocomplete="off"
-              />
-            </div>
-            <div class="field">
-              <input
-                id="monitor-for"
-                name="prompt"
+                id="keyword-input"
+                name="keyword"
                 type="text"
-                placeholder="What to monitor for"
+                placeholder="e.g. AI chips, space travel, concept design"
                 autocomplete="off"
               />
             </div>
-            <button class="submit-btn" type="submit">OK</button>
+            <button class="submit-btn" type="submit">Follow</button>
           </form>
+          <button class="submit-btn brief-btn" id="brief-btn" type="button">Refresh briefs</button>
         </div>
       </main>
     </div>
@@ -105,63 +97,13 @@
     <script src="./matey-whisper.js?v=5"></script>
     <script src="./matey-pull.js?v=5"></script>
     <script src="./matey-rss.js?v=5"></script>
-    <script src="./matey-license.js?v=5"></script>
-    <script src="./matey-settings.js?v=5"></script>
+    <script src="./matey-license.js?v=6"></script>
+    <script src="./matey-hooks.js?v=6"></script>
+    <script src="./matey-recall.js?v=6"></script>
+    <script src="./matey-settings.js?v=6"></script>
     <script src="./matey-init.js?v=5"></script>
     <script>
-      document.getElementById('hook-form').addEventListener('submit', (event) => {
-        event.preventDefault();
-        const url = document.getElementById('target-url').value.trim();
-        const prompt = document.getElementById('monitor-for').value.trim();
-        if (!url || !prompt) return;
-        const hooks = JSON.parse(localStorage.getItem('matey-hooks') || '[]');
-        hooks.push({ id: crypto.randomUUID(), url, prompt, createdAt: Date.now() });
-        localStorage.setItem('matey-hooks', JSON.stringify(hooks));
-        event.target.reset();
-      });
-
-      function renderFeed() {
-        var container = document.getElementById('intel-feed');
-        if (!container || !window.SnapFeed) return;
-        var feed = SnapFeed.get();
-        if (!feed || feed.length === 0) {
-          container.innerHTML = '<div class="feed-empty">No insights yet</div>';
-          return;
-        }
-        var html = '';
-        feed.forEach(function(item) {
-          var timeAgo = '';
-          var diff = Date.now() - item.time;
-          var mins = Math.floor(diff / 60000);
-          if (mins < 1) timeAgo = 'Just now';
-          else if (mins < 60) timeAgo = mins + 'm ago';
-          else if (mins < 1440) timeAgo = Math.floor(mins / 60) + 'h ago';
-          else timeAgo = Math.floor(mins / 1440) + 'd ago';
-
-          var savedClass = item.saved ? ' saved' : '';
-          html += '<div class="feed-item' + savedClass + '">';
-          html += '<div class="feed-dot"></div>';
-          html += '<div class="feed-topic">' + item.topic + '</div>';
-          html += '<div class="feed-title">' + item.title + '</div>';
-          html += '<div class="feed-body">' + item.body + '</div>';
-          if (item.personal) {
-            html += '<div class="feed-personal">' + item.personal + '</div>';
-          }
-          html += '<div class="feed-time">' + timeAgo + '</div>';
-          if (!item.saved) {
-            html += '<div class="feed-actions">';
-            html += '<button class="feed-btn" onclick="SnapFeed.save(\'' + item.id + '\');renderFeed();">Save</button>';
-            html += '<button class="feed-btn" onclick="this.textContent=\'Noted\';this.classList.add(\'saved\');">Dismiss</button>';
-            html += '</div>';
-          } else {
-            html += '<div class="feed-actions"><button class="feed-btn saved">Saved</button></div>';
-          }
-          html += '</div>';
-        });
-        container.innerHTML = html;
-      }
-
-      renderFeed();
+      // Hooks page behavior is owned by matey-hooks.js (keyword -> news -> AI briefs)
     </script>
 
   </body>
