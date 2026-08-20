@@ -1,0 +1,148 @@
+The user wants to rename the package from com.aiconcierge.app to com.gaffe.app. This involves:
+1. Editing capacitor.config.ts (appId)
+2. Android manifest + build.gradle (namespace, applicationId, package)
+3. Java source MainActivity.java is at com/aiconcierge/app/ — needs to move to com/gaffe/app/
+4. Rebuild
+5. Uninstall old package, install new
+6. Update STRING/title resources if any
+7. Commit
+Steps:
+- frontend/ai-concierge-app/capacitor.config.ts: appId: "com.aiconcierge.app" → appId: "com.gaffe.app"
+- frontend/ai-concierge-app/android/app/build.gradle: applicationId "com.aiconcierge.app" and namespace likely match
+- frontend/ai-concierge-app/android/app/src/main/java/com/aiconcierge/app/MainActivity.java: file path + package declaration inside
+- frontend/ai-concierge-app/android/variables.gradle: might contain appId too
+- App labels (strings.xml): "AI Concierge" → "Gaffe"
+- The Capacitor dependencies config in capacitor.config or no?
+Let me check the relevant files first.Renaming com.aiconcierge.app → com.gaffe.app. Let me find every reference first:
+$ cd "/home/prp/Documents/Default Project/frontend/ai-concierge-app" && grep -rln "aiconcierge\|AI Concierge" --include="*.ts" --include="*.js" --include="*.json" --include="*.gradle" --include="*.xml" --include="*.java" --include="*.kt" --include="*.properties" 2>/dev/null | grep -v node_modules | grep -v "android/.*\(build\|\.gradle-home\|capacitor-cordova\)/" | head -30
+capacitor.config.ts
+android/.idea/workspace.xml
+android/app/build.gradle
+android/app/src/main/java/com/aiconcierge/app/MainActivity.java
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/res/values/strings.xml
+android/app/src/androidTest/java/com/getcapacitor/myapp/ExampleInstrumentedTest.java
+$ cd "/home/prp/Documents/Default Project/frontend/ai-concierge-app" && for f in capacitor.config.ts android/app/build.gradle android/app/src/main/java/com/aiconcierge/app/MainActivity.java android/app/src/main/res/values/strings.xml; do echo "=== $f ==="; grep -n "aiconcierge\|AI Concierge\|com\.aiconcierge" "$f" 2>/dev/null | head -10; done
+=== capacitor.config.ts ===
+6:  appId: 'com.aiconcierge.app',
+=== android/app/build.gradle ===
+4:    namespace "com.aiconcierge.app"
+7:        applicationId "com.aiconcierge.app"
+=== android/app/src/main/java/com/aiconcierge/app/MainActivity.java ===
+1:package com.aiconcierge.app;
+=== android/app/src/main/res/values/strings.xml ===
+5:    <string name="package_name">com.aiconcierge.app</string>
+6:    <string name="custom_url_scheme">com.aiconcierge.app</string>
+Clean inventory. Plan:
+1. capacitor.config.ts — appId to com.gaffe.app, appName already "AI Concierge" → "Gaffe"
+2. android/app/build.gradle — namespace + applicationId
+3. Move android/app/src/main/java/com/aiconcierge/app/MainActivity.java → com/gaffe/app/, update package declaration
+4. android/app/src/main/res/values/strings.xml — app_name (label), package_name, custom_url_scheme
+5. Uninstall old package from phone, rebuild, install
+6. Commit
+Let me also check the strings.xml app_name value:
+$ cat "/home/prp/Documents/Default Project/frontend/ai-concierge-app/android/app/src/main/res/values/strings.xml"
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Snap!</string>
+    <string name="title_activity_main">Snap!</string>
+    <string name="package_name">com.aiconcierge.app</string>
+    <string name="custom_url_scheme">com.aiconcierge.app</string>
+</resources>
+Now I'll do all the edits and file moves in parallel where safe. Let me also check android variables.gradle which I might have missed:
+$ grep -l "aiconcierge\|AI Concierge\|app/packageName\|PACKAGE" "/home/prp/Documents/Default Project/frontend/ai-concierge-app/android/"*.gradle 2>/dev/null; grep -n "applicationId\|namespace" "/home/prp/Documents/Default Project/frontend/ai-concierge-app/android/variables.gradle" 2>/dev/null
+(no output)
+Clean. variables.gradle doesn't reference it. Now performing all edits:
+←Edit Documents/Default Project/frontend/ai-concierge-app/capacitor.config.ts 
+→Read Documents/Default Project/frontend/ai-concierge-app/capitor.config.ts 
+→Read Documents/Default Project/frontend/ai-concierge-app/android/app/build.gradle 
+$ cat "/home/prp/Documents/Default Project/frontend/ai-concierge-app/capacitor.config.ts"
+import { CapacitorConfig } from '@capacitor/cli';
+
+const liveReloadUrl = process.env.CAP_SERVER_URL?.trim();
+
+const config: CapacitorConfig = {
+  appId: 'com.aiconcierge.app',
+  appName: 'Snap!',
+  webDir: 'public',
+  ...(liveReloadUrl
+    ? {
+…
+Click to expand
+Different content than expected — there's a liveReloadUrl block. Let me edit all of them now in parallel:
+← Edit Documents/Default Project/frontend/ai-concierge-app/capacitor.config.ts
+
+const liveReloadUrl = process.env.CAP_SERVER_URL?.trim();
+
+const config: CapacitorConfig = {
+  appId: 'com.aiconcierge.app',
+  appName: 'Snap!',
+  appId: 'com.gaffe.app',
+  appName: 'Gaffe',
+  webDir: 'public',
+  ...(liveReloadUrl
+    ? {
+        server: {
+← Edit Documents/Default Project/frontend/ai-concierge-app/android/app/build.gradle
+apply plugin: 'com.android.application'
+
+android {
+    namespace "com.aiconcierge.app"
+    namespace "com.gaffe.app"
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.aiconcierge.app"
+        applicationId "com.gaffe.app"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+# Wrote Documents/Default Project/frontend/ai-concierge-app/android/app/src/main/res/values/strings.xml
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Gaffe</string>
+    <string name="title_activity_main">Gaffe</string>
+    <string name="package_name">com.gaffe.app</string>
+    <string name="custom_url_scheme">com.gaffe.app</string>
+</resources>
+
+$ mkdir -p "/home/prp/Documents/Default Project/frontend/ai-concierge-app/android/app/src/main/java/com/gaffe/app" && mv "/home/prp/Documents/Default Project/frontend/ai-concierge-app/android/app/src/main/java/com/aiconcierge/app/MainActivity.java" "/home/prp/Documents/Default Project/frontend/ai-concierge-app/android/app/src/main/java/com/gaffe/app/" && rmdir "/home/prp/Documents/Default Project/frontend/ai-concierge-app/android/app/src/main/java/com/aiconcierge/app" && cat "/home/prp/Documents/Default Project/frontend/ai-concierge-app/android/app/src/main/java/com/gaffe/app/MainActivity.java" | head -3
+package com.aiconcierge.app;
+
+import android.os.Bundle;
+← Edit Documents/Default Project/frontend/ai-concierge-app/android/app/src/main/java/com/gaffe/app/MainActivity.java
+package com.aiconcierge.app;
+package com.gaffe.app;
+
+import android.os.Bundle;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+All edits applied. Now confirm clean state, uninstall old, sync, rebuild, install, and commit:
+$ cd "/home/prp/Documents/Default Project/frontend/ai-concierge-app" && echo "=== verifying no aiconcierge refs in source ==="; grep -rln "aiconcierge\|AI Concierge" --include="*.ts" --include="*.gradle" --include="*.xml" --include="*.java" capacitor.config.ts android/app/src/main/ android/app/build.gradle 2>/dev/null | grep -v "androidTest/com/getcapacitor\|.gradle-home\|build/" | head; echo "=== uninstall old ==="; export PATH="/home/prp/Documents/Default Project/scripts/platform-tools:$PATH" && timeout 30 adb -s adb-43161JEKB05998-gdQbKt._adb-tls-connect._tcp uninstall com.aiconcierge.app
+=== verifying no aiconcierge refs in source ===
+=== uninstall old ===
+Success
+All source-level aiconcierge refs clean. Old app uninstalled. Now rebuild (background) then install:
+$ cd "/home/prp/Documents/Default Project/frontend/ai-concierge-app" && rm -rf dist && cp -r public dist && (JAVA_HOME="$HOME/.jdks/jbr-21.0.11" PATH="$JAVA_HOME/bin:$PATH" nohup npx cap sync android > /tmp/cap-sync.log 2>&1 &) && sleep 15 && tail -3 /tmp/cap-sync.log && cat android/app/src/main/assets/capacitor.config.json | head
+@capacitor/preferences@7.0.4
+✔ update android in 295.72ms
+[info] Sync finished in 0.568s
+{
+	"appId": "com.gaffe.app",
+	"appName": "Gaffe",
+	"webDir": "public"
+}
+Sync confirms new ID. Now gradle build + install:
+$ cd "/home/prp/Documents/Default Project/frontend/ai-concierge-app/android" && rm -f app/build/outputs/apk/debug/app-debug.apk /tmp/gradle-build.log && (JAVA_HOME="$HOME/.jdks/jbr-21.0.11" GRADLE_USER_HOME="$(cd .. && pwd)/.gradle-home" PATH="$JAVA_HOME/bin:$PATH" nohup ./gradlew assembleDebug --console=plain > /tmp/gradle-build.log 2>&1 &) && echo "build PID $(pgrep -f 'gradlew assembleDebug' | head -1)"
+build PID 358486
+$ for i in 1 2 3 4 5 6; do sleep 45; if [ -f "/home/prp/Documents/Default Project/frontend/ai-concierge-app/android/app/build/outputs/apk/debug/app-debug.apk" ]; then echo "APK READY after ~$((i*45))s"; break; fi; echo "$((i*45))s: $(tail -1 /tmp/gradle-build.log | cut -c1-60)"; done && ls -la "/home/prp/Documents/Default Project/frontend/ai-concierge-app/android/app/build/outputs/apk/debug/app-debug.apk" 2>/dev/null
+APK READY after ~45s
+-rw-rw-r-- 1 prp prp 5794561 Aug 18 21:59 /home/prp/Documents/Default Project/frontend/ai-concierge-app/android/app/build/outputs/apk/debug/app-debug.apk
+APK ready at 21:59 with the new package ID. Installing:
+$ export PATH="/home/prp/Documents/Default Project/scripts/platform-tools:$PATH" && timeout 20 adb connect 10.2.0.2:46853 >/dev/null 2>&1; timeout 90 adb -s adb-43161JEKB05998-gdQbKt._adb-tls-connect._tcp install -r "/home/prp/Documents/Default Project/frontend/ai-concierge-app/android/app/build/outputs/apk/debug/app-debug.apk" && echo "--- verify ---" && timeout 15 adb -s adb-43161JEKB05998-gdQbKt._adb-tls-connect._tcp shell pm list packages | grep gaffe
+Performing Streamed Install
+Success
+--- verify ---
+Error: java.lang.SecurityException: Shell does not have permission to access user 11
+ com.android.server.am.ActivityManagerService.handleIncomingUser:14677 android.app.ActivityManager.handleIncomingUser:5605 com.android.server.pm.PackageManagerShellCommand.translateUserId:4122 
+package:com.gaffe.app

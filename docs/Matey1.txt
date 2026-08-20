@@ -1,0 +1,157 @@
+Here is the detailed prompt, incorporating all the granular specifications for **Matey**:
+
+```markdown
+Implement the complete brand identity, core UI architecture, streamlined theme engine, Custom Provider BYOK system, Local AI model management, AI productivity pipelines, Knowledge Bank, and monetization structure for **Matey**:
+
+### 1. Brand Identity & Stylized Logo
+*   **Name Replacement:** Completely replace all instances of "Snap", "Snap!", "Gaffe", or "Guffaw" with **Matey** across all headers, metadata, titles, UI components, and application strings.
+*   **Stylized Logo Component:** Create a dedicated UI header component that displays the word **matey** in the specified custom bold typography, rendered as a clean text element.
+
+### 2. Core UI Layout & Input Bar
+*   **Borderless Design:** Gut all boxed card containers, itemized tabs, and solid background fills from navigation views and main feeds. Present all data in a clean, unified, borderless layout.
+*   **Floating Pull-Down Bar:** Implement a global input bar revealed via a top-to-bottom swipe/gesture. Remove all placeholder text. Feature a **microphone icon** on the left and a **plus (`+`) attachment sign** on the right.
+
+### 3. Core Theme Engine (3 Dark Themes Only)
+*   **Core Architecture Integration:** Integrate themes deeply into the core runtime architecture, rather than applying them as superficial overlays.
+*   **Streamlined Selection:** Retain only **3 hand-picked dark themes**. Remove all other themes.
+*   **Flat Architecture:** Eliminate light/dark category sorting entirely; present a flat, direct list of the 3 core dark options.
+
+### 4. Settings Menu Redesign
+*   **Standalone Navigation:** Redesign the Settings menu so **Theme** selection and **Personalization** (user profile configuration for ambient RAG) are presented as clean, standalone list items.
+*   **Visual Polish:** Use enlarged filled-down arrow indicators on the right for navigation, without any boxed backgrounds or container wrappers.
+
+### 5. Custom Provider BYOK (Bring Your Own Key) System
+*   **Generic Dialog Box:** Create a clean, provider-agnostic configuration dialog box (list-down) consisting exclusively of three core fields:
+    1. **Name:** A text field to identify the custom endpoint.
+    2. **Base URL:** An endpoint URL input field (supporting local `http://` or remote `https://` addresses).
+    3. **API Key:** A masked secure input field for authentication tokens.
+*   **Strictly Generic:** Ensure the UI and code logic contain absolutely zero pre-configured mention of specific third-party providers (e.g., Grok, Claude, Gemini, Ollama).
+*   **Universal API Client:** Build a flexible network router that dynamically injects the user's custom Base URL and Bearer token into all outbound requests.
+
+### 6. Local AI & Voice-to-Text Model Manager (Browser-First / WASM)
+*   **Offline Whisper Integration:** Implement a browser-first abstraction layer utilizing WebAssembly/WebGPU runtimes (via Transformers.js) to support local quantized speech-to-text models (`tiny` ~99MB / `base` ~300MB for English dictation).
+*   **Model Download Center:** Add a management UI in Settings allowing users to download, track progress, view storage usage, and delete local model weights.
+*   **Local Backend Support:** Ensure the Custom Provider Base URL can route requests to local desktop engines (e.g., LM Studio, Ollama, Llama.cpp).
+
+### 7. Knowledge Bank & External Hooks
+*   **Knowledge Bank:** Implement a centralized, secure on-device repository for structured notes, scratchpads, and persistent records. Make this repository fully searchable via natural language and `??` syntax queries.
+*   **External Hooks:** Build an ingestion engine for external news hooks and RSS feeds. Directly cross-reference incoming hook content against the user's **Personalization profile** (via local RAG) to dynamically filter and surface tailored insights.
+
+### 8. AI Productivity Pipelines & Syntax Engine
+*   **Brain-Dump Polishing:** Instantly clean, format, and structure raw local voice dictation transcripts into tidy Markdown notes, stripping filler words.
+*   **Automated Task Extraction:** Extract action items and todos automatically from voice notes and text feeds.
+*   **Conversational Profile Coach:** Implement a chat-based personalization setup screen where the local LLM guides the user in natural language to extract profile details (goals, profession, interests) for the RAG system.
+*   **Syntax Engine Rules:** Wire up the core interactive syntax:
+    *   `##` — Scratchpads and temporary notes.
+    *   `**` — Permanent knowledge notes.
+    *   `//` — Silent background automation (tagging, summarization).
+    *   `??` — Conversational profile queries and Knowledge Bank retrieval.
+    *   `!!` — Priority flagging.
+
+### 9. Monetization & Subscription Tier
+*   **$5/Month Flat Rate:** Configure a subscription tier explicitly targeted at users running local AI or utilizing their own BYOK keys, capitalizing on zero server-side compute overhead.
+*   **Extensible Architecture:** Structure billing flags to easily accommodate a future one-time lifetime purchase option.
+
+```
+
+Here is the detailed prompt, incorporating all the granular specifications for **Matey**:
+
+```markdown
+Implement the complete brand identity, core UI architecture, streamlined theme engine, Custom Provider BYOK system, Local AI model management, AI productivity pipelines, Knowledge Bank, and monetization structure for **Matey**:
+
+### 1. Brand Identity & Stylized Logo
+*   **Name Replacement:** Completely replace all instances of "Snap", "Snap!", "Gaffe", or "Guffaw" with **Matey** across all headers, metadata, titles, UI components, and application strings.
+*   **Stylized Logo Component:** Create a dedicated UI header component that displays the word **matey** in the specified custom bold typography, rendered as a clean text element.
+
+### 2. Core UI Layout & Input Bar
+*   **Borderless Design:** Gut all boxed card containers, itemized tabs, and solid background fills from navigation views and main feeds. Present all data in a clean, unified, borderless layout.
+*   **Floating Pull-Down Bar:** Implement a global input bar revealed via a top-to-bottom swipe/gesture. Remove all placeholder text. Feature a **microphone icon** on the left and a **plus (`+`) attachment sign** on the right.
+
+### 3. Core Theme Engine (3 Dark Themes Only)
+*   **Core Architecture Integration:** Integrate themes deeply into the core runtime architecture, rather than applying them as superficial overlays.
+*   **Streamlined Selection:** Retain only **3 hand-picked dark themes**. Remove all other themes.
+*   **Flat Architecture:** Eliminate light/dark category sorting entirely; present a flat, direct list of the 3 core dark options.
+
+### 4. Settings Menu Redesign
+*   **Standalone Navigation:** Redesign the Settings menu so **Theme** selection and **Personalization** (user profile configuration for ambient RAG) are presented as clean, standalone list items.
+*   **Visual Polish:** Use enlarged filled-down arrow indicators on the right for navigation, without any boxed backgrounds or container wrappers.
+
+### 5. Custom Provider BYOK (Bring Your Own Key) System
+*   **Generic Dialog Box:** Create a clean, provider-agnostic configuration dialog box (list-down) consisting exclusively of three core fields:
+    1. **Name:** A text field to identify the custom endpoint.
+    2. **Base URL:** An endpoint URL input field (supporting local `http://` or remote `https://` addresses).
+    3. **API Key:** A masked secure input field for authentication tokens.
+*   **Strictly Generic:** Ensure the UI and code logic contain absolutely zero pre-configured mention of specific third-party providers (e.g., Grok, Claude, Gemini, Ollama).
+*   **Universal API Client:** Build a flexible network router that dynamically injects the user's custom Base URL and Bearer token into all outbound requests.
+
+### 6. Local AI & Voice-to-Text Model Manager (Browser-First / WASM)
+*   **Offline Whisper Integration:** Implement a browser-first abstraction layer utilizing WebAssembly/WebGPU runtimes (via Transformers.js) to support local quantized speech-to-text models (`tiny` ~99MB / `base` ~300MB for English dictation).
+*   **Model Download Center:** Add a management UI in Settings allowing users to download, track progress, view storage usage, and delete local model weights.
+*   **Local Backend Support:** Ensure the Custom Provider Base URL can route requests to local desktop engines (e.g., LM Studio, Ollama, Llama.cpp).
+
+### 7. Knowledge Bank & External Hooks
+*   **Knowledge Bank:** Implement a centralized, secure on-device repository for structured notes, scratchpads, and persistent records. Make this repository fully searchable via natural language and `??` syntax queries.
+*   **External Hooks:** Build an ingestion engine for external news hooks and RSS feeds. Directly cross-reference incoming hook content against the user's **Personalization profile** (via local RAG) to dynamically filter and surface tailored insights.
+
+### 8. AI Productivity Pipelines & Syntax Engine
+*   **Brain-Dump Polishing:** Instantly clean, format, and structure raw local voice dictation transcripts into tidy Markdown notes, stripping filler words.
+*   **Automated Task Extraction:** Extract action items and todos automatically from voice notes and text feeds.
+*   **Conversational Profile Coach:** Implement a chat-based personalization setup screen where the local LLM guides the user in natural language to extract profile details (goals, profession, interests) for the RAG system.
+*   **Syntax Engine Rules:** Wire up the core interactive syntax:
+    *   `##` — Scratchpads and temporary notes.
+    *   `**` — Permanent knowledge notes.
+    *   `//` — Silent background automation (tagging, summarization).
+    *   `??` — Conversational profile queries and Knowledge Bank retrieval.
+    *   `!!` — Priority flagging.
+
+### 9. Monetization & Subscription Tier
+*   **$5/Month Flat Rate:** Configure a subscription tier explicitly targeted at users running local AI or utilizing their own BYOK keys, capitalizing on zero server-side compute overhead.
+*   **Extensible Architecture:** Structure billing flags to easily accommodate a future one-time lifetime purchase option.
+
+```
+
+Implement the **Custom Tab ("Dashboard")** functionality for **Matey**, allowing users to configure a personalized application perspective via a setup wizard in Settings. The implementation must utilize the core Syntax Engine and Knowledge Bank architecture, adhering to the following technical and UX specifications:
+
+### 1. Custom Tab Activation & Setup UI
+*   **Settings Integration:** Add a "Navigation" section within the main Settings menu. Include a list item for "Custom Tab" with a toggle or checkbox to enable/disable its visibility in the main app tab bar.
+*   **Setup Wizard:** Upon enabling the Custom Tab for the first time, launch a modal Setup Wizard.
+    *   **Step 1: Naming:** A text input field to name the tab (e.g., "Project Alpha", "Client Briefs"). This sets the UI string for the tab label.
+    *   **Step 2: Template Selection:** A selection interface presenting the four defined "Out of the Box" templates. Each template must have a title, icon, and brief description.
+
+### 2. Supported "Out of the Box" Customization Templates
+Implement the logic and UI rendering for the following four templates:
+
+*   **Template A: The "AI Assistant" (Dynamic Chat)**
+    *   **Function:** Dedicated chat interface distinct from the ambient Recap feed.
+    *   **Configuration:** Wizard prompts for: 
+        1. **Role Definition** (e.g., "Expert Researcher", "Python Tutor").
+        2. **Topic Focus** (e.g., "Market Trends", "API Refactoring").
+    *   **Backend:** Initialize this view's local LLM instance with a custom system prompt derived from these configurations: * "You are Matey's AI Assistant acting as an `{Role}`. Focus your responses strictly on `{Topic}`. Do not use the Knowledge Bank unless explicitly asked."*
+
+*   **Template B: The "Knowledge Filter" (Dynamic RAG Feed)**
+    *   **Function:** A filtered feed view, similar to Recap, but scoped exclusively to user-defined criteria.
+    *   **Configuration:** Wizard prompts for:
+        1. **Tags** (e.g., `#ProjectA`, `#ClientX`).
+        2. **Keywords** (e.g., "Budget", "Deadline").
+    *   **Backend:** When active, this view must override the global personalization profile and execute a local RAG query matching *only* the configured `{Tags}` and `{Keywords}` against the Knowledge Bank and incoming hooks.
+
+*   **Template C: The "Task & Priority Center" (Actionable View)**
+    *   **Function:** An actionable Kanban-style or list view of tasks and priorities extracted from notes.
+    *   **Configuration:** No specific parameters required beyond selection; the template defaults to scanning all notes.
+    *   **Backend:** Implement a dedicated parser to scan the Knowledge Bank (all `##` and `**` notes) for markdown tasks `[ ]` and priority flags `!!`.
+    *   **Display:** Render these items in a clean, borderless list view, grouped by status (Pending/Done) or original note context.
+
+*   **Template D: The "Connect & Track" (External Integration View)**
+    *   **Function:** A view displaying data fetched from external services via webhooks.
+    *   **Configuration:** Wizard prompts for:
+        1. **Service Name** (e.g., "GitHub", "Trello", "Email").
+        2. **Webhook URL** (Input field for secure endpoint URL).
+    *   **Backend:** Utilize the `//` silent automation engine to periodically ping the configured `{Webhook URL}`.
+    *   **Display:** Render the returned external data payload in a structured, read-only dashboard format within the tab.
+
+### 3. Technical Implementation & State Management
+*   **URL Scheme/Deep Linking:** Structure the Custom Tab configuration as an internal deep link state blob stored securely on the device (e.g., `matey://custom-tab?config={base64_encoded_json_config}`).
+*   **Internal Router:** Modify the application's main navigation router to detect the activation of the Custom Tab and execute the corresponding rendering logic based on the stored configuration blob.
+*   **Borderless UI:** Ensure all rendered views within the Custom Tab adhere strictly to the global borderless design system (no boxed containers, itemized tabs, or solid background fills).
+*   **Syntax/RAG Parser Update:** Update the local RAG engine to accept temporary, tab-specific override filters for use with the "Knowledge Filter" template.
+

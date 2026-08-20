@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+    <style>
+      html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
+      .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; border: none; }
+    </style>
+    <meta name="theme-color" content="#000000" />
+    <title>Matey</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./matey-preview.css" />
+    <script src="./matey-boot.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="header">
+        <div class="header-top">
+          <h1 class="matey-brand" aria-label="Matey">
+            <span class="matey-mark" aria-hidden="true"><span class="matey-mark-s">M</span></span>
+            <span class="matey-word">atey</span>
+          </h1>
+          <div class="header-actions">
+            <button class="icon-btn settings-trigger" type="button" aria-label="Settings">⚙</button>
+          </div>
+        </div>
+        <div class="greeting-row">
+          <p class="greeting" id="greeting">Good evening</p>
+          <span class="greeting-meta" id="greeting-meta"></span>
+        </div>
+        <div class="vibe-prompt" id="vibe-prompt"></div>
+        <div class="usage-block">
+          <div class="usage-row">
+            <span>Usage</span>
+            <span>65%</span>
+          </div>
+          <div class="usage-bar"><div class="usage-fill"></div></div>
+        </div>
+      </header>
+
+      <nav class="tabs-wrap">
+        <div class="tabs">
+          <a class="tab active" href="./starring.html">Starring</a>
+          <a class="tab" href="./hooks.html">Hooks</a>
+          <a class="tab" href="./preview.html">Library</a>
+          <a class="tab" href="./preview.html#custom">Custom</a>
+          <a class="tab" href="./preview.html#recap">Recap</a>
+        </div>
+      </nav>
+
+      <main class="content">
+        <div class="category-list">
+          <div class="category-item">
+            <div class="category-icon">✂</div>
+            <div class="category-name">Grooming</div>
+            <div class="category-arrow">▸</div>
+          </div>
+          <div class="category-item">
+            <div class="category-icon">👔</div>
+            <div class="category-name">Wardrobe</div>
+            <div class="category-arrow">▸</div>
+          </div>
+          <div class="category-item">
+            <div class="category-icon">🍳</div>
+            <div class="category-name">Culinary</div>
+            <div class="category-arrow">▸</div>
+          </div>
+          <div class="category-item">
+            <div class="category-icon">🌿</div>
+            <div class="category-name">Lifestyle</div>
+            <div class="category-arrow">▸</div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="pull-hint" id="pull-hint"></div>
+
+    <div class="chat-overlay" id="chat-overlay">
+      <div class="chat-backdrop" id="chat-backdrop"></div>
+      <div class="chat-dialog">
+        <div class="chat-handle"></div>
+        <div class="chat-dialog-input">
+          <button class="chat-mic" type="button" aria-label="Voice">🎤</button>
+          <input type="text" class="chat-field" autocomplete="off" />
+          <button class="chat-plus" type="button" aria-label="Add">+</button>
+        </div>
+        <div class="chat-dialog-body">
+          <div class="chat-dialog-empty"></div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="settings-overlay" id="settings">
+      <div class="settings-header">
+        <button class="settings-back" id="settings-close" type="button" aria-label="Close">←</button>
+        <h2 class="settings-title">Settings</h2>
+      </div>
+      <div class="settings-body">
+
+        <div class="settings-section open" id="sec-theme">
+          <div class="settings-section-header" data-toggle="sec-theme">
+            <div class="settings-section-left">
+              <div class="settings-section-icon">🎨</div>
+              <div>
+                <div class="settings-section-title">Theme</div>
+                <div class="settings-section-desc">Choose your look</div>
+              </div>
+            </div>
+            <span class="settings-section-arrow"></span>
+          </div>
+          <div class="settings-section-body">
+            <p class="settings-theme-label">Dark Themes</p>
+            <div class="theme-container" id="theme-grid-dark"></div>
+            <p class="settings-theme-label">Light Themes</p>
+            <div class="theme-container" id="theme-grid-light"></div>
+          </div>
+        </div>
+
+        <div class="settings-section" id="sec-personalization">
+          <div class="settings-section-header" data-toggle="sec-personalization">
+            <div class="settings-section-left">
+              <div class="settings-section-icon">👤</div>
+              <div>
+                <div class="settings-section-title">Personalization</div>
+                <div class="settings-section-desc">Your profile & preferences</div>
+              </div>
+            </div>
+            <span class="settings-section-arrow"></span>
+          </div>
+          <div class="settings-section-body">
+            <form id="profile-form">
+              <div class="profile-hint">Tell Snap about yourself — your profession, interests, goals, what you care about. The more you share, the better your feed gets.</div>
+              <textarea class="profile-about" id="profile-about" placeholder="I'm a software engineer who loves cooking, hiking, and reading about AI. Currently exploring job opportunities in product management..."></textarea>
+              <button class="submit-btn" type="submit">Save</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="settings-section" id="sec-incognito">
+          <div class="settings-section-header" data-toggle="sec-incognito">
+            <div class="settings-section-left">
+              <div class="settings-section-icon">🕵️</div>
+              <div>
+                <div class="settings-section-title">Incognito Mode</div>
+                <div class="settings-section-desc">Private browsing & data</div>
+              </div>
+            </div>
+            <span class="settings-section-arrow"></span>
+          </div>
+          <div class="settings-section-body">
+            <div class="settings-incognito-row">
+              <div class="settings-incognito-left">
+                <span class="settings-incognito-title">Private Browsing</span>
+                <span class="settings-incognito-desc">Disables local data storage</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="incognito-toggle" />
+                <span class="toggle-track"></span>
+                <span class="toggle-thumb"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section" id="sec-language">
+          <div class="settings-section-header" data-toggle="sec-language">
+            <div class="settings-section-left">
+              <div class="settings-section-icon">🌐</div>
+              <div>
+                <div class="settings-section-title">App Language</div>
+                <div class="settings-section-desc">Choose display language</div>
+              </div>
+            </div>
+            <span class="settings-section-arrow"></span>
+          </div>
+          <div class="settings-section-body">
+            <div class="settings-select-wrap">
+              <select class="settings-select" id="lang-select">
+                <option value="en" selected>English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="pt">Português</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+                <option value="zh">中文</option>
+                <option value="ar">العربية</option>
+                <option value="hi">हिन्दी</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section" id="sec-custom">
+          <div class="settings-section-header" data-toggle="sec-custom">
+            <div class="settings-section-left">
+              <div class="settings-section-icon">⚙️</div>
+              <div>
+                <div class="settings-section-title">Custom</div>
+                <div class="settings-section-desc">Integrations & extensions</div>
+              </div>
+            </div>
+            <span class="settings-section-arrow"></span>
+          </div>
+          <div class="settings-section-body">
+            <div class="settings-list-item">
+              <div class="settings-list-left">
+                <span class="settings-list-label">API Keys</span>
+                <span class="settings-list-desc">Manage external service keys</span>
+              </div>
+              <span class="settings-list-arrow">▸</span>
+            </div>
+            <div class="settings-list-item">
+              <div class="settings-list-left">
+                <span class="settings-list-label">Webhooks</span>
+                <span class="settings-list-desc">Configure event callbacks</span>
+              </div>
+              <span class="settings-list-arrow">▸</span>
+            </div>
+            <div class="settings-list-item">
+              <div class="settings-list-left">
+                <span class="settings-list-label">Data Export</span>
+                <span class="settings-list-desc">Download your data</span>
+              </div>
+              <span class="settings-list-arrow">▸</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section" id="sec-about">
+          <div class="settings-section-header" data-toggle="sec-about">
+            <div class="settings-section-left">
+              <div class="settings-section-icon">ℹ️</div>
+              <div>
+                <div class="settings-section-title">About</div>
+                <div class="settings-section-desc">App info & legal</div>
+              </div>
+            </div>
+            <span class="settings-section-arrow"></span>
+          </div>
+          <div class="settings-section-body">
+            <div class="settings-about-card">
+              <div class="settings-about-brand">
+                <span class="matey-mark" aria-hidden="true"><span class="matey-mark-s">M</span></span>
+                <span class="matey-word">atey</span>
+              </div>
+              <div class="settings-about-version">Version 0.1.0 · Build 1</div>
+              <div class="settings-about-links">
+                <a class="settings-about-link" href="#">Privacy Policy <span>▸</span></a>
+                <a class="settings-about-link" href="#">Terms of Service <span>▸</span></a>
+                <a class="settings-about-link" href="#">Open Source Licenses <span>▸</span></a>
+                <a class="settings-about-link" href="#">Contact Support <span>▸</span></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+    <script src="./snap-themes.js"></script>
+    <script src="./snap-swipe.js"></script>
+    <script src="./snap-profile.js"></script>
+    <script src="./snap-greet.js"></script>
+    <script src="./snap-syntax.js"></script>
+    <script src="./snap-feed.js"></script>
+    <script src="./snap-chat.js"></script>
+    <script src="./snap-ai.js"></script>
+    <script>
+      document.querySelector('[aria-label="Settings"]').addEventListener('click', function() {
+        document.getElementById('settings').classList.add('open');
+        SnapThemes.build(document.getElementById('settings'));
+      });
+      document.getElementById('settings-close').addEventListener('click', function() {
+        document.getElementById('settings').classList.remove('open');
+      });
+      document.querySelectorAll('[data-toggle]').forEach(function(el) {
+        el.addEventListener('click', function() {
+          document.getElementById(el.dataset.toggle).classList.toggle('open');
+        });
+      });
+
+      var pf = document.getElementById('profile-form');
+      if (pf) pf.addEventListener('submit', SnapProfile.save);
+    </script>
+  </body>
+</html>

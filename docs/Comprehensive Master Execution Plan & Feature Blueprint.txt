@@ -1,0 +1,98 @@
+Matey: 
+This document serves as the complete, granular roadmap capturing every feature, technical specification, and design decision discussed for Matey, updated with the generic BYOK dialog box specification, core theme integration, streamlined dark themes, and explicit Knowledge Bank and Hook specifications.
+
+1. Brand Identity & Visual Design
+App Name: Matey (replacing all legacy references to "Snap", "Snap!", "Gaffe", or "Guffaw" across all headers, metadata, titles, UI components, and strings).
+
+Stylized Logo Component:
+
+Displays the word matey in custom bold typography as per the brand asset specification.
+
+2. Core UI Layout & Input Bar
+Borderless Design: Completely eliminate boxed card containers, itemized tabs, and solid background fills from navigation views and main feeds. Present data in a clean, unified, borderless layout.
+
+Floating Pull-Down Bar:
+
+Triggered via a top-to-bottom swipe/gesture.
+
+Removes legacy placeholder text.
+
+Features a microphone icon on the left and a plus (+) attachment sign on the right.
+
+3. Core Theme Engine (3 Dark Themes Only)
+Core Architecture Integration: Deeply integrate themes into the core runtime architecture of the app rather than applying them as superficial overlays.
+
+Streamlined Selection: Retain only 3 hand-picked dark themes while completely removing all other themes.
+
+No Categorization: Eliminate light/dark category sorting entirely, keeping the theme selection flat, direct, and focused solely on the 3 core dark options.
+
+4. Settings Menu Architecture
+Standalone Navigation: Redesign navigation so Theme selection and Personalization (user profile configuration for ambient RAG filtering) are presented as clean, standalone list items.
+
+Visual Polish: Use enlarged filled-down arrow indicators on the right without any boxed backgrounds or container wrappers.
+
+5. Custom Provider BYOK (Bring Your Own Key) System
+Generic Dropdown / List-Down Dialog Box: A clean, provider-agnostic configuration dialog box consisting exclusively of three core fields:
+
+Name: Text field to identify the custom endpoint.
+
+Base URL: Endpoint URL input supporting local or remote addresses.
+
+API Key: Masked secure input field for authentication tokens.
+
+Strictly Generic Integration: Absolute absence of any pre-configured or hardcoded third-party provider names (e.g., Grok, Claude, Gemini) within the UI or code logic.
+
+Universal API Client: A flexible network router that dynamically injects the user's custom Base URL and Bearer token into all outbound requests.
+
+6. Local AI & Voice-to-Text Model Manager (Browser-First / WASM)
+Offline Whisper Integration: Browser-first abstraction layer utilizing WebAssembly/WebGPU runtimes (via Transformers.js) to support local quantized speech-to-text models:
+
+tiny (~99MB) for rapid English dictation.
+
+base (~300MB) for higher vocabulary accuracy.
+
+Model Download Center: A dedicated management UI allowing users to download weights with progress tracking, storage management, and deletion options.
+
+Local Backend Compatibility: Full support for connecting local desktop engines directly through the Custom Provider Base URL configuration.
+
+7. Knowledge Bank & External Hooks
+Knowledge Bank (Local Notes & RAG):
+
+Centralized repository for structured notes, scratchpads, and persistent records stored securely on device.
+
+Fully searchable using natural language and the ?? conversational query syntax ("What did I note down about project X last Tuesday?").
+
+Hooks (Ambient News & Feed Intelligence):
+
+Automated ingestion of external news hooks, RSS feeds, and data sources.
+
+Cross-references incoming hooks directly against the user's Personalization profile (profession, goals, studies, preferences) to dynamically filter out noise and surface tailored insights.
+
+8. AI Productivity Pipelines & Syntax Engine
+Brain-Dump Text Polishing: Instantly clean, format, and structure raw local voice dictation transcripts into organized Markdown notes, stripping filler words and false starts.
+
+Automated Task Extraction: Automatically extract action items and todos from voice transcripts and text feeds.
+
+Syntax Engine Rules:
+
+## — Scratchpads and temporary notes.
+
+** — Permanent knowledge notes.
+
+// — Silent background automation and summarization routines.
+
+?? — Conversational profile queries and Knowledge Bank retrieval.
+
+!! — Priority flagging.
+
+9. Library & Learning Section
+Dedicated Learning Tab: Built directly inside the Library view as an in-app guide and documentation center.
+
+Syntax Masterclass: Clear documentation cards and collapsible guides detailing Matey’s complete syntax suite (##, **, //, ??, !!).
+
+Local Setup Guides: Step-by-step instructions for configuring local backends and managing local Whisper audio weights.
+
+10. Monetization & Licensing Strategy
+Flat-Rate Subscription ($5/Month): Targeted specifically at users running local AI or utilizing their own BYOK keys, maximizing margins due to zero server-side compute overhead.
+
+Extensible License State: Internal billing flags structured to easily toggle and support a future one-time lifetime license option once user traction scales.

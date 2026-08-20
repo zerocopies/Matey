@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+    <style>
+      html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
+      .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; border: none; }
+    </style>
+    <meta name="theme-color" content="#000000" />
+    <title>Matey - Semantic Hooks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./matey-preview.css?v=4" />
+    <script src="./matey-boot.js?v=4"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="header">
+        <div class="header-top">
+          <img class="matey-logo" src="./images/matey-logo.png" alt="Matey" />
+          <div class="header-actions">
+            <button class="icon-btn settings-trigger" type="button" aria-label="Settings"></button>
+          </div>
+        </div>
+        <div class="greeting-row">
+          <p class="greeting" id="greeting">Good evening</p>
+          <span class="greeting-meta" id="greeting-meta"></span>
+        </div>
+        <div class="vibe-prompt" id="vibe-prompt"></div>
+        <div class="usage-block">
+          <div class="usage-row">
+            <span>Usage</span>
+            <span>65%</span>
+          </div>
+          <div class="usage-bar"><div class="usage-fill"></div></div>
+        </div>
+      </header>
+
+      <nav class="tabs-wrap">
+        <div class="tabs">
+          <a class="tab" href="./starring.html">Starring</a>
+          <a class="tab active" href="./hooks.html">Hooks</a>
+          <a class="tab" href="./markdown.html">Markdown</a>
+          <a class="tab" href="./preview.html#custom">Custom</a>
+        </div>
+      </nav>
+
+      <main class="content" style="display:flex;flex-direction:column;">
+        <div class="feed-scroll" id="intel-feed"></div>
+        <div class="hook-section">
+          <div class="hook-section-label">Add a Hook</div>
+          <form id="hook-form">
+            <div class="field">
+              <input
+                id="target-url"
+                name="url"
+                type="url"
+                placeholder="Target source / URL"
+                autocomplete="off"
+              />
+            </div>
+            <div class="field">
+              <input
+                id="monitor-for"
+                name="prompt"
+                type="text"
+                placeholder="What to monitor for"
+                autocomplete="off"
+              />
+            </div>
+            <button class="submit-btn" type="submit">OK</button>
+          </form>
+        </div>
+      </main>
+    </div>
+
+    <div class="pull-hint" id="pull-hint"></div>
+
+    <div class="chat-overlay" id="chat-overlay">
+      <div class="chat-backdrop" id="chat-backdrop"></div>
+      <div class="chat-dialog">
+        <div class="chat-handle"></div>
+        <div class="chat-dialog-input">
+          <button class="chat-mic" type="button" aria-label="Voice"></button>
+          <input type="text" class="chat-field" autocomplete="off" />
+          <button class="chat-plus" type="button" aria-label="Add">+</button>
+        </div>
+        <div class="chat-dialog-body">
+          <div class="chat-dialog-empty"></div>
+        </div>
+      </div>
+    </div>
+    <script src="./matey-themes.js?v=4"></script>
+    <script src="./matey-swipe.js?v=4"></script>
+    <script src="./matey-profile.js?v=4"></script>
+    <script src="./matey-greet.js?v=4"></script>
+    <script src="./matey-feed.js?v=4"></script>
+    <script src="./matey-chat.js?v=4"></script>
+    <script src="./matey-ai.js?v=4"></script>
+    <script src="./matey-tabs.js?v=4"></script>
+    <script src="./matey-byok.js?v=4"></script>
+    <script src="./matey-syntax.js?v=4"></script>
+    <script src="./matey-whisper.js?v=4"></script>
+    <script src="./matey-pull.js?v=4"></script>
+    <script src="./matey-rss.js?v=4"></script>
+    <script src="./matey-license.js?v=4"></script>
+    <script src="./matey-settings.js?v=4"></script>
+    <script src="./matey-init.js?v=4"></script>
+    <script>
+      document.getElementById('hook-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const url = document.getElementById('target-url').value.trim();
+        const prompt = document.getElementById('monitor-for').value.trim();
+        if (!url || !prompt) return;
+        const hooks = JSON.parse(localStorage.getItem('matey-hooks') || '[]');
+        hooks.push({ id: crypto.randomUUID(), url, prompt, createdAt: Date.now() });
+        localStorage.setItem('matey-hooks', JSON.stringify(hooks));
+        event.target.reset();
+      });
+
+      function renderFeed() {
+        var container = document.getElementById('intel-feed');
+        if (!container || !window.SnapFeed) return;
+        var feed = SnapFeed.get();
+        if (!feed || feed.length === 0) {
+          container.innerHTML = '<div class="feed-empty">No insights yet</div>';
+          return;
+        }
+        var html = '';
+        feed.forEach(function(item) {
+          var timeAgo = '';
+          var diff = Date.now() - item.time;
+          var mins = Math.floor(diff / 60000);
+          if (mins < 1) timeAgo = 'Just now';
+          else if (mins < 60) timeAgo = mins + 'm ago';
+          else if (mins < 1440) timeAgo = Math.floor(mins / 60) + 'h ago';
+          else timeAgo = Math.floor(mins / 1440) + 'd ago';
+
+          var savedClass = item.saved ? ' saved' : '';
+          html += '<div class="feed-item' + savedClass + '">';
+          html += '<div class="feed-dot"></div>';
+          html += '<div class="feed-topic">' + item.topic + '</div>';
+          html += '<div class="feed-title">' + item.title + '</div>';
+          html += '<div class="feed-body">' + item.body + '</div>';
+          if (item.personal) {
+            html += '<div class="feed-personal">' + item.personal + '</div>';
+          }
+          html += '<div class="feed-time">' + timeAgo + '</div>';
+          if (!item.saved) {
+            html += '<div class="feed-actions">';
+            html += '<button class="feed-btn" onclick="SnapFeed.save(\'' + item.id + '\');renderFeed();">Save</button>';
+            html += '<button class="feed-btn" onclick="this.textContent=\'Noted\';this.classList.add(\'saved\');">Dismiss</button>';
+            html += '</div>';
+          } else {
+            html += '<div class="feed-actions"><button class="feed-btn saved">Saved</button></div>';
+          }
+          html += '</div>';
+        });
+        container.innerHTML = html;
+      }
+
+      renderFeed();
+    </script>
+
+  </body>
+</html>

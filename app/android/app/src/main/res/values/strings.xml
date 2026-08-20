@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Matey</string>
+    <string name="title_activity_main">Matey</string>
+    <string name="package_name">com.matey.app</string>
+    <string name="custom_url_scheme">com.matey.app</string>
+</resources>

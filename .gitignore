@@ -1,0 +1,14 @@
+app/.gradle-home/
+app/.gradle/
+app/android/.gradle/
+app/android/app/build/
+app/android/build/
+app/android/**/build/
+app/android/.idea/
+app/android/local.properties
+app/android/app/src/main/assets/public/
+node_modules/
+app/dist/
+.cache/
+*.log
+.DS_Store
