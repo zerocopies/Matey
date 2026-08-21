@@ -6,6 +6,7 @@
     '.agentic-input-bar { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)); }' +
     '.agentic-results { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }' +
     '.content { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)); }' +
+    '.content-section { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)); }' + +
     '.tabs-wrap { padding-bottom: env(safe-area-inset-bottom, 0px); }' +
     '.hook-input-bar { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)); }';
 

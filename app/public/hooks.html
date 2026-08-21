@@ -39,22 +39,9 @@
           <span class="greeting-meta" id="greeting-meta"></span>
         </div>
         <div class="vibe-prompt" id="vibe-prompt"></div>
-        <div class="workspace-bar" id="workspace-bar">
-          <span class="workspace-name">No workspace set</span>
-          <button class="workspace-btn" id="workspace-btn" type="button" aria-label="Set Workspace" title="Set Workspace">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><circle cx="10" cy="8" r="2"></circle><path d="M2 12l8-8v8l-8 8z"></path></svg>
-          </button>
-        </div>
-        <div class="usage-block">
-          <div class="usage-row">
-            <span>Usage</span>
-            <span>65%</span>
-          </div>
-          <div class="usage-bar"><div class="usage-fill"></div></div>
-        </div>
       </header>
 
-      <nav class="tabs-wrap">
+      <nav class="tabs-wrap" id="tabs-wrap">
         <div class="tabs">
           <a class="tab" href="./starring.html">Starring</a>
           <a class="tab active" href="./hooks.html">Hooks</a>
@@ -63,13 +50,31 @@
         </div>
       </nav>
 
-       <main class="content">
+      <div class="usage-bar-container">
+        <div class="usage-info">
+          <span>Usage</span>
+          <span id="usage-percent">65%</span>
+        </div>
+        <div class="usage-bar"><div class="usage-fill" id="usage-fill"></div></div>
+      </div>
+
+      <div class="workspace-bar-wrap">
+        <span class="workspace-name">No workspace set</span>
+        <button class="workspace-btn" id="workspace-btn" type="button" aria-label="Set Workspace" title="Set Workspace">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><line x1="12" y1="12" x2="12" y2="12"></line><circle cx="10" cy="8" r="2"></circle><path d="M2 12l8-8v8l-8 8z"></path></svg>
+        </button>
+      </div>
+
+      <div class="content-section">
+        <div class="section-border"></div>
+        <main class="content">
         <div class="feed-scroll" id="intel-feed"></div>
         <div class="hook-input-bar" id="hook-input-bar">
           <input type="text" class="hook-field" id="hook-field" autocomplete="off" placeholder="Add a keyword to monitor..." />
           <button class="hook-add" id="hook-add" type="button" aria-label="Add keyword">+</button>
         </div>
-      </main>
+        </main>
+      </div>
     </div>
     <script src="./matey-boot.js?v=13"></script>
     <script src="./matey-themes.js?v=13"></script>
