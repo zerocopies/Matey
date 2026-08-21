@@ -39,22 +39,9 @@
           <span class="greeting-meta" id="greeting-meta"></span>
         </div>
         <div class="vibe-prompt" id="vibe-prompt"></div>
-        <div class="workspace-bar" id="workspace-bar">
-          <span class="workspace-name">No workspace set</span>
-          <button class="workspace-btn" id="workspace-btn" type="button" aria-label="Set Workspace" title="Set Workspace">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><circle cx="10" cy="8" r="2"></circle><path d="M2 12l8-8v8l-8 8z"></path></svg>
-          </button>
-        </div>
-        <div class="usage-block">
-          <div class="usage-row">
-            <span>Usage</span>
-            <span>65%</span>
-          </div>
-          <div class="usage-bar"><div class="usage-fill"></div></div>
-        </div>
       </header>
 
-      <nav class="tabs-wrap">
+      <nav class="tabs-wrap" id="tabs-wrap">
         <div class="tabs">
           <a class="tab" href="./starring.html">Starring</a>
           <a class="tab" href="./hooks.html">Hooks</a>
@@ -63,8 +50,26 @@
         </div>
       </nav>
 
-      <main class="placeholder-page" id="page-copy">AGENTIC-AI ready — ask me anything</main>
-      <div class="agentic-results" id="agentic-results"></div>
+      <div class="usage-bar-container">
+        <div class="usage-info">
+          <span>Usage</span>
+          <span id="usage-percent">65%</span>
+        </div>
+        <div class="usage-bar"><div class="usage-fill" id="usage-fill"></div></div>
+      </div>
+
+      <div class="workspace-bar-wrap">
+        <span class="workspace-name">No workspace set</span>
+        <button class="workspace-btn" id="workspace-btn" type="button" aria-label="Set Workspace" title="Set Workspace">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><circle cx="10" cy="8" r="2"></circle><path d="M2 12l8-8v8l-8 8z"></path></svg>
+        </button>
+      </div>
+
+      <div class="agentic-section">
+        <div class="agentic-border"></div>
+        <main class="agentic-display" id="page-copy">AGENTIC-AI ready — ask me anything</main>
+        <div class="agentic-results" id="agentic-results"></div>
+      </div>
       <div class="agentic-input-bar" id="agentic-input">
         <button class="agentic-mic" id="agentic-mic" type="button" aria-label="Voice input">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.1 2 5 5.1 5 8.9c0 4.7 6 8.8 7 9.5.6-.7 7-4.8 7-9.5C19 5.1 15.9 2 12 2z"></path></svg>
@@ -74,9 +79,6 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 12 22 2 2 11 13 22 2" fill="currentColor"></polygon></svg>
         </button>
       </div>
-    </div>
-
-    </div>
     </div>
     <script src="./matey-boot.js?v=13"></script>
     <script src="./matey-themes.js?v=13"></script>

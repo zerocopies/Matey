@@ -407,7 +407,7 @@
         '<button type="button" id="ws-init" data-action="init">Matey Workspace</button>' +
         '<button type="button" id="ws-usb" data-action="usb">USB Drive</button>' +
         '<button type="button" id="ws-clear" data-action="clear">Disconnect</button>';
-      var bar = document.querySelector('.workspace-bar');
+      var bar = document.querySelector('.workspace-bar-wrap, .workspace-bar');
       if (bar) bar.appendChild(selector);
     }
 

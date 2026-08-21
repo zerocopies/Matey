@@ -592,7 +592,7 @@ body {
 }
 
 .tabs-wrap {
-  padding: 16px max(var(--page-gutter), env(safe-area-inset-right, 0px)) 0 max(var(--page-gutter), env(safe-area-inset-left, 0px));
+  padding: 0 max(var(--page-gutter), env(safe-area-inset-right, 0px)) 0 max(var(--page-gutter), env(safe-area-inset-left, 0px));
   flex-shrink: 0;
   width: 100%;
 }
@@ -603,15 +603,15 @@ body {
   gap: 8px;
 }
 
-.tab {
+  .tab {
   flex: 1 1 0;
   min-width: 0;
   border: none;
   background: transparent;
   color: var(--muted);
-  padding: 12px 4px;
+  padding: 8px 4px;
   border-radius: 0;
-  font-size: var(--font-base);
+  font-size: 11px;
   font-weight: var(--font-weight-normal);
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
@@ -1190,15 +1190,12 @@ body {
 
 /* Agentic AI results */
 .agentic-results {
-  position: fixed;
-  bottom: 80px;
-  left: 0;
-  right: 0;
-  padding: 12px 16px;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  width: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  max-height: calc(100vh - 200px);
+  padding: 8px 0;
+  flex: 1;
+  min-height: 0;
   z-index: 110;
 }
 
@@ -1248,7 +1245,111 @@ body {
   color: #f87171;
 }
 
-/* Hook input bar (fixed bottom input for Hooks page) */
+/* Thin usage bar below tab bar */
+.usage-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 16px 6px;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.usage-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.usage-bar {
+  width: 100%;
+  height: 3px;
+  background: var(--surface);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.usage-fill {
+  height: 100%;
+  width: 65%;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* Workspace bar below usage */
+.workspace-bar-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 16px 8px;
+  flex-shrink: 0;
+}
+
+.workspace-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.workspace-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.workspace-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Agentic AI section with border */
+.agentic-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.agentic-border {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 12px;
+}
+
+.agentic-display {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  padding-bottom: 12px;
+}
 .hook-input-bar {
   position: fixed;
   bottom: 0;
