@@ -59,7 +59,8 @@
           <a class="tab" href="./starring.html">Starring</a>
           <a class="tab" href="./hooks.html">Hooks</a>
           <a class="tab" href="./markdown.html">Markdown</a>
-          <a class="tab active" href="./room.html">Room</a>
+          <a class="tab" href="./living.html">Living</a>
+          <a class="tab active" href="./preview.html#agent">AGENTIC-AI</a>
         </div>
       </nav>
 
@@ -88,12 +89,12 @@
     <script src="./matey-ai.js?v=13"></script>
     <script src="./matey-tabs.js?v=13"></script>
     <script src="./matey-byok.js?v=13"></script>
-    <script src="./matey-room.js?v=13"></script>
+    <script src="./matey-living.js?v=13"></script>
     <script src="./matey-lifestyle.js?v=13"></script>
     <script>
       const hash = location.hash.replace('#', '');
       const copy = document.getElementById('page-copy');
-      if (hash === 'custom') copy.textContent = 'Custom integrations ready';
+      if (hash === 'agent') copy.textContent = 'AGENTIC-AI ready — ask me anything';
     </script>
 
     <script src="./matey-settings.js?v=13"></script>
@@ -108,5 +109,6 @@
     <script src="./matey-hooks.js?v=13"></script>
     <script src="./matey-keyboard.js?v=13"></script>
     <script src="./matey-fs.js?v=13"></script>
+    <script src="./matey-hooks-manager.js?v=13"></script>
   </body>
 </html>

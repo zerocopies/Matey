@@ -8,7 +8,7 @@
       .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; }
     </style>
     <meta name="theme-color" content="#000000" />
-    <title>Matey - Room</title>
+    <title>Matey - Living</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -59,22 +59,23 @@
           <a class="tab" href="./starring.html">Starring</a>
           <a class="tab" href="./hooks.html">Hooks</a>
           <a class="tab" href="./markdown.html">Markdown</a>
-          <a class="tab active" href="./room.html">Room</a>
+          <a class="tab active" href="./living.html">Living</a>
+          <a class="tab" href="./preview.html#agent">AGENTIC-AI</a>
         </div>
       </nav>
 
       <main class="content">
-        <div class="room-header">
-          <h1 class="room-title">Spatial Room Restyler</h1>
-          <p class="room-subtitle">Upload 4 photos of your room from different angles to get the best layout recommendation.</p>
+        <div class="living-header">
+          <h1 class="living-title">Spatial Living Restyler</h1>
+          <p class="living-subtitle">Upload 4 photos of your space from different angles to get the best layout recommendation.</p>
         </div>
 
-        <div class="room-controls">
-          <div class="room-wall-grid" id="room-wall-grid"></div>
-          <button class="room-analyze" id="room-analyze" type="button">Generate Layout Options</button>
+        <div class="living-controls">
+          <div class="living-wall-grid" id="living-wall-grid"></div>
+          <button class="living-analyze" id="living-analyze" type="button">Generate Layout Options</button>
         </div>
 
-        <div class="room-results" id="room-results" style="display:none;"></div>
+        <div class="living-results" id="living-results" style="display:none;"></div>
       </main>
     </div>
 <div class="chat-overlay" id="chat-overlay">
@@ -109,9 +110,10 @@
     <script src="./matey-behavior.js?v=13"></script>
     <script src="./matey-adaptive.js?v=13"></script>
     <script src="./matey-init.js?v=13"></script>
-    <script src="./matey-room.js?v=13"></script>
+    <script src="./matey-living.js?v=13"></script>
     <script src="./matey-keyboard.js?v=13"></script>
     <script src="./matey-fs.js?v=13"></script>
+    <script src="./matey-hooks-manager.js?v=13"></script>
 
   </body>
 </html>

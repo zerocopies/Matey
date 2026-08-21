@@ -6,11 +6,13 @@
       <div class="settings-header">
         <button class="settings-back" id="settings-back" aria-label="Back" type="button">&#8249;</button>
         <span class="settings-title">Settings</span>
-        <span class="settings-incognito-header" id="settings-incognito" aria-label="Incognito" title="Incognito">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.5 2 3 6 3 9c0 2 1 3 1 5 0 2-1 3-2 4s-1 2 0 3c1 1 2 0 3-1s2-2 3-1 2 1 3 1 2-1 3-1 2 1 3 1c1 0 2-1 2-2s-1-2-2-3-2-2-2-4c0-2 1-3 1-5 0-3-3.5-7-8.5-7z"/>
+        <button class="settings-menu" id="settings-menu" type="button" aria-label="Menu" title="Menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
           </svg>
-        </span>
+        </button>
       </div>
       <div class="settings-body">
 
@@ -140,6 +142,46 @@
             <p class="whisper-hint">Models run entirely on-device. No data leaves your device. Download once, use offline.</p>
           </div>
         </div>
+
+        <div class="settings-section" id="sec-models">
+          <div class="settings-section-header" data-toggle="sec-models">
+            <div class="settings-section-left">
+              <div>
+                <div class="settings-section-title">Micro Models</div>
+                <div class="settings-section-desc">Download on-device AI models</div>
+              </div>
+            </div>
+            <span class="settings-section-arrow"></span>
+          </div>
+          <div class="settings-section-body">
+            <p class="settings-placeholder" id="models-status">No micro models downloaded. These run entirely on-device for enhanced AI capabilities.</p>
+            <div class="model-list" id="model-list">
+              <div class="model-item">
+                <div class="model-info">
+                  <div class="model-name">TinyLLM — 20M params</div>
+                  <div class="model-desc">Lightweight text generation, <span class="model-size">~25MB</span></div>
+                </div>
+                <button class="model-download-btn" data-model="tinyllm-20m" type="button">Download</button>
+              </div>
+              <div class="model-item">
+                <div class="model-info">
+                  <div class="model-name">MiniSTT — Whisper Tiny</div>
+                  <div class="model-desc">Speech-to-text, <span class="model-size">~75MB</span></div>
+                </div>
+                <button class="model-download-btn" data-model="ministt-75m" type="button">Download</button>
+              </div>
+              <div class="model-item">
+                <div class="model-info">
+                  <div class="model-name">CodeHelper — 50M params</div>
+                  <div class="model-desc">Code completion & assistance, <span class="model-size">~50MB</span></div>
+                </div>
+                <button class="model-download-btn" data-model="codehelper-50m" type="button">Download</button>
+              </div>
+            </div>
+            <p class="whisper-hint">All models run locally. No data leaves your device.</p>
+          </div>
+        </div>
+
         <div class="settings-section" id="sec-adaptive">
           <div class="settings-section-header" data-toggle="sec-adaptive">
             <div class="settings-section-left">
@@ -206,6 +248,36 @@
               <button class="byok-add-btn" id="fs-connect-usb" type="button" style="flex:1">Connect USB Drive</button>
             </div>
             <button class="byok-add-btn" id="fs-clear-workspace" type="button" style="margin-top:8px;width:100%">Disconnect</button>
+          </div>
+        </div>
+
+        <div class="settings-section" id="sec-hooks">
+          <div class="settings-section-header" data-toggle="sec-hooks">
+            <div class="settings-section-left">
+              <div>
+                <div class="settings-section-title">Hooks</div>
+                <div class="settings-section-desc">Web monitor & keyword tracking</div>
+              </div>
+            </div>
+            <span class="settings-section-arrow"></span>
+          </div>
+          <div class="settings-section-body">
+            <div class="hooks-sub-section">
+              <h4 class="hooks-sub-title">Web Monitor Hooks</h4>
+              <p class="settings-placeholder">Monitor web pages for changes. Add a URL, describe what to watch for in natural language, and set a schedule (3-7 days).</p>
+              <div class="hook-list" id="hook-list-web">
+                <p class="settings-placeholder-small">No web monitors configured.</p>
+              </div>
+              <button class="byok-add-btn" id="hook-add-web" type="button">+ Add Web Monitor</button>
+            </div>
+            <div class="hooks-sub-section">
+              <h4 class="hooks-sub-title">Keyword Hooks</h4>
+              <p class="settings-placeholder">Track keywords across the web — people, brands, topics, languages. Results refresh automatically.</p>
+              <div class="hook-list" id="hook-list-keywords">
+                <p class="settings-placeholder-small">No keyword hooks configured.</p>
+              </div>
+              <button class="byok-add-btn" id="hook-add-keyword" type="button">+ Add Keyword Hook</button>
+            </div>
           </div>
         </div>
 
@@ -399,10 +471,56 @@
       updateFSSetup({ ok: false, error: 'cleared' });
     });
 
+    /* Settings menu (three lines) */
+    var settingsMenu = document.getElementById('settings-menu');
+    if (settingsMenu) {
+      settingsMenu.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var menu = document.querySelector('.settings-context-menu');
+        if (!menu) {
+          var m = document.createElement('div');
+          m.className = 'settings-context-menu';
+          m.innerHTML =
+            '<button data-action="incognito" type="button">Incognito Mode</button>' +
+            '<button data-action="theme" type="button">Change Theme</button>' +
+            '<button data-action="language" type="button">Language</button>';
+          settingsMenu.parentNode.appendChild(m);
+
+          m.querySelectorAll('button').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              if (btn.dataset.action === 'incognito') {
+                var inc = document.querySelector('.incognito-trigger');
+                if (inc) inc.click();
+              } else if (btn.dataset.action === 'theme') {
+                var t = document.getElementById('sec-theme');
+                if (t) t.classList.add('open');
+              } else if (btn.dataset.action === 'language') {
+                var l = document.getElementById('lang-select');
+                if (l) l.focus();
+              }
+              m.remove();
+            });
+          });
+
+          var rect = settingsMenu.getBoundingClientRect();
+          m.style.position = 'fixed';
+          m.style.top = (rect.bottom + 8) + 'px';
+          m.style.right = (window.innerWidth - rect.right - 8) + 'px';
+
+          document.addEventListener('click', function closeMenu(e2) {
+            if (!m.contains(e2.target) && e2.target !== settingsMenu) {
+              m.remove();
+              document.removeEventListener('click', closeMenu);
+            }
+          });
+        }
+      });
+    }
+
     updateFSSetup(null);
 
     document.querySelectorAll('[data-toggle]').forEach(function (el) {
-      el.addEventListener('click', function () {
+        el.addEventListener('click', function () {
         var t = document.getElementById(el.dataset.toggle);
         if (t) t.classList.toggle('open');
         setTimeout(renderRecap, 50);
@@ -410,6 +528,37 @@
     });
     var pf = document.getElementById('profile-form');
     if (pf && window.SnapProfile) pf.addEventListener('submit', SnapProfile.save);
+
+    /* Micro model download handlers */
+    var downloadBtns = document.querySelectorAll('.model-download-btn');
+    downloadBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var modelId = btn.dataset.model;
+        var modelName = btn.closest('.model-item').querySelector('.model-name').textContent;
+        btn.textContent = 'Downloading…';
+        btn.disabled = true;
+
+        /* Simulate download progress */
+        var progress = 0;
+        var interval = setInterval(function () {
+          progress += Math.random() * 15;
+          if (progress >= 100) {
+            progress = 100;
+            clearInterval(interval);
+            btn.textContent = 'Downloaded';
+            btn.style.background = 'var(--accent, rgba(245, 197, 67, 0.2))';
+            btn.style.color = 'var(--accent)';
+
+            /* Update status */
+            var status = document.getElementById('models-status');
+            if (status) {
+              status.textContent = '1 model ready: ' + modelName;
+              status.style.color = 'var(--accent)';
+            }
+          }
+        }, 300);
+      });
+    });
   }
 
   function inject() {

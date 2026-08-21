@@ -361,9 +361,10 @@ body {
 
 .header-top {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding-top: 4px;
 }
 
 .matey-logo {
@@ -2880,25 +2881,31 @@ body {
 .hook-pending { font-size: 12px; color: var(--muted); padding: 6px 0; }
 .brief-btn { margin-top: 10px; }
 
-/* ===== Incognito header icon ===== */
-.settings-incognito-header {
+/* ===== Settings header menu button ===== */
+.settings-menu {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
-  position: relative;
-  cursor: pointer;
-  background: var(--surface, rgba(255,255,255,0.08));
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
   border-radius: 10px;
+  cursor: pointer;
   flex-shrink: 0;
+  transition: all 0.15s ease;
 }
-.settings-incognito-header svg {
+
+.settings-menu:hover {
+  background: var(--surface, rgba(255,255,255,0.08));
+  color: var(--text);
+}
+
+.settings-menu svg {
   display: block;
-  width: 22px;
-  height: 22px;
-  color: #f5c542;
-  fill: currentColor;
+  width: 20px;
+  height: 20px;
 }
 
 /* visible bottom border on app shell */
@@ -3550,6 +3557,167 @@ body {
 
 .fs-toast.show {
   opacity: 1;
+}
+
+/* ===== Micro Models section ===== */
+.model-list {
+  margin-top: 12px;
+}
+
+.model-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  background: var(--surface, rgba(255,255,255,0.04));
+}
+
+.model-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.model-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.model-desc {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.model-size {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.model-download-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  background: var(--surface, rgba(255,255,255,0.04));
+  color: var(--text);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.model-download-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ===== Hooks sections ===== */
+.hooks-sub-section {
+  margin-bottom: 20px;
+}
+
+.hooks-sub-section:last-child {
+  margin-bottom: 0;
+}
+
+.hooks-sub-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  margin: 16px 0 8px;
+}
+
+.hook-list {
+  margin-bottom: 12px;
+}
+
+.hook-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: var(--surface, rgba(255,255,255,0.04));
+}
+
+.hook-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hook-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.hook-item-desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.hook-item-status {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.hook-item-status.paused {
+  color: var(--muted);
+}
+
+.hook-item-status.error {
+  color: #ff4444;
+}
+
+.settings-placeholder-small {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ===== Settings context menu (three-lines menu) ===== */
+.settings-context-menu {
+  position: fixed;
+  z-index: 10000;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 160px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-context-menu button {
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.settings-context-menu button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent);
 }
 
 @media (min-width: 768px) {
