@@ -1,10 +1,12 @@
 /* Matey Keyboard — visualViewport-aware layout so UI stays organized when keyboard opens */
 (function () {
   'use strict';
-  var KEYBOARD_CSS = '.chat-overlay.open .chat-dialog { bottom: var(--keyboard-offset, 0px) !important; }' +
-    '.content { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)) !important; }' +
-    '.settings-overlay.open .settings-body { padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)) !important; }' +
-    '.lifestyle-body { padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)) !important; }';
+
+  var KEYBOARD_CSS =
+    '.agentic-input-bar { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)); }' +
+    '.content { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)); }' +
+    '.tabs-wrap { padding-bottom: env(safe-area-inset-bottom, 0px); }' +
+    '.hook-section { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)); }';
 
   var styleEl = document.createElement('style');
   styleEl.textContent = KEYBOARD_CSS;
@@ -28,9 +30,4 @@
   });
   window.addEventListener('load', updateKeyboardOffset);
   updateKeyboardOffset();
-
-  var chatOverlay = document.getElementById('chat-overlay');
-  if (chatOverlay) chatOverlay.classList.remove('open');
-  var settings = document.getElementById('settings');
-  if (settings) settings.classList.remove('open');
 })();

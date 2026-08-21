@@ -10,20 +10,23 @@
     c.querySelectorAll('.whisper-model-btn').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-model');MateyWhisper.storeModel(id);b.disabled=true;b.textContent='Loading…';p.style.display='flex';f.style.width='0%';t.textContent='Downloading model…';MateyWhisper.loadModel(id,function(pr){f.style.width=pr+'%';if(pr>=100)t.textContent='Initializing…';}).then(function(){p.style.display='none';s.textContent='Loaded: '+(models.find(function(x){return x.id===id;})||{}).label||id;initWhisperUI();}).catch(function(e){p.style.display='none';b.disabled=false;b.textContent='Retry';t.textContent='Error';});});});
   }
   function initMic() {
-    var b=document.querySelector('.chat-mic'),f=document.querySelector('.chat-field');if(!b)return;
+    var b=document.querySelector('.agentic-mic'),f=document.querySelector('.agentic-field');if(!b)return;
     var r,ch=[],rec=false;
     b.addEventListener('click',function(){
-      if(!MateyWhisper.getState().ready){if(f){f.placeholder='Download a model in Settings → Local AI';setTimeout(function(){if(f)f.placeholder='Type a message…';},2500);}return;}
+      if(!MateyWhisper.getState().ready){if(f){f.placeholder='Download a model in Settings → Local AI';setTimeout(function(){if(f)f.placeholder='Ask Matey AI agent…';},2500);}return;}
       if(rec){rec=false;r.stop();b.style.color='';b.textContent='';}else{
-        navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){ch=[];r=new MediaRecorder(s);rec=true;b.style.color='#f87171';b.textContent='';r.ondataavailable=function(e){ch.push(e.data);};r.onstop=function(){var bl=new Blob(ch,{type:'audio/webm'});if(f)f.placeholder='Transcribing…';MateyWhisper.transcribe(bl).then(function(res){var t=res&&res.text?res.text:'';if(f){f.value=t;f.placeholder='Type a message…';}}).catch(function(){if(f)f.placeholder='Transcription failed';});s.getTracks().forEach(function(t){t.stop();});};r.start();}).catch(function(){alert('Microphone denied');});
+        navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){ch=[];r=new MediaRecorder(s);rec=true;b.style.color='#f87171';b.textContent='';r.ondataavailable=function(e){ch.push(e.data);};r.onstop=function(){var bl=new Blob(ch,{type:'audio/webm'});if(f)f.placeholder='Transcribing…';MateyWhisper.transcribe(bl).then(function(res){var t=res&&res.text?res.text:'';if(f){f.value=t;f.placeholder='Ask Matey AI agent…';}}).catch(function(){if(f)f.placeholder='Transcription failed';});s.getTracks().forEach(function(t){t.stop();});};r.start();}).catch(function(){alert('Microphone denied');});
       }
     });
   }
   function initChatSyntax() {
-    var f=document.querySelector('.chat-field'),body=document.querySelector('.chat-dialog-body');if(!f||!body)return;
-    function add(msg,cls){var d=document.createElement('div');d.className='chat-bubble '+(cls||'');d.textContent=msg;body.appendChild(d);body.scrollTop=body.scrollHeight;return d;}
+    var f=document.querySelector('.agentic-field'),body=document.getElementById('agentic-results')||document.querySelector('.agentic-results'),sendBtn=document.getElementById('agentic-send');if(!f)return;
+    function add(msg,cls){var d=document.createElement('div');d.className='agentic-bubble '+(cls||'');d.textContent=msg;if(body){body.appendChild(d);body.scrollTop=body.scrollHeight;}return d;}
+    function submitQuery(){var v=f.value.trim();if(!v)return;add(v,'user');var p=MateySyntax.parse(v);if(p){switch(p.type){case'scratchpad':add('Scratchpad: '+p.content.substring(0,60)+'…','system');break;case'permanent':add('Saved ['+p.topic+']: '+p.content.substring(0,60)+'…','system');break;case'silent':add('Queued: '+p.content.substring(0,60)+'…','system');break;case'kb-query':var hits = window.MateyRecall ? MateyRecall.rank(p.content) : (p.results||[]);if(hits.length){add(hits.length+' answer'+(hits.length>1?'s':'')+':','system');hits.forEach(function(r){add('['+(r.source||'note')+'] '+(r.relevance?'('+r.relevance+'%) ':'')+(r.text||'').substring(0,80)+'…','system');});}else add('No relevant notes found','system');break;case'priority':add('Priority: '+p.content.substring(0,60)+'…','system');break;case'math':add('= '+p.result,'system');break;}}else{askAI(v,add);}f.value='';}
+    f.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();submitQuery();}});
+    if(sendBtn)sendBtn.addEventListener('click',submitQuery);
     if(window.MateyAdaptive&&MateyAdaptive.suggestPrompt){
-      var originalPlaceholder=f.placeholder||'Type a message…';
+      var originalPlaceholder=f.placeholder||'Ask Matey AI agent…';
       f.addEventListener('input',function(){
         var q=f.value.trim();
         if(!q){f.placeholder=originalPlaceholder;return;}
@@ -32,7 +35,6 @@
       });
       f.addEventListener('blur',function(){f.placeholder=originalPlaceholder;});
     }
-    f.addEventListener('keydown',function(e){if(e.key!=='Enter')return;var v=f.value.trim();if(!v)return;add(v,'user');var p=MateySyntax.parse(v);if(p){switch(p.type){case'scratchpad':add('Scratchpad: '+p.content.substring(0,60)+'…','system');break;case'permanent':add('Saved ['+p.topic+']: '+p.content.substring(0,60)+'…','system');break;case'silent':add('Queued: '+p.content.substring(0,60)+'…','system');break;case'kb-query':var hits = window.MateyRecall ? MateyRecall.rank(p.content) : (p.results||[]);if(hits.length){add(hits.length+' answer'+(hits.length>1?'s':'')+':','system');hits.forEach(function(r){add('['+(r.source||'note')+'] '+(r.relevance?'('+r.relevance+'%) ':'')+(r.text||'').substring(0,80)+'…','system');});}else add('No relevant notes found','system');break;case'priority':add('Priority: '+p.content.substring(0,60)+'…','system');break;case'math':add('= '+p.result,'system');break;}}else{askAI(v,add);}f.value='';e.preventDefault();});
   }
   function askAI(text,add){
     if(!window.MateyByok||!MateyByok.hasProviders()){add('Add an API provider in Settings → Custom to enable AI replies.','system');return;}
