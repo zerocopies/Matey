@@ -4,8 +4,13 @@
 
   var SETTINGS_HTML = `<aside class="settings-overlay" id="settings">
       <div class="settings-header">
-        <button class="settings-back" id="settings-close" type="button" aria-label="Close">←</button>
-        <h2 class="settings-title">Settings</h2>
+        <button class="settings-back" id="settings-back" aria-label="Back" type="button">&#8249;</button>
+        <span class="settings-title">Settings</span>
+        <span class="settings-incognito-header" id="settings-incognito" aria-label="Incognito" title="Incognito">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.5 2 3 6 3 9c0 2 1 3 1 5 0 2-1 3-2 4s-1 2 0 3c1 1 2 0 3-1s2-2 3-1 2 1 3 1 2-1 3-1 2 1 3 1c1 0 2-1 2-2s-1-2-2-3-2-2-2-4c0-2 1-3 1-5 0-3-3.5-7-8.5-7z"/>
+          </svg>
+        </span>
       </div>
       <div class="settings-body">
 
@@ -115,30 +120,6 @@
             
           </div>
         </div>
-        <div class="settings-section" id="sec-incognito">
-          <div class="settings-section-header" data-toggle="sec-incognito">
-            <div class="settings-section-left">
-              <div>
-                <div class="settings-section-title">Incognito Mode</div>
-                <div class="settings-section-desc">Private browsing & data</div>
-              </div>
-            </div>
-            <span class="settings-section-arrow"></span>
-          </div>
-          <div class="settings-section-body">
-            <div class="settings-incognito-row">
-              <div class="settings-incognito-left">
-                <span class="settings-incognito-title">Private Browsing</span>
-                <span class="settings-incognito-desc">Disables local data storage</span>
-              </div>
-              <label class="toggle">
-                <input type="checkbox" id="incognito-toggle" />
-                <span class="toggle-track"></span>
-                <span class="toggle-thumb"></span>
-              </label>
-            </div>
-          </div>
-        </div>
         <div class="settings-section" id="sec-localai">
           <div class="settings-section-header" data-toggle="sec-localai">
             <div class="settings-section-left">
@@ -157,6 +138,23 @@
               <span class="whisper-progress-text" id="whisper-progress-text">Downloading...</span>
             </div>
             <p class="whisper-hint">Models run entirely on-device. No data leaves your device. Download once, use offline.</p>
+          </div>
+        </div>
+        <div class="settings-section" id="sec-adaptive">
+          <div class="settings-section-header" data-toggle="sec-adaptive">
+            <div class="settings-section-left">
+              <div>
+                <div class="settings-section-title">Adaptive ML</div>
+                <div class="settings-section-desc">Behavioral learning & context tuning</div>
+              </div>
+            </div>
+            <span class="settings-section-arrow"></span>
+          </div>
+          <div class="settings-section-body">
+            <div class="adaptive-stats" id="adaptive-stats">
+              <p class="settings-placeholder">Learning from your usage. Interact more to build your personalization profile.</p>
+            </div>
+            <button class="byok-add-btn" id="adaptive-refine" type="button">Refine Profile Now</button>
           </div>
         </div>
         <div class="settings-section" id="sec-custom">
@@ -290,18 +288,51 @@
     el.innerHTML = html;
   }
 
+  function renderAdaptive() {
+    var el = document.getElementById('adaptive-stats');
+    if (!el || !window.MateyBehavior || !window.MateyAdaptive) return;
+    var metrics = MateyBehavior.getMetrics();
+    var adaptive = MateyAdaptive.getAdaptiveProfile();
+    var html = '<div class="adaptive-grid">';
+    html += '<div class="adaptive-stat"><span class="adaptive-stat-label">Style</span><span class="adaptive-stat-value">' + (adaptive.communicationStyle || 'learning') + '</span></div>';
+    html += '<div class="adaptive-stat"><span class="adaptive-stat-label">Interactions</span><span class="adaptive-stat-value">' + (metrics.totalInteractions || 0) + '</span></div>';
+    html += '<div class="adaptive-stat"><span class="adaptive-stat-label">Avg Response</span><span class="adaptive-stat-value">' + (metrics.avgResponseLength || 0) + ' chars</span></div>';
+    html += '<div class="adaptive-stat"><span class="adaptive-stat-label">Top Tools</span><span class="adaptive-stat-value">' + ((adaptive.preferredTools || []).join(', ') || 'none') + '</span></div>';
+    html += '</div>';
+    if (metrics.topPages && metrics.topPages.length) {
+      html += '<div class="adaptive-topics">Top pages: ' + metrics.topPages.map(function (t) { return '<span class="adaptive-topic">' + t + '</span>'; }).join(' ') + '</div>';
+    }
+    el.innerHTML = html;
+  }
+
   /* ---------- wiring ---------- */
   function wire() {
     var settings = document.getElementById('settings');
     var trigger = document.querySelector('[aria-label="Settings"]');
     if (trigger) trigger.addEventListener('click', function () {
-      settings.classList.add('open');
-      if (window.MateyThemes) MateyThemes.build(settings);
-      renderRecap();
-      if (window.MateyByok) MateyByok.render();
+      var willOpen = !settings.classList.contains('open');
+      settings.classList[willOpen ? 'add' : 'remove']('open');
+      if (willOpen) {
+        if (window.MateyThemes) MateyThemes.build(settings);
+        renderRecap();
+        renderAdaptive();
+        if (window.MateyByok) MateyByok.render();
+      }
     });
-    var close = document.getElementById('settings-close');
-    if (close) close.addEventListener('click', function () { settings.classList.remove('open'); });
+    var backBtn = document.getElementById('settings-back');
+    if (backBtn && settings) backBtn.addEventListener('click', function () {
+      settings.classList.remove('open');
+    });
+    if (settings) settings.addEventListener('click', function (e) {
+      if (e.target === settings) settings.classList.remove('open');
+    });
+
+    var refineBtn = document.getElementById('adaptive-refine');
+    if (refineBtn && window.MateyAdaptive) refineBtn.addEventListener('click', function () {
+      MateyAdaptive.refineProfile();
+      renderAdaptive();
+    });
+
     document.querySelectorAll('[data-toggle]').forEach(function (el) {
       el.addEventListener('click', function () {
         var t = document.getElementById(el.dataset.toggle);
@@ -317,6 +348,9 @@
     if (document.getElementById('settings')) { wire(); return; }
     document.body.insertAdjacentHTML('beforeend', SETTINGS_HTML + BYOK_HTML);
     wire();
+    if (window.MateyByok && typeof MateyByok.wireDynamic === 'function') {
+      MateyByok.wireDynamic();
+    }
   }
 
   window.MateySettings = { renderRecap: renderRecap };

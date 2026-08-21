@@ -127,7 +127,7 @@
   document.addEventListener('mousemove', function (e) { if (isDragging) { e.preventDefault(); moveDrag(e); } });
   document.addEventListener('mouseup', function () { clearTimeout(longPressTimer); mouseDownTab = null; if (isDragging) endDrag(); });
 
-  document.addEventListener('click', function (e) { if (isDragging) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  document.addEventListener('click', function (e) { if (isDragging) { e.preventDefault(); e.stopImmediatePropagation(); } isDragging = false; }, true);
 
   /* init */
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderTabs);

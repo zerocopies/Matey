@@ -5,23 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
     <style>
       html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
-      .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; border: none; }
+      .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; }
     </style>
     <meta name="theme-color" content="#000000" />
     <title>Matey</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./matey-preview.css?v=6" />
-    <script src="./matey-boot.js?v=6"></script>
+    <link rel="stylesheet" href="./matey-preview.css?v=13" />
+    <script src="./matey-boot.js?v=13"></script>
   </head>
   <body>
     <div class="app-shell">
+      <div class="pull-hint" id="pull-hint"></div>
       <header class="header">
         <div class="header-top">
           <img class="matey-logo" src="./images/matey-logo.png" alt="Matey" />
           <div class="header-actions">
-            <button class="icon-btn settings-trigger" type="button" aria-label="Settings"></button>
+            <button class="incognito-trigger" type="button" aria-label="Incognito" title="Incognito">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.5 2 3 6 3 9c0 2 1 3 1 5 0 2-1 3-2 4s-1 2 0 3c1 1 2 0 3-1s2-2 3-1 2 1 3 1 2-1 3-1 2 1 3 1c1 0 2-1 2-2s-1-2-2-3-2-2-2-4c0-2 1-3 1-5 0-3-3.5-7-8.5-7z"/>
+              </svg>
+            </button>
+            <button class="icon-btn settings-trigger" type="button" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+              </svg></button>
           </div>
         </div>
         <div class="greeting-row">
@@ -43,7 +53,7 @@
           <a class="tab active" href="./starring.html">Starring</a>
           <a class="tab" href="./hooks.html">Hooks</a>
           <a class="tab" href="./markdown.html">Markdown</a>
-          <a class="tab" href="./preview.html#custom">Custom</a>
+          <a class="tab" href="./room.html">Room</a>
         </div>
       </nav>
 
@@ -71,15 +81,8 @@
           </div>
         </div>
       </main>
-      <div class="feed-section">
-        <div class="feed-head">Today&#39;s Brief</div>
-        <div class="feed-list" id="feed-list"></div>
-      </div>
     </div>
-
-    <div class="pull-hint" id="pull-hint"></div>
-
-    <div class="chat-overlay" id="chat-overlay">
+<div class="chat-overlay" id="chat-overlay">
       <div class="chat-backdrop" id="chat-backdrop"></div>
       <div class="chat-dialog">
         <div class="chat-handle"></div>
@@ -93,23 +96,27 @@
         </div>
       </div>
     </div>
-    <script src="./matey-themes.js?v=6"></script>
-    <script src="./matey-swipe.js?v=6"></script>
-    <script src="./matey-profile.js?v=6"></script>
-    <script src="./matey-greet.js?v=6"></script>
-    <script src="./matey-feed.js?v=6"></script>
-    <script src="./matey-chat.js?v=6"></script>
-    <script src="./matey-ai.js?v=6"></script>
-    <script src="./matey-tabs.js?v=6"></script>
-    <script src="./matey-byok.js?v=6"></script>
-    <script src="./matey-syntax.js?v=6"></script>
-    <script src="./matey-whisper.js?v=6"></script>
-    <script src="./matey-pull.js?v=6"></script>
-    <script src="./matey-rss.js?v=6"></script>
-    <script src="./matey-license.js?v=6"></script>
-    <script src="./matey-settings.js?v=6"></script>
-    <script src="./matey-recall.js?v=6"></script>
-    <script src="./matey-init.js?v=6"></script>
+    <script src="./matey-themes.js?v=13"></script>
+    <script src="./matey-swipe.js?v=13"></script>
+    <script src="./matey-profile.js?v=13"></script>
+    <script src="./matey-greet.js?v=13"></script>
+    
+    <script src="./matey-chat.js?v=13"></script>
+    <script src="./matey-ai.js?v=13"></script>
+    <script src="./matey-tabs.js?v=13"></script>
+    <script src="./matey-byok.js?v=13"></script>
+    <script src="./matey-room.js?v=13"></script>
+    <script src="./matey-lifestyle.js?v=13"></script>
+    <script src="./matey-syntax.js?v=13"></script>
+    <script src="./matey-whisper.js?v=13"></script>
+<script src="./matey-rss.js?v=13"></script>
+    <script src="./matey-license.js?v=13"></script>
+    <script src="./matey-settings.js?v=13"></script>
+    <script src="./matey-recall.js?v=13"></script>
+    <script src="./matey-behavior.js?v=13"></script>
+    <script src="./matey-adaptive.js?v=13"></script>
+    <script src="./matey-init.js?v=13"></script>
+    <script src="./matey-keyboard.js?v=13"></script>
 
   </body>
 </html>

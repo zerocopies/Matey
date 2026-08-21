@@ -25,13 +25,20 @@
   function addRecap(txt,type,topic) {
     try{var r=JSON.parse(localStorage.getItem(RECAP_KEY)||'[]');r.unshift({text:txt.substring(0,200),type:type,topic:topic,time:Date.now()});localStorage.setItem(RECAP_KEY,JSON.stringify(r.slice(0,200)));}catch(e){}
   }
+  function safeEval(expr) {
+    var cleaned = expr.replace(/[^0-9+\-*/().%\s]/g, '').trim();
+    if (!cleaned) return null;
+    try { return new Function('return ' + cleaned)(); }
+    catch (e) { return null; }
+  }
   function parse(text) {
     if(!text||!text.trim())return null;var t=text.trim(),now=Date.now();
-    if(/^##\s/.test(t)){var n={type:'scratchpad',content:t.replace(/^##\s*/,''),created:now,expires:now+86400000};var s=sessions();s.unshift(n);saveSessions(s.slice(0,50));return n;}
-    if(/^\*\*\s/.test(t)){var tp=categorize(t);var n={type:'permanent',content:t.replace(/^\*\*\s*/,''),created:now,topic:tp};var v=vault();v.unshift(n);saveVault(v);addRecap(t,'permanent-note',tp);return n;}
-    if(/^\/\/\s/.test(t)){var c=t.replace(/^\/\/\s*/,'');console.log('[Matey] silent:',c);addRecap(c,'silent-auto','system');return{type:'silent',content:c,created:now};}
-    if(/^\?\?\s/.test(t)){var q=t.replace(/^\?\?\s*/,'');return{type:'kb-query',content:q,results:searchKB(q),created:now};}
-    if(/^!!\s/.test(t)){var i={type:'priority',content:t.replace(/^!!\s*/,''),created:now};var p=priorities();p.unshift(i);savePriorities(p.slice(0,20));addRecap(t,'priority-flag','priority');return i;}
+    if(/^##\s/.test(t)){var n={type:'scratchpad',content:t.replace(/^##\s*/,''),created:now,expires:now+86400000};var s=sessions();s.unshift(n);saveSessions(s.slice(0,50));if(window.MateyBehavior)MateyBehavior.trackSyntax('##');return n;}
+    if(/^\*\*\s/.test(t)){var tp=categorize(t);var n={type:'permanent',content:t.replace(/^\*\*\s*/,''),created:now,topic:tp};var v=vault();v.unshift(n);saveVault(v);addRecap(t,'permanent-note',tp);if(window.MateyBehavior)MateyBehavior.trackSyntax('**');return n;}
+    if(/^\/\/\s/.test(t)){var c=t.replace(/^\/\/\s*/,'');console.log('[Matey] silent:',c);addRecap(c,'silent-auto','system');if(window.MateyBehavior)MateyBehavior.trackSyntax('//');return{type:'silent',content:c,created:now};}
+    if(/^\?\?\s/.test(t)){var q=t.replace(/^\?\?\s*/,'');if(window.MateyBehavior)MateyBehavior.trackSyntax('??');return{type:'kb-query',content:q,results:searchKB(q),created:now};}
+    if(/^!!\s/.test(t)){var i={type:'priority',content:t.replace(/^!!\s*/,''),created:now};var p=priorities();p.unshift(i);savePriorities(p.slice(0,20));addRecap(t,'priority-flag','priority');if(window.MateyBehavior)MateyBehavior.trackSyntax('!!');return i;}
+    if(/^\$\$\s/.test(t)){var expr=t.replace(/^\$\$\s*/,'');var result=safeEval(expr);if(window.MateyBehavior)MateyBehavior.trackSyntax('$$');return{type:'math',content:expr,result:result,created:now};}
     return null;
   }
   function searchKB(query) {

@@ -22,14 +22,25 @@
   function initChatSyntax() {
     var f=document.querySelector('.chat-field'),body=document.querySelector('.chat-dialog-body');if(!f||!body)return;
     function add(msg,cls){var d=document.createElement('div');d.className='chat-bubble '+(cls||'');d.textContent=msg;body.appendChild(d);body.scrollTop=body.scrollHeight;return d;}
-    f.addEventListener('keydown',function(e){if(e.key!=='Enter')return;var v=f.value.trim();if(!v)return;add(v,'user');var p=MateySyntax.parse(v);if(p){switch(p.type){case'scratchpad':add('Scratchpad: '+p.content.substring(0,60)+'…','system');break;case'permanent':add('Saved ['+p.topic+']: '+p.content.substring(0,60)+'…','system');break;case'silent':add('Queued: '+p.content.substring(0,60)+'…','system');break;case'kb-query':var hits = window.MateyRecall ? MateyRecall.rank(p.content) : (p.results||[]);if(hits.length){add(hits.length+' answer'+(hits.length>1?'s':'')+':','system');hits.forEach(function(r){add('['+(r.source||'note')+'] '+(r.relevance?'('+r.relevance+'%) ':'')+(r.text||'').substring(0,80)+'…','system');});}else add('No relevant notes found','system');break;case'priority':add('Priority: '+p.content.substring(0,60)+'…','system');break;}}else{askAI(v,add);}f.value='';e.preventDefault();});
+    if(window.MateyAdaptive&&MateyAdaptive.suggestPrompt){
+      var originalPlaceholder=f.placeholder||'Type a message…';
+      f.addEventListener('input',function(){
+        var q=f.value.trim();
+        if(!q){f.placeholder=originalPlaceholder;return;}
+        var s=MateyAdaptive.suggestPrompt(q);
+        if(s)f.placeholder=s;
+      });
+      f.addEventListener('blur',function(){f.placeholder=originalPlaceholder;});
+    }
+    f.addEventListener('keydown',function(e){if(e.key!=='Enter')return;var v=f.value.trim();if(!v)return;add(v,'user');var p=MateySyntax.parse(v);if(p){switch(p.type){case'scratchpad':add('Scratchpad: '+p.content.substring(0,60)+'…','system');break;case'permanent':add('Saved ['+p.topic+']: '+p.content.substring(0,60)+'…','system');break;case'silent':add('Queued: '+p.content.substring(0,60)+'…','system');break;case'kb-query':var hits = window.MateyRecall ? MateyRecall.rank(p.content) : (p.results||[]);if(hits.length){add(hits.length+' answer'+(hits.length>1?'s':'')+':','system');hits.forEach(function(r){add('['+(r.source||'note')+'] '+(r.relevance?'('+r.relevance+'%) ':'')+(r.text||'').substring(0,80)+'…','system');});}else add('No relevant notes found','system');break;case'priority':add('Priority: '+p.content.substring(0,60)+'…','system');break;case'math':add('= '+p.result,'system');break;}}else{askAI(v,add);}f.value='';e.preventDefault();});
   }
   function askAI(text,add){
     if(!window.MateyByok||!MateyByok.hasProviders()){add('Add an API provider in Settings → Custom to enable AI replies.','system');return;}
     var thinking=add('Matey is thinking…','system ai-thinking');
     var profile='';try{profile=localStorage.getItem('matey-profile')||'';}catch(e){}
-    var messages=[{role:'system',content:'You are Matey, a concise personal AI concierge.'+(profile?' The user shared this about themselves: '+profile:'')+' Keep replies short and helpful.'},{role:'user',content:text}];
-    MateyByok.chat(messages).then(function(reply){thinking.textContent=reply;thinking.classList.remove('ai-thinking');}).catch(function(err){thinking.textContent=(err&&err.message)?err.message:'AI request failed. Check provider settings.';thinking.classList.remove('ai-thinking');});
+    var adaptiveContext='';if(window.MateyAdaptive&&MateyAdaptive.buildSystemContext)adaptiveContext=MateyAdaptive.buildSystemContext();
+    var messages=[{role:'system',content:'You are Matey, a concise personal AI concierge.'+(profile?' The user shared this about themselves: '+profile:'')+(adaptiveContext?' '+adaptiveContext:'')+' Keep replies short and helpful.'},{role:'user',content:text}];
+    MateyByok.chat(messages).then(function(reply){thinking.textContent=reply;thinking.classList.remove('ai-thinking');if(window.MateyBehavior)MateyBehavior.trackChatResponse(reply);}).catch(function(err){thinking.textContent=(err&&err.message)?err.message:'AI request failed. Check provider settings.';thinking.classList.remove('ai-thinking');});
   }
   function initLicenseUI() {
     var ab=document.querySelector("#sec-about .settings-section-body");if(!ab)return;var card=ab.querySelector('.settings-about-card');if(!card||document.getElementById('license-row'))return;
@@ -77,6 +88,11 @@
         });
       });
       observer.observe(settings, { attributes: true });
+    }
+    // Track page visit for adaptive ML
+    if (window.MateyBehavior) {
+      var page = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
+      MateyBehavior.trackPage(page);
     }
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

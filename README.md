@@ -36,8 +36,12 @@ Matey/
 | matey-swipe.js | Swipe between pages |
 | matey-whisper.js | Transformers.js Whisper (offline STT) |
 | matey-md.js | Markdown editor autosave |
-| matey-chat.js / matey-pull.js | Chat overlay gestures / pull-down bar |
-| matey-profile.js / matey-license.js / matey-greet.js | Profile store, $5 Pro license shell, greetings |
+| matey-chat.js | Chat overlay gestures |
+| matey-profile.js / matey-license.js / matey-greet.js | Profile store, Pro license shell, greetings |
+
+## Removed / shelved features
+
+- **Pull-down notepad** — A pull-down gesture from the top edge that revealed a quick notepad was prototyped in `matey-pull.js` and a `.pull-hint` element. It was removed from the UI because the persistent chat overlay and Markdown page cover the same use case. The module is kept in source for future revival if needed.
 
 ## Build & run
 

@@ -115,6 +115,10 @@
 
   function init() {
     renderList();
+    wireDynamic();
+  }
+
+  function wireDynamic() {
     var addBtn = document.getElementById('byok-add');
     if (addBtn) addBtn.addEventListener('click', function () { showDialog(null); });
     var cancelBtn = document.getElementById('byok-cancel');
@@ -139,6 +143,26 @@
       });
   }
 
+  function convertMessages(messages) {
+    return messages.map(function (msg) {
+      if (!msg.content || !Array.isArray(msg.content)) return msg;
+      var converted = [];
+      msg.content.forEach(function (block) {
+        if (block.type === 'image' && block.source && block.source.type === 'base64') {
+          converted.push({
+            type: 'image_url',
+            image_url: {
+              url: 'data:' + (block.source.media_type || 'image/jpeg') + ';base64,' + block.source.data
+            }
+          });
+        } else {
+          converted.push(block);
+        }
+      });
+      return { role: msg.role, content: converted };
+    });
+  }
+
   window.MateyByok = {
     load: load,
     hasProviders: function () { return load().length > 0; },
@@ -157,6 +181,22 @@
         });
       });
     },
+    sendVision: function (providerId, messages) {
+      var providers = load();
+      if (providerId < 0 || providerId >= providers.length) return Promise.reject('Provider not found');
+      var p = providers[providerId];
+      var converted = convertMessages(messages);
+      return resolveModel(p).then(function (model) {
+        return fetch(p.baseUrl + '/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + p.apiKey },
+          body: JSON.stringify({ model: model, messages: converted, stream: false })
+        }).then(function (r) {
+          if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + ' ' + t.slice(0, 120)); });
+          return r.json();
+        });
+      });
+    },
     chat: function (messages) {
       var providers = load();
       if (!providers.length) return Promise.reject('No provider configured. Add one in Settings → Custom.');
@@ -166,7 +206,17 @@
         return txt;
       });
     },
-    render: renderList
+    chatVision: function (messages) {
+      var providers = load();
+      if (!providers.length) return Promise.reject('No provider configured. Add one in Settings → Custom.');
+      return this.sendVision(0, messages).then(function (j) {
+        var txt = j && j.choices && j.choices[0] && (j.choices[0].message && j.choices[0].message.content);
+        if (!txt) throw new Error('Empty response from provider');
+        return txt;
+      });
+    },
+    render: renderList,
+    wireDynamic: wireDynamic
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

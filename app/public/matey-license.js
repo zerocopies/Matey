@@ -40,5 +40,5 @@
 
   function listFeatures() { return PAID_FEATURES; }
 
-  window.MateyLicense = { get: get, isUnlocked: isUnlocked, isPro: isPro, upgrade: upgrade, has: has, features: listFeatures, PRICE: UNLOCK_USD };
+  window.MateyLicense = { get: get, isUnlocked: isUnlocked, isPro: isPro, upgrade: upgrade, has: has, features: listFeatures, PRICE: UNLOCK_PRICE_USD };
 })();
