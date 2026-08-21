@@ -185,8 +185,30 @@
               <span class="settings-list-arrow"></span>
             </div>
           </div>
-
         </div>
+
+        <div class="settings-section" id="sec-fs">
+          <div class="settings-section-header" data-toggle="sec-fs">
+            <div class="settings-section-left">
+              <div>
+                <div class="settings-section-title">File System</div>
+                <div class="settings-section-desc">Workspace &amp; USB drive access</div>
+              </div>
+            </div>
+            <span class="settings-section-arrow"></span>
+          </div>
+          <div class="settings-section-body">
+            <div class="fs-status" id="fs-status">
+              <span class="fs-status-text" id="fs-status-text">No workspace connected</span>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+              <button class="byok-add-btn" id="fs-init-workspace" type="button" style="flex:1">Matey Workspace</button>
+              <button class="byok-add-btn" id="fs-connect-usb" type="button" style="flex:1">Connect USB Drive</button>
+            </div>
+            <button class="byok-add-btn" id="fs-clear-workspace" type="button" style="margin-top:8px;width:100%">Disconnect</button>
+          </div>
+        </div>
+
         <div class="settings-section" id="sec-about">
           <div class="settings-section-header" data-toggle="sec-about">
             <div class="settings-section-left">
@@ -305,6 +327,30 @@
     el.innerHTML = html;
   }
 
+  /* ---------- File System status ---------- */
+  function updateFSSetup(result) {
+    var status = document.getElementById('fs-status-text');
+    if (!status) return;
+    if (!result) {
+      status.textContent = 'No workspace connected';
+      status.style.color = 'var(--muted)';
+    } else if (result.ok) {
+      status.textContent = result.type === 'usb' ? 'USB: ' + result.name : result.name;
+      status.style.color = 'var(--text)';
+    } else {
+      if (result.error === 'api_unavailable') {
+        status.textContent = 'FSA not supported (fallback available)';
+        status.style.color = 'var(--muted)';
+      } else if (result.error === 'user_cancelled') {
+        status.textContent = 'Selection cancelled';
+        status.style.color = 'var(--muted)';
+      } else {
+        status.textContent = 'Error: ' + result.error;
+        status.style.color = 'var(--accent)';
+      }
+    }
+  }
+
   /* ---------- wiring ---------- */
   function wire() {
     var settings = document.getElementById('settings');
@@ -332,6 +378,28 @@
       MateyAdaptive.refineProfile();
       renderAdaptive();
     });
+
+    var fsInit = document.getElementById('fs-init-workspace');
+    if (fsInit && window.MateyFS) fsInit.addEventListener('click', function () {
+      MateyFS.initializeWorkspace().then(function (result) {
+        updateFSSetup(result);
+      });
+    });
+
+    var fsUsb = document.getElementById('fs-connect-usb');
+    if (fsUsb && window.MateyFS) fsUsb.addEventListener('click', function () {
+      MateyFS.selectUSBMount().then(function (result) {
+        updateFSSetup(result);
+      });
+    });
+
+    var fsClear = document.getElementById('fs-clear-workspace');
+    if (fsClear && window.MateyFS) fsClear.addEventListener('click', function () {
+      MateyFS.clearCachedWorkspace();
+      updateFSSetup({ ok: false, error: 'cleared' });
+    });
+
+    updateFSSetup(null);
 
     document.querySelectorAll('[data-toggle]').forEach(function (el) {
       el.addEventListener('click', function () {

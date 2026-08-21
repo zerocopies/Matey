@@ -500,6 +500,74 @@ body {
   width: 100%;
 }
 
+.workspace-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.workspace-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.workspace-name.active {
+  color: var(--text);
+}
+
+.workspace-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.workspace-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.workspace-btn svg {
+  display: block;
+}
+
+.workspace-selector {
+  display: none;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.workspace-selector button {
+  flex: 1;
+  min-width: 120px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
 .usage-row {
   display: flex;
   justify-content: space-between;
@@ -3429,4 +3497,63 @@ body {
 
 .lifestyle-dialog {
   max-height: 85vh;
+}
+
+/* ===== File System Integration ===== */
+.workspace-selector {
+  display: none;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.workspace-selector.visible {
+  display: flex;
+}
+
+.workspace-selector button {
+  flex: 1;
+  min-width: 120px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.workspace-selector button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.fs-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-raised);
+  color: var(--text);
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  border: 1px solid var(--border);
+}
+
+.fs-toast.show {
+  opacity: 1;
+}
+
+@media (min-width: 768px) {
+  .workspace-name {
+    max-width: 200px;
+  }
 }
