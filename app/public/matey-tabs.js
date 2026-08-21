@@ -1,6 +1,6 @@
 /* Matey Tabs — Draggable reorder with long-press + swipe navigation, localStorage persistence */
 (function () {
-  var TAB_ORDER = ['starring', 'hooks', 'markdown', 'living', 'agent'];
+  var TAB_ORDER = ['starring', 'hooks', 'markdown', 'agent'];
   var LONG_PRESS_MS = 800;
   var isDragging = false, dragTab = null, dragStartX = 0, dragStartY = 0;
   var longPressTimer = null, touchMoved = false, placeholder = null, tabsContainer = null;
@@ -18,7 +18,7 @@
   function saveOrder(o) { try { localStorage.setItem('matey-tab-order', JSON.stringify(o)); } catch (e) {} }
 
   function tabUrl(id) {
-    return ({ 'starring': './starring.html', 'hooks': './hooks.html', 'markdown': './markdown.html', 'living': './living.html', 'agent': './preview.html#agent' })[id] || '#';
+    return ({ 'starring': './starring.html', 'hooks': './hooks.html', 'markdown': './markdown.html', 'agent': './preview.html#agent' })[id] || '#';
   }
 
   function renderTabs() {
@@ -29,11 +29,10 @@
     if (path.indexOf('starring') !== -1) active = 'starring';
     else if (path.indexOf('hooks') !== -1) active = 'hooks';
     else if (path.indexOf('markdown') !== -1) active = 'markdown';
-    else if (path.indexOf('living') !== -1) active = 'living';
     else if (hash === '#agent') active = 'agent';
     else if (path.indexOf('preview') !== -1) active = 'agent';
     else active = 'starring';
-    var labels = { 'starring': 'Starring', 'hooks': 'Hooks', 'markdown': 'Markdown', 'living': 'Living', 'agent': 'AGENTIC-AI' };
+    var labels = { 'starring': 'Starring', 'hooks': 'Hooks', 'markdown': 'Markdown', 'agent': 'AGENTIC-AI' };
     order.forEach(function (id) {
       var a = document.createElement('a');
       a.className = 'tab' + (id === active ? ' active' : '');

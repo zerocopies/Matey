@@ -379,6 +379,125 @@
     });
   }
 
+  /* ---------- Living (Spatial Living Restyler) ---------- */
+  function openLiving() {
+    var body = '<div class="lifestyle-form">' +
+      '<div class="lifestyle-field">' +
+        '<label class="lifestyle-label">Room Type</label>' +
+        '<select class="lifestyle-input" id="living-type">' +
+          '<option value="living-room">Living Room</option>' +
+          '<option value="bedroom">Bedroom</option>' +
+          '<option value="office">Home Office</option>' +
+          '<option value="kitchen">Kitchen</option>' +
+          '<option value="bathroom">Bathroom</option>' +
+          '<option value="open">Open Plan</option>' +
+        '</select>' +
+      '</div>' +
+      '<div class="lifestyle-field">' +
+        '<label class="lifestyle-label">Room Dimensions (L x W)</label>' +
+        '<input type="text" class="lifestyle-input" id="living-dims" placeholder="e.g. 12 x 10 ft" />' +
+      '</div>' +
+      '<div class="lifestyle-field">' +
+        '<label class="lifestyle-label">Notable Features</label>' +
+        '<input type="text" class="lifestyle-input" id="living-features" placeholder="e.g. large east window, fireplace, two doors" />' +
+      '</div>' +
+      '<div class="lifestyle-field">' +
+        '<label class="lifestyle-label">Primary Activities</label>' +
+        '<input type="text" class="lifestyle-input" id="living-activities" placeholder="e.g. work from home, watch TV, read" />' +
+      '</div>' +
+      '<div class="lifestyle-field">' +
+        '<label class="lifestyle-label">Photo (optional)</label>' +
+        '<input type="file" accept="image/*" id="living-file" style="display:none" />' +
+        '<button class="lifestyle-btn lifestyle-btn-secondary" id="living-choose" style="width:100%;margin-bottom:8px">Choose Photo</button>' +
+        '<img id="living-img" style="display:none;width:100%;max-height:180px;object-fit:cover;border-radius:12px;border:1px solid var(--border);margin-bottom:12px" />' +
+      '</div>' +
+      '<button class="lifestyle-btn" id="living-analyze" style="margin-top:12px;width:100%">Generate Layout Options</button>' +
+      '</div>' +
+      '<div id="living-result" class="lifestyle-result-container"></div>';
+
+    var modal = createModal('modal-living', 'Spatial Living Restyler', body);
+    var resultEl = modal.querySelector('#living-result');
+    var dataUrl = null;
+    var fileInput = modal.querySelector('#living-file');
+    var imgEl = modal.querySelector('#living-img');
+
+    modal.querySelector('#living-choose').addEventListener('click', function () { fileInput.click(); });
+
+    fileInput.addEventListener('change', async function () {
+      var file = this.files[0];
+      if (!file) return;
+      dataUrl = await readFile(file);
+      imgEl.src = dataUrl;
+      imgEl.style.display = '';
+    });
+
+    modal.querySelector('#living-analyze').addEventListener('click', async function () {
+      var roomType = modal.querySelector('#living-type').value;
+      var dims = modal.querySelector('#living-dims').value.trim();
+      var features = modal.querySelector('#living-features').value.trim();
+      var activities = modal.querySelector('#living-activities').value.trim();
+
+      if (!roomType) { showError(resultEl, 'Please specify a room type.'); return; }
+
+      showLoading(resultEl);
+
+      var context = '# Spatial Living Analysis Request\n' +
+        '- Room type: ' + roomType + '\n' +
+        (dims ? '- Dimensions: ' + dims + '\n' : '') +
+        (features ? '- Notable features: ' + features + '\n' : '') +
+        (activities ? '- Primary activities: ' + activities + '\n' : '');
+
+      var prompt = 'You are a spatial design restyler. Given a room description, provide THE SINGLE BEST furniture layout recommendation with 3-5 specific, actionable move instructions and a brief rationale. Consider traffic flow, natural light, and practical use.';
+
+      if (dataUrl) {
+        var block = dataUrlToBase64Block(dataUrl);
+        if (block) {
+          try {
+            var messages = [{ type: 'text', text: context + '\n' + prompt }, block];
+            if (window.MateyByok && typeof MateyByok.chatVision === 'function') {
+              var analysis = await MateyByok.chatVision([{ role: 'user', content: messages }]);
+              showResult(resultEl, analysis);
+            } else {
+              showError(resultEl, 'AI provider not configured.');
+            }
+          } catch (e) { showError(resultEl, e.message || 'Analysis failed'); }
+        } else {
+          showError(resultEl, 'Invalid image.');
+        }
+      } else {
+        try {
+          var messages2 = [{ role: 'system', content: PERSONA }, { role: 'user', content: [{ type: 'text', text: context + '\n' + prompt }] }];
+          if (window.MateyByok && typeof MateyByok.chat === 'function') {
+            var analysis2 = await MateyByok.chat(messages2);
+            showResult(resultEl, analysis2);
+          } else {
+            /* Fallback: basic layout suggestion */
+            showResult(resultEl, generateBasicLayout(roomType, dims, features, activities));
+          }
+        } catch (e) { showError(resultEl, e.message || 'Analysis failed'); }
+      }
+    });
+
+    function generateBasicLayout(type, dims, features, activities) {
+      var layouts = {
+        'living-room': 'Open-concept layout: Place sofa facing the largest window for natural light. Add a coffee table 18" from seating. Floating TV stand on the longest wall. Keep 36" clearance around all paths.',
+        'bedroom': 'Focal-point layout: Bed centered on the longest wall, nightstands on each side. Dresser opposite the bed. Keep 30" clearance around. Add a reading chair near any window.',
+        'office': 'Workstation-first: Desk facing the door or window. Chair with 24" depth clearance. Floating shelves above for storage. Add a small lounge chair for breaks.',
+        'kitchen': 'Work-triangle: Prioritize sink-stove-refrigerator triangle. Ensure 42" between counters. Add rolling cart for extra prep space. Task lighting over each zone.',
+        'bathroom': 'Vertical flow: Toilet, sink, shower, bath in sequence. Maximize vertical storage. Non-slip mat near shower. Keep 30" clearance for doors.',
+        'open': 'Zone-based: Define areas with furniture rugs. Living zone around TV, dining zone central, kitchen workflow separate. Maintain 42" traffic lanes.'
+      };
+      var output = '# Spatial Living Layout — ' + type.replace(/-/g, ' ').toUpperCase() + '\n\n';
+      output += (dims ? '**Dimensions:** ' + dims + '\n\n' : '');
+      if (features) output += '**Features:** ' + features + '\n\n';
+      if (activities) output += '**Activities:** ' + activities + '\n\n';
+      output += '**Recommended Layout:**\n' + (layouts[type] || layouts['living-room']);
+      if (features) output += '\n\n**Feature Integration:** Position furniture to take advantage of ' + features + '.';
+      if (activities) output += '\n\n**Activity Zones:** Organize space to support: ' + activities + '.';
+      return output;
+    }
+  }
+
   /* ---------- Lifestyle Beat ---------- */
   function openLifestyle() {
     var body = '<div class="lifestyle-form"><div class="lifestyle-field"><label class="lifestyle-label">Period</label><select class="lifestyle-input" id="beat-period"><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div><div class="lifestyle-row"><div class="lifestyle-field"><label class="lifestyle-label">Meals Cooked</label><input type="number" class="lifestyle-input" id="beat-meals" value="0" /></div><div class="lifestyle-field"><label class="lifestyle-label">Outfits Worn</label><input type="number" class="lifestyle-input" id="beat-outfits" value="0" /></div></div><div class="lifestyle-row"><div class="lifestyle-field"><label class="lifestyle-label">Discoveries</label><input type="number" class="lifestyle-input" id="beat-discoveries" value="0" /></div><div class="lifestyle-field"><label class="lifestyle-label">Kitchen Events</label><input type="number" class="lifestyle-input" id="beat-kitchen" value="0" /></div></div><div class="lifestyle-field"><label class="lifestyle-label">Weather</label><input type="text" class="lifestyle-input" id="beat-weather" placeholder="e.g., Hot, 38C, sunny" /></div><button class="lifestyle-btn" id="beat-generate" style="margin-top:12px;width:100%">Generate Beat</button></div><div id="lifestyle-result" class="lifestyle-result-container"></div>';
@@ -414,6 +533,7 @@
       if (cat === 'Grooming') openGrooming();
       else if (cat === 'Wardrobe') openWardrobe();
       else if (cat === 'Culinary') openCulinary();
+      else if (cat === 'Living') openLiving();
       else if (cat === 'Lifestyle') openLifestyle();
     });
   }
