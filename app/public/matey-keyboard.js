@@ -4,9 +4,10 @@
 
   var KEYBOARD_CSS =
     '.agentic-input-bar { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)); }' +
+    '.agentic-results { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)); }' +
     '.content { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)); }' +
     '.tabs-wrap { padding-bottom: env(safe-area-inset-bottom, 0px); }' +
-    '.hook-section { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)); }';
+    '.hook-input-bar { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px)); }';
 
   var styleEl = document.createElement('style');
   styleEl.textContent = KEYBOARD_CSS;
