@@ -3,7 +3,7 @@
   'use strict';
   var WHISPER_STATE = { ready: false, model: null, transcriber: null, loading: false, modelId: null, progress: 0 };
   var MODEL_OPTIONS = [
-    { id: 'Xenova/whisper-tiny.en', label: 'Tiny (~99MB)', size: '99MB', desc: 'Fast English dictation' },
+    { id: 'Xenova/whisper-tiny.en', label: 'Tiny (~99MB)', size: '99MB', desc: 'Fast dictation' },
     { id: 'Xenova/whisper-base.en', label: 'Base (~300MB)', size: '300MB', desc: 'Higher accuracy' }
   ];
 

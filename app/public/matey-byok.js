@@ -6,15 +6,21 @@
   function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
   function save(list) { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {} }
 
-  function renderList() {
+   function renderList() {
     var el = document.getElementById('byok-list');
     if (!el) return;
     var providers = load();
     if (!providers.length) { el.innerHTML = '<p class="byok-empty">No custom providers configured.</p>'; return; }
     el.innerHTML = providers.map(function (p, i) {
+      var caps = (p.capabilities || []).map(function (c) {
+        var label = { text: 'Text', vision: 'Vision', stt: 'Speach', imagegen: 'Image Gen' }[c] || c;
+        return '<span class="byok-cap-tag">' + label + '</span>';
+      }).join('');
       return '<div class="byok-provider-item" data-index="' + i + '">' +
         '<div class="byok-provider-info"><span class="byok-provider-name">' + esc(p.name) + '</span>' +
-        '<span class="byok-provider-url">' + esc(p.baseUrl) + '</span></div>' +
+        '<span class="byok-provider-url">' + esc(p.baseUrl) + '</span>' +
+        (caps ? '<div class="byok-provider-caps">' + caps + '</div>' : '') +
+        '</div>' +
         '<div class="byok-provider-actions">' +
         '<button class="byok-edit" data-action="edit" data-index="' + i + '" aria-label="Edit">✎</button>' +
         '<button class="byok-delete" data-action="delete" data-index="' + i + '" aria-label="Delete">✕</button>' +
@@ -62,16 +68,21 @@
 
   function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-  function showDialog(editingIndex) {
+   function showDialog(editingIndex) {
     var dialog = document.getElementById('byok-dialog');
     if (!dialog) return;
     var providers = load();
-    var p = editingIndex != null && editingIndex >= 0 ? providers[editingIndex] : null;
+    var p = (editingIndex != null && editingIndex >= 0) ? providers[editingIndex] : null;
     document.getElementById('byok-name').value = p ? p.name : '';
     document.getElementById('byok-url').value = p ? p.baseUrl : '';
     document.getElementById('byok-key').value = p ? p.apiKey : '';
     var modelEl = document.getElementById('byok-model');
     if (modelEl) modelEl.value = p ? (p.model || '') : '';
+    var caps = p ? (p.capabilities || []) : [];
+    ['cap_text', 'cap_vision', 'cap_stt', 'cap_imagegen'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.checked = caps.indexOf(el.value) !== -1;
+    });
     dialog.setAttribute('data-edit-index', editingIndex != null ? editingIndex : '');
     dialog.classList.add('open');
   }
@@ -81,7 +92,7 @@
     if (dialog) dialog.classList.remove('open');
   }
 
-  function saveProvider(e) {
+   function saveProvider(e) {
     e.preventDefault();
     var dialog = document.getElementById('byok-dialog');
     var name = document.getElementById('byok-name').value.trim();
@@ -89,10 +100,15 @@
     var apiKey = document.getElementById('byok-key').value.trim();
     var modelEl = document.getElementById('byok-model');
     var model = modelEl ? modelEl.value.trim() : '';
+    var caps = [];
+    ['cap_text', 'cap_vision', 'cap_stt', 'cap_imagegen'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && el.checked) caps.push(el.value);
+    });
     if (!name || !baseUrl) return;
     var providers = load();
     var editIdx = dialog.getAttribute('data-edit-index');
-    var entry = { name: name, baseUrl: baseUrl, apiKey: apiKey, model: model };
+    var entry = { name: name, baseUrl: baseUrl, apiKey: apiKey, model: model, capabilities: caps };
     if (editIdx !== '' && editIdx !== null) {
       providers[parseInt(editIdx)] = entry;
     } else {
@@ -163,28 +179,55 @@
     });
   }
 
-  window.MateyByok = {
+   window.MateyByok = {
     load: load,
     hasProviders: function () { return load().length > 0; },
-    send: function (providerId, messages) {
-      var providers = load();
-      if (providerId < 0 || providerId >= providers.length) return Promise.reject('Provider not found');
-      var p = providers[providerId];
-      return resolveModel(p).then(function (model) {
-        return fetch(p.baseUrl + '/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + p.apiKey },
-          body: JSON.stringify({ model: model, messages: messages, stream: false })
-        }).then(function (r) {
+     getProvider: function (capability) {
+       var providers = load();
+       if (!providers.length) return null;
+       for (var i = 0; i < providers.length; i++) {
+         var caps = providers[i].capabilities || [];
+         if (caps.indexOf(capability) !== -1) return providers[i];
+       }
+       for (var j = 0; j < providers.length; j++) {
+         var caps2 = providers[j].capabilities || [];
+         if (!caps2.length) return providers[j];
+       }
+       return providers[0];
+     },
+    resolveProvider: function (capability) {
+      var p = this.getProvider(capability);
+      if (!p) return Promise.reject('No provider configured for capability: ' + capability);
+      return p;
+    },
+    chat: function (messages) {
+      return this.send('text', messages);
+    },
+     chatVision: function (messages) {
+       return this.sendVision('vision', messages);
+     },
+     send: function (capability, messages) {
+       var p = this.getProvider(capability);
+       if (!p) return Promise.reject('No provider configured for: ' + capability + '. Add one in Settings → Custom.');
+       var converted = convertMessages(messages);
+       return resolveModel(p).then(function (model) {
+         return fetch(p.baseUrl + '/v1/chat/completions', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + p.apiKey },
+           body: JSON.stringify({ model: model, messages: converted, stream: false })
+         }).then(function (r) {
           if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + ' ' + t.slice(0, 120)); });
           return r.json();
         });
+      }).then(function (j) {
+        var txt = j && j.choices && j.choices[0] && (j.choices[0].message && j.choices[0].message.content);
+        if (!txt) throw new Error('Empty response from provider');
+        return txt;
       });
     },
-    sendVision: function (providerId, messages) {
-      var providers = load();
-      if (providerId < 0 || providerId >= providers.length) return Promise.reject('Provider not found');
-      var p = providers[providerId];
+     sendVision: function (capability, messages) {
+       var p = this.getProvider(capability || 'vision');
+       if (!p) return Promise.reject('No vision provider configured. Add one in Settings → Custom (enable Vision capability).');
       var converted = convertMessages(messages);
       return resolveModel(p).then(function (model) {
         return fetch(p.baseUrl + '/v1/chat/completions', {
@@ -195,21 +238,7 @@
           if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + ' ' + t.slice(0, 120)); });
           return r.json();
         });
-      });
-    },
-    chat: function (messages) {
-      var providers = load();
-      if (!providers.length) return Promise.reject('No provider configured. Add one in Settings → Custom.');
-      return this.send(0, messages).then(function (j) {
-        var txt = j && j.choices && j.choices[0] && (j.choices[0].message && j.choices[0].message.content);
-        if (!txt) throw new Error('Empty response from provider');
-        return txt;
-      });
-    },
-    chatVision: function (messages) {
-      var providers = load();
-      if (!providers.length) return Promise.reject('No provider configured. Add one in Settings → Custom.');
-      return this.sendVision(0, messages).then(function (j) {
+      }).then(function (j) {
         var txt = j && j.choices && j.choices[0] && (j.choices[0].message && j.choices[0].message.content);
         if (!txt) throw new Error('Empty response from provider');
         return txt;

@@ -1,6 +1,6 @@
 /* Swipe navigation for Matey (updated tab order) */
 (function() {
-  var TAB_ORDER = ['starring', 'hooks', 'markdown', 'custom'];
+  var TAB_ORDER = ['lifestyle', 'vots', 'markdown', 'journal', 'agent'];
   var SWIPE_THRESHOLD = 60;
   var isSwiping = false, startX = 0, startY = 0;
 

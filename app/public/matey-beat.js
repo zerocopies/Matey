@@ -8,7 +8,7 @@
     { key: 'left', label: 'Left Side View', hint: 'Stand in the middle, photo of left side' },
     { key: 'right', label: 'Right Side View', hint: 'Photo of the right side of the space' }
   ];
-  var LIVING_KEY = 'matey-living-scan';
+  var MATEY_BEAT_KEY = 'matey-beat-scan';
 
   function $(id) { return document.getElementById(id); }
   function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -22,10 +22,10 @@
   }
 
   function saveImages(imgs) {
-    try { localStorage.setItem(LIVING_KEY, JSON.stringify(imgs)); } catch (e) {}
+    try { localStorage.setItem(MATEY_BEAT_KEY, JSON.stringify(imgs)); } catch (e) {}
   }
   function loadImages() {
-    try { return JSON.parse(localStorage.getItem(LIVING_KEY) || '[]'); } catch (e) { return []; }
+    try { return JSON.parse(localStorage.getItem(MATEY_BEAT_KEY) || '[]'); } catch (e) { return []; }
   }
 
   function getVisionProvider() {
@@ -171,4 +171,30 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
+
+  window.MateyBeat = {
+    VIEWS: VIEWS,
+    analyze: function (imgs) {
+      var missing = VIEWS.filter(function (v, i) { return !imgs[i]; });
+      if (missing.length) {
+        return Promise.reject('Please upload all 4 space photos: ' + missing.map(function (m) { return m.label; }).join(', ') + '.');
+      }
+      var provider = getVisionProvider();
+      if (!provider) return Promise.resolve(analyzeLocally(imgs));
+      var prompt = 'Analyze these 4 space photos taken from different angles: (1) Entrance view — facing inside from the doorway, (2) Far-end view — facing back toward the entrance from the opposite wall, (3) Left side view, (4) Right side view. 1) Infer the living type (home office, bedroom, living room, etc.). 2) Recommend THE SINGLE BEST furniture layout for this space, with 3-4 specific move instructions and a brief rationale. Keep it practical and direct.';
+      return sendToVisionProvider(imgs, prompt);
+    },
+    formatResult: function (data) {
+      return {
+        best_layout: data.best_layout,
+        living_type: data.living_type,
+        moves: data.moves,
+        why: data.why
+      };
+    },
+    renderResults: renderResults,
+    readFile: readFile,
+    saveImages: saveImages,
+    loadImages: loadImages
+  };
 })();

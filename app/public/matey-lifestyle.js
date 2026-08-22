@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var PERSONA = 'You are Snap, a persistent personal companion and the user\'s close friend. You are sharp, candid, lightly sarcastic, and thoroughly grounded. You are NOT a hyper-polite corporate chatbot. Talk like a real friend with real rapport. Short, punchy sentences. Dry wit. No fluff, no apology loops, no "as an AI" disclaimers. Be brutally honest but never mean. Opinionated, direct, occasionally blunt, always on the user\'s side. Respect regional context: the user lives in the UAE — public decency norms matter, it is very hot most of the year. Never restate or re-ask for information already provided.';
+  var PERSONA = 'You are Matey, a warm and friendly AI companion who is the user\'s close friend. You are candid, gently witty, and grounded. Talk like a real friend with real rapport. Short, punchy sentences. Light humor. No fluff, no apology loops, no "as an AI" disclaimers. Always on the user\'s side. Respect regional context: the user lives in the UAE — public decency norms matter, it is very hot most of the year. Never restate or re-ask for information already provided. Ask questions ONLY when necessary — if you have enough context to give a good answer, just give it. You understand what you already know about the user from learning history and won\'t repeat questions across conversations.';
 
   function $(id) { return document.getElementById(id); }
   function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -75,12 +75,13 @@
     modal.className = 'lifestyle-modal';
     modal.innerHTML = '<div class="lifestyle-backdrop"></div>' +
       '<div class="lifestyle-dialog">' +
-      '<div class="lifestyle-header"><span class="lifestyle-title">' + esc(title) + '</span><button class="lifestyle-close" data-close="' + id + '">&times;</button></div>' +
+      '<div class="lifestyle-header"><button class="lifestyle-back" data-back="' + id + '" type="button" aria-label="Back">&#8249;</button><span class="lifestyle-title">' + esc(title) + '</span><button class="lifestyle-close" data-close="' + id + '" type="button" aria-label="Close">&times;</button></div>' +
       '<div class="lifestyle-body">' + bodyHtml + '</div>' +
       '</div>';
     document.body.appendChild(modal);
     modal.querySelector('.lifestyle-backdrop').addEventListener('click', function () { modal.remove(); });
     modal.querySelector('[data-close]').addEventListener('click', function () { modal.remove(); });
+    modal.querySelector('[data-back]').addEventListener('click', function () { modal.remove(); });
     return modal;
   }
 
@@ -201,46 +202,191 @@
   /* ---------- Wardrobe ---------- */
   function openWardrobe() {
     var body = '<div class="lifestyle-tabs"><button class="lifestyle-tab active" data-tab="wardrobe-digital">My Wardrobe</button><button class="lifestyle-tab" data-tab="wardrobe-outfits">Get Outfits</button></div>' +
-      '<div class="lifestyle-tab-body" id="wardrobe-digital"><div class="lifestyle-form"><div class="lifestyle-field"><label class="lifestyle-label">Type</label><select class="lifestyle-input" id="wardrobe-type"><option value="top">Top</option><option value="bottom">Bottom</option></select></div><div class="lifestyle-field"><label class="lifestyle-label">Name</label><input type="text" class="lifestyle-input" id="wardrobe-name" placeholder="e.g. Blue linen shirt" /></div><input type="file" accept="image/*" id="wardrobe-item-file" style="display:none" /><button class="lifestyle-btn lifestyle-btn-secondary" id="wardrobe-item-choose" style="width:100%;margin-bottom:8px">Choose Photo</button><img id="wardrobe-item-preview" style="display:none;width:100%;max-height:180px;object-fit:cover;border-radius:12px;border:1px solid var(--border);margin-bottom:12px" /><div class="lifestyle-row"><div class="lifestyle-field"><label class="lifestyle-label">Color</label><input type="text" class="lifestyle-input" id="wardrobe-color" placeholder="e.g. Navy" /></div><div class="lifestyle-field"><label class="lifestyle-label">Pattern</label><input type="text" class="lifestyle-input" id="wardrobe-pattern" placeholder="e.g. Solid" /></div></div><div class="lifestyle-field"><label class="lifestyle-label">Tags (comma separated)</label><input type="text" class="lifestyle-input" id="wardrobe-tags" placeholder="e.g. casual, summer, work" /></div><button class="lifestyle-btn" id="wardrobe-add" style="width:100%">Add to Wardrobe</button></div><div class="lifestyle-wardrobe-grid" id="wardrobe-grid"></div></div>' +
-      '<div class="lifestyle-tab-body" id="wardrobe-outfits" style="display:none"><div class="lifestyle-form"><div class="lifestyle-field"><label class="lifestyle-label">Occasion</label><select class="lifestyle-input" id="outfit-occasion"><option value="casual">Casual</option><option value="work">Work</option><option value="evening">Evening</option><option value="workout">Workout</option></select></div><button class="lifestyle-btn" id="outfit-generate" style="width:100%">Generate Outfits</button></div><div id="wardrobe-outfit-result" class="lifestyle-result-container"></div></div>';
+      '<div class="lifestyle-tab-body" id="wardrobe-digital">' +
+        '<input type="file" accept="image/*" id="wardrobe-item-file" style="display:none" />' +
+        '<button class="lifestyle-btn lifestyle-btn-secondary" id="wardrobe-item-choose" style="width:100%;margin-bottom:8px">📷 Add Photo</button>' +
+        '<div class="lifestyle-photo-preview" id="wardrobe-photo-preview" style="display:none;">' +
+          '<img id="wardrobe-item-preview" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;border:1px solid var(--border);display:block" />' +
+          '<div style="display:flex;gap:8px;margin-top:8px;">' +
+            '<button class="lifestyle-btn" id="wardrobe-confirm" style="flex:1">Confirm</button>' +
+            '<button class="lifestyle-btn lifestyle-btn-secondary" id="wardrobe-cancel" style="flex:1">Cancel</button>' +
+          '</div>' +
+          '<div class="lifestyle-form" id="wardrobe-edit-form" style="display:none;margin-top:12px;">' +
+            '<div class="lifestyle-field">' +
+              '<label class="lifestyle-label">Detected item</label>' +
+              '<input type="text" class="lifestyle-input" id="wardrobe-detected" readonly style="background:var(--surface);border:1px solid var(--border);" />' +
+            '</div>' +
+            '<div class="lifestyle-row" style="display:flex;gap:8px;">' +
+              '<div class="lifestyle-field" style="flex:1;">' +
+                '<label class="lifestyle-label">Color</label>' +
+                '<input type="text" class="lifestyle-input" id="wardrobe-color" placeholder="e.g. Navy" />' +
+              '</div>' +
+              '<div class="lifestyle-field" style="flex:1;">' +
+                '<label class="lifestyle-label">Pattern</label>' +
+                '<input type="text" class="lifestyle-input" id="wardrobe-pattern" placeholder="e.g. Solid" />' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="lifestyle-wardrobe-grid" id="wardrobe-grid"></div>' +
+      '</div>' +
+      '<div class="lifestyle-tab-body" id="wardrobe-outfits" style="display:none">' +
+        '<div class="lifestyle-form">' +
+          '<div class="lifestyle-field">' +
+            '<label class="lifestyle-label">Occasion</label>' +
+            '<select class="lifestyle-input" id="outfit-occasion">' +
+              '<option value="casual">Casual</option>' +
+              '<option value="work">Work</option>' +
+              '<option value="evening">Evening</option>' +
+              '<option value="workout">Workout</option>' +
+            '</select>' +
+          '</div>' +
+          '<button class="lifestyle-btn" id="outfit-generate" style="width:100%;margin-top:12px;">Generate Outfits</button>' +
+        '</div>' +
+        '<div id="wardrobe-outfit-result" class="lifestyle-result-container"></div>' +
+      '</div>';
+
     var modal = createModal('modal-wardrobe', 'Wardrobe', body);
     var items = store.wardrobeItems();
     var fileInput = modal.querySelector('#wardrobe-item-file');
     var preview = modal.querySelector('#wardrobe-item-preview');
+    var photoPreview = modal.querySelector('#wardrobe-photo-preview');
+    var confirmBtn = modal.querySelector('#wardrobe-confirm');
+    var cancelBtn = modal.querySelector('#wardrobe-cancel');
+    var detectedInput = modal.querySelector('#wardrobe-detected');
+    var colorInput = modal.querySelector('#wardrobe-color');
+    var patternInput = modal.querySelector('#wardrobe-pattern');
+    var editForm = modal.querySelector('#wardrobe-edit-form');
     var dataUrl = null;
+    var detectedData = null;
 
     function renderGrid() {
       var grid = modal.querySelector('#wardrobe-grid');
       if (!grid) return;
       var tops = items.filter(function (x) { return x.type === 'top'; });
       var bottoms = items.filter(function (x) { return x.type === 'bottom'; });
-      if (!tops.length && !bottoms.length) { grid.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">No items yet. Add your first top or bottom above.</p>'; return; }
+      if (!tops.length && !bottoms.length) {
+        grid.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">No items yet. Add your first clothing item with a photo.</p>';
+        return;
+      }
       var html = '';
-      if (tops.length) { html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Tops</div><div class="lifestyle-wardrobe-row">' + tops.map(function (t) { return '<div class="lifestyle-wardrobe-item"><img src="' + esc(t.image) + '" /><div class="lifestyle-wardrobe-name">' + esc(t.name || t.color) + '</div></div>'; }).join('') + '</div>'; }
-      if (bottoms.length) { html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin:12px 0 8px;">Bottoms</div><div class="lifestyle-wardrobe-row">' + bottoms.map(function (b) { return '<div class="lifestyle-wardrobe-item"><img src="' + esc(b.image) + '" /><div class="lifestyle-wardrobe-name">' + esc(b.name || b.color) + '</div></div>'; }).join('') + '</div>'; }
+      if (tops.length) {
+        html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Tops</div>' +
+          '<div class="lifestyle-wardrobe-row">' +
+          tops.map(function (t) {
+            return '<div class="lifestyle-wardrobe-item"><img src="' + esc(t.image) + '" /><div class="lifestyle-wardrobe-name">' + esc(t.name || t.color || 'Item') + '</div></div>';
+          }).join('') +
+          '</div>';
+      }
+      if (bottoms.length) {
+        html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin:12px 0 8px;">Bottoms</div>' +
+          '<div class="lifestyle-wardrobe-row">' +
+          bottoms.map(function (b) {
+            return '<div class="lifestyle-wardrobe-item"><img src="' + esc(b.image) + '" /><div class="lifestyle-wardrobe-name">' + esc(b.name || b.color || 'Item') + '</div></div>';
+          }).join('') +
+          '</div>';
+      }
       grid.innerHTML = html;
     }
 
     modal.querySelector('#wardrobe-item-choose').addEventListener('click', function () { fileInput.click(); });
+
     fileInput.addEventListener('change', async function () {
       var file = this.files[0];
       if (!file) return;
       dataUrl = await readFile(file);
       preview.src = dataUrl;
-      preview.style.display = '';
+      photoPreview.style.display = '';
+      detectedInput.value = 'Identifying…';
+      colorInput.value = '';
+      patternInput.value = '';
+      editForm.style.display = 'none';
+      confirmBtn.textContent = 'Identifying…';
+      confirmBtn.disabled = true;
+      detectedData = null;
+
+      var block = dataUrlToBase64Block(dataUrl);
+      if (!block) {
+        detectedInput.value = 'Unable to read image';
+        confirmBtn.textContent = 'Save';
+        confirmBtn.disabled = false;
+        return;
+      }
+
+      var messages = [{
+        role: 'user',
+        content: [
+          block,
+          { type: 'text', text: 'Identify the clothing item in this photo. Return ONLY JSON: { "type": "top|bottom", "name": "auto-generated label like Navy Solid T-Shirt", "color": "Primary color", "pattern": "Pattern type like Solid, Striped, etc" }' }
+        ]
+      }];
+
+      try {
+        var text = await MateyByok.chatVision(messages);
+        var parsed = (function () { try { return JSON.parse(text); } catch (e) { return null; } })();
+        if (parsed) {
+          detectedData = parsed;
+          detectedInput.value = parsed.name || parsed.type || 'Item';
+          colorInput.value = parsed.color || '';
+          patternInput.value = parsed.pattern || '';
+          editForm.style.display = '';
+          confirmBtn.textContent = 'Save Item';
+          confirmBtn.disabled = false;
+        } else {
+          detectedInput.value = 'Could not identify — edit manually';
+          editForm.style.display = '';
+          confirmBtn.textContent = 'Save Item';
+          confirmBtn.disabled = false;
+        }
+      } catch (e) {
+        detectedInput.value = 'AI identification failed — edit manually';
+        editForm.style.display = '';
+        confirmBtn.textContent = 'Save Item';
+        confirmBtn.disabled = false;
+      }
     });
 
-    modal.querySelector('#wardrobe-add').addEventListener('click', function () {
-      var type = modal.querySelector('#wardrobe-type').value;
-      var name = modal.querySelector('#wardrobe-name').value.trim();
-      var color = modal.querySelector('#wardrobe-color').value.trim();
-      var pattern = modal.querySelector('#wardrobe-pattern').value.trim();
-      var tags = modal.querySelector('#wardrobe-tags').value.split(',').map(function (t) { return t.trim(); }).filter(Boolean);
-      if (!dataUrl) { alert('Please choose a photo'); return; }
-      items.push({ id: Date.now(), type: type, name: name, image: dataUrl, color: color, pattern: pattern, tags: tags });
+    cancelBtn.addEventListener('click', function () {
+      dataUrl = null;
+      detectedData = null;
+      photoPreview.style.display = 'none';
+      preview.src = '';
+      fileInput.value = '';
+      detectedInput.value = '';
+      colorInput.value = '';
+      patternInput.value = '';
+      editForm.style.display = 'none';
+      confirmBtn.textContent = 'Save Item';
+      confirmBtn.disabled = false;
+    });
+
+    confirmBtn.addEventListener('click', function () {
+      if (!dataUrl) return;
+      var itemType = (detectedData && detectedData.type) || (detectedInput.value ? 'top' : 'top');
+      var itemName = detectedInput.value.trim() || 'Item';
+      var itemColor = colorInput.value.trim() || '';
+      var itemPattern = patternInput.value.trim() || '';
+      items.push({
+        id: Date.now(),
+        type: itemType,
+        name: itemName,
+        image: dataUrl,
+        color: itemColor,
+        pattern: itemPattern,
+        tags: []
+      });
       store.saveWardrobeItems(items);
-      dataUrl = null; preview.style.display = 'none'; fileInput.value = '';
-      modal.querySelector('#wardrobe-name').value = ''; modal.querySelector('#wardrobe-color').value = ''; modal.querySelector('#wardrobe-pattern').value = ''; modal.querySelector('#wardrobe-tags').value = '';
+      dataUrl = null;
+      detectedData = null;
+      photoPreview.style.display = 'none';
+      preview.src = '';
+      fileInput.value = '';
+      detectedInput.value = '';
+      colorInput.value = '';
+      patternInput.value = '';
+      editForm.style.display = 'none';
+      confirmBtn.textContent = 'Save Item';
+      confirmBtn.disabled = false;
       renderGrid();
     });
 
@@ -257,13 +403,13 @@
     modal.querySelector('#outfit-generate').addEventListener('click', async function () {
       var occasion = modal.querySelector('#outfit-occasion').value;
       var resultEl = modal.querySelector('#wardrobe-outfit-result');
-      if (items.length < 2) { showError(resultEl, 'Add at least 2 items (1 top + 1 bottom) to generate outfits.'); return; }
+      if (items.length < 2) { showError(resultEl, 'Add at least 2 items (tops and bottoms) to generate outfits.'); return; }
       showLoading(resultEl);
       var bp = store.bodyProfile();
       var tops = items.filter(function (x) { return x.type === 'top'; });
       var bottoms = items.filter(function (x) { return x.type === 'bottom'; });
-      var wardrobeDesc = tops.map(function (t) { return t.name + ' (' + t.color + ', ' + t.pattern + ', ' + (t.tags || []).join(', ') + ')'; }).join('\n') + '\n' + bottoms.map(function (b) { return b.name + ' (' + b.color + ', ' + b.pattern + ', ' + (b.tags || []).join(', ') + ')'; }).join('\n');
-      var context = buildLearningContext() + '\n\n# User Body Profile\n- Skin tone: ' + (bp.skinTone || 'unknown') + '\n- Face shape: ' + (bp.faceShape || 'unknown') + '\n- Height: ' + (bp.height || 'unknown') + '\n- Weight: ' + (bp.weight || 'unknown') + '\n- Body type: ' + (bp.bodyType || 'unknown') + '\n\n# Available Wardrobe\n' + wardrobeDesc + '\n\n# Occasion\n' + occasion + '\n\n# Rules\nRecommend 3-5 complete outfits (top + bottom combinations). Consider skin tone contrast, body proportions, and hot UAE weather. Respect modesty norms. Return ONLY JSON array with objects: { "name": string, "top": string, "bottom": string, "why": string }';
+      var wardrobeDesc = tops.map(function (t) { return t.name + ' (' + t.color + ', ' + t.pattern + ')'; }).join('\n') + '\n' + bottoms.map(function (b) { return b.name + ' (' + b.color + ', ' + b.pattern + ')'; }).join('\n');
+      var context = buildLearningContext() + '\n\n# User Body Profile\n- Skin tone: ' + (bp.skinTone || 'unknown') + '\n- Face shape: ' + (bp.faceShape || 'unknown') + '\n- Height: ' + (bp.height || 'unknown') + '\n- Weight: ' + (bp.weight || 'unknown') + '\n- Body type: ' + (bp.bodyType || 'unknown') + '\n\n# Available Wardrobe\n' + wardrobeDesc + '\n\n# Occasion\n' + occasion + '\n\n# Rules\nSuggest 3-5 complete outfit combinations (one top + one bottom). Work with what is actually in the wardrobe — suggest good combinations from existing items, don\'t block on having "enough" items. Return ONLY JSON array with objects: { "name": string, "top": string, "bottom": string, "why": string }';
       var messages = [{ role: 'system', content: PERSONA }, { role: 'user', content: [{ type: 'text', text: context }] }];
       try {
         var text = await MateyByok.chat(messages);
@@ -287,17 +433,13 @@
 
   /* ---------- Culinary ---------- */
   function openCulinary() {
-    var body = '<div class="lifestyle-tabs"><button class="lifestyle-tab active" data-tab="culinary-pantry">Pantry Scan</button><button class="lifestyle-tab" data-tab="culinary-recipe">Get Recipes</button></div>' +
-      '<div class="lifestyle-tab-body" id="culinary-pantry"><div class="lifestyle-upload-area"><input type="file" accept="image/*" id="pantry-file" style="display:none" /><div class="lifestyle-upload-prompt" id="pantry-prompt"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg><p>Upload a pantry or fridge photo</p><button class="lifestyle-btn" id="pantry-choose">Choose Photo</button></div><div class="lifestyle-preview" id="pantry-preview" style="display:none"><img id="pantry-img" /><button class="lifestyle-btn lifestyle-btn-secondary" id="pantry-retake">Retake</button></div></div><button class="lifestyle-btn" id="pantry-analyze" style="display:none;margin-top:12px;width:100%">Identify Ingredients</button></div>' +
-      '<div class="lifestyle-tab-body" id="culinary-recipe" style="display:none"><div class="lifestyle-form"><div class="lifestyle-field"><label class="lifestyle-label">Cuisines you like</label><input type="text" class="lifestyle-input" id="cuisine-prefs" placeholder="e.g. Lebanese, Indian, Italian" /></div><div class="lifestyle-field"><label class="lifestyle-label">Dietary restrictions</label><input type="text" class="lifestyle-input" id="dietary-restrictions" placeholder="e.g. no pork, vegetarian" /></div><div class="lifestyle-field"><label class="lifestyle-label">Allergies</label><input type="text" class="lifestyle-input" id="allergies" placeholder="e.g. nuts, dairy" /></div><textarea class="lifestyle-input" id="recipe-ingredients" placeholder="List your ingredients, e.g. chicken, rice, tomatoes, labneh…" rows="4"></textarea><button class="lifestyle-btn" id="recipe-generate" style="margin-top:12px;width:100%">Get Recipes</button></div></div>' +
+    var body = '<div class="lifestyle-tabs"><button class="lifestyle-tab active" data-tab="culinary-recipe">Get Recipes</button></div>' +
+      '<div class="lifestyle-tab-body" id="culinary-recipe"><div class="lifestyle-form"><div class="lifestyle-field"><label class="lifestyle-label">Cuisines you like</label><input type="text" class="lifestyle-input" id="cuisine-prefs" placeholder="e.g. Lebanese, Indian, Italian" /></div><textarea class="lifestyle-input" id="recipe-ingredients" placeholder="List your ingredients, e.g. chicken, rice, tomatoes, labneh…" rows="4"></textarea><button class="lifestyle-btn" id="recipe-generate" style="margin-top:12px;width:100%">Get Recipes</button></div></div>' +
       '<div id="culinary-result" class="lifestyle-result-container"></div>';
     var modal = createModal('modal-culinary', 'Culinary', body);
     var resultEl = modal.querySelector('#culinary-result');
-    var dataUrl = null;
     var prefs = store.culinaryPrefs();
     modal.querySelector('#cuisine-prefs').value = prefs.cuisines || '';
-    modal.querySelector('#dietary-restrictions').value = prefs.dietary || '';
-    modal.querySelector('#allergies').value = prefs.allergies || '';
 
     modal.querySelectorAll('.lifestyle-tab').forEach(function (tab) {
       tab.addEventListener('click', function () {
@@ -310,57 +452,16 @@
       });
     });
 
-    var pantryPrompt = modal.querySelector('#pantry-prompt');
-    var pantryPreview = modal.querySelector('#pantry-preview');
-    var pantryFile = modal.querySelector('#pantry-file');
-    var pantryImg = modal.querySelector('#pantry-img');
-    var pantryAnalyze = modal.querySelector('#pantry-analyze');
-
-    modal.querySelector('#pantry-choose').addEventListener('click', function () { pantryFile.click(); });
-    modal.querySelector('#pantry-retake').addEventListener('click', function () { dataUrl = null; pantryPrompt.style.display = ''; pantryPreview.style.display = 'none'; pantryAnalyze.style.display = 'none'; resultEl.innerHTML = ''; });
-
-    pantryFile.addEventListener('change', async function () {
-      var file = this.files[0];
-      if (!file) return;
-      dataUrl = await readFile(file);
-      pantryImg.src = dataUrl;
-      pantryPrompt.style.display = 'none';
-      pantryPreview.style.display = '';
-      pantryAnalyze.style.display = '';
-    });
-
-    pantryAnalyze.addEventListener('click', async function () {
-      if (!dataUrl) return;
-      showLoading(resultEl);
-      var block = dataUrlToBase64Block(dataUrl);
-      if (!block) { showError(resultEl, 'Invalid image'); return; }
-      var learning = buildLearningContext();
-      var messages = [{ role: 'system', content: PERSONA + '\n\n' + learning }, { role: 'user', content: [block, { type: 'text', text: 'Identify the groceries and ingredients in this photo. Return ONLY JSON: { "ingredients": ["item1", "item2", ...] }' }] }];
-      try {
-        var text = await MateyByok.chatVision(messages);
-        var parsed = (function () { try { return JSON.parse(text); } catch (e) { return null; } })();
-        if (parsed && parsed.ingredients) {
-          resultEl.innerHTML = '<div class="lifestyle-result"><div class="lifestyle-suggestions-title">Identified Ingredients</div><div class="lifestyle-suggestions">' + parsed.ingredients.map(function (ing) { return '<div class="lifestyle-suggestion">' + esc(ing) + '</div>'; }).join('') + '</div></div>';
-        } else {
-          showResult(resultEl, text);
-        }
-      } catch (e) { showError(resultEl, e.message || 'Analysis failed'); }
-    });
-
     modal.querySelector('#recipe-generate').addEventListener('click', async function () {
       var ingredients = modal.querySelector('#recipe-ingredients').value.trim();
       var cuisines = modal.querySelector('#cuisine-prefs').value.trim();
-      var dietary = modal.querySelector('#dietary-restrictions').value.trim();
-      var allergies = modal.querySelector('#allergies').value.trim();
       if (!ingredients) { showError(resultEl, 'Please enter some ingredients'); return; }
-      store.saveCulinaryPrefs({ cuisines: cuisines, dietary: dietary, allergies: allergies });
+      store.saveCulinaryPrefs({ cuisines: cuisines });
       showLoading(resultEl);
       var learning = buildLearningContext();
       var context = 'Ingredients: ' + ingredients;
       if (cuisines) context += '\nPreferred cuisines: ' + cuisines;
-      if (dietary) context += '\nDietary restrictions: ' + dietary;
-      if (allergies) context += '\nAllergies: ' + allergies;
-      var messages = [{ role: 'system', content: PERSONA + '\n\n' + learning }, { role: 'user', content: [{ type: 'text', text: context + '\n\nSuggest 2-4 creative recipe ideas using these ingredients. Work with what is on hand. Respect dietary restrictions and allergies. Return ONLY JSON array: [{ "name": string, "description": string, "ingredients_used": [string], "instructions": [string] }]' }] }];
+      var messages = [{ role: 'system', content: PERSONA + '\n\n' + learning }, { role: 'user', content: [{ type: 'text', text: context + '\n\nSuggest 2-4 creative recipe ideas using these ingredients. Work with what is on hand. Return ONLY JSON array: [{ "name": string, "description": string, "ingredients_used": [string], "instructions": [string] }]' }] }];
       try {
         var text = await MateyByok.chat(messages);
         var recipes = (function () { try { return JSON.parse(text); } catch (e) { return null; } })();
@@ -376,6 +477,57 @@
           showResult(resultEl, text);
         }
       } catch (e) { showError(resultEl, e.message || 'Recipe generation failed'); }
+    });
+  }
+
+  /* ---------- Lifestyle Beat ---------- */
+  function openLiving() {
+    var body = '<div class="lifestyle-upload-area"><input type="file" accept="image/*" id="living-file" style="display:none" /><div class="lifestyle-upload-prompt" id="living-prompt"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l6-6 4 4 8-8"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/></svg><p>Upload a photo of your space — entrance, far-end, left side, right side (4 views)</p><button class="lifestyle-btn" id="living-choose">Choose Photo</button></div><div class="lifestyle-preview" id="living-preview" style="display:none"><img id="living-img" /><button class="lifestyle-btn lifestyle-btn-secondary" id="living-retake">Retake</button></div></div><button class="lifestyle-btn" id="living-analyze" style="display:none;margin-top:12px;width:100%">Analyze Space</button><div id="living-result" class="lifestyle-result-container"></div>';
+    var modal = createModal('modal-living', 'Spatial Room Restyler', body);
+    var resultEl = modal.querySelector('#living-result');
+    var dataUrl = null;
+
+    modal.querySelector('#living-choose').addEventListener('click', function () { document.getElementById('living-file').click(); });
+    modal.querySelector('#living-retake').addEventListener('click', function () { dataUrl = null; document.getElementById('living-prompt').style.display = ''; document.getElementById('living-preview').style.display = 'none'; document.getElementById('living-analyze').style.display = 'none'; resultEl.innerHTML = ''; });
+
+    document.getElementById('living-file').addEventListener('change', function (e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        dataUrl = ev.target.result;
+        document.getElementById('living-img').src = dataUrl;
+        document.getElementById('living-prompt').style.display = 'none';
+        document.getElementById('living-preview').style.display = '';
+        document.getElementById('living-analyze').style.display = '';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    modal.querySelector('#living-analyze').addEventListener('click', async function () {
+      if (!dataUrl) return;
+      if (window.MateyBeat && MateyBeat.analyze) {
+        showLoading(resultEl);
+        try {
+          var result = await MateyBeat.analyze([dataUrl]);
+          if (typeof result === 'string') {
+            resultEl.innerHTML = '<div class="lifestyle-result"><pre class="lifestyle-pre">' + esc(result).replace(/\n/g, '<br>') + '</pre></div>';
+          } else {
+            var html = '<div class="lifestyle-result"><div class="lifestyle-badges"><span class="lifestyle-badge">Type: ' + esc(result.living_type || 'Detected') + '</span></div>';
+            if (result.moves && result.moves.length) {
+              html += '<div class="lifestyle-suggestions-title">Layout Moves</div><div class="lifestyle-suggestions">' + result.moves.map(function (m) { return '<div class="lifestyle-suggestion">' + esc(m) + '</div>'; }).join('') + '</div>';
+            }
+            if (result.why) html += '<div style="font-size:13px;color:var(--muted);margin-top:8px;">' + esc(result.why) + '</div>';
+            html += '</div>';
+            resultEl.innerHTML = html;
+          }
+        } catch (e) { showError(resultEl, e.message || 'Analysis failed'); }
+      } else {
+        showLoading(resultEl);
+        setTimeout(function () {
+          showResult(resultEl, 'Living analysis needs your AI key set up under Settings → Custom.');
+        }, 500);
+      }
     });
   }
 
@@ -414,7 +566,7 @@
       if (cat === 'Grooming') openGrooming();
       else if (cat === 'Wardrobe') openWardrobe();
       else if (cat === 'Culinary') openCulinary();
-      else if (cat === 'Lifestyle') openLifestyle();
+      else if (cat === 'Living') openLiving();
     });
   }
 

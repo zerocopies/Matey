@@ -6,13 +6,6 @@
       <div class="settings-header">
         <button class="settings-back" id="settings-back" aria-label="Back" type="button">&#8249;</button>
         <span class="settings-title">Settings</span>
-        <button class="settings-menu" id="settings-menu" type="button" aria-label="Menu" title="Menu">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <line x1="3" y1="12" x2="21" y2="12"/>
-            <line x1="3" y1="18" x2="21" y2="18"/>
-          </svg>
-        </button>
       </div>
       <div class="settings-body">
 
@@ -35,79 +28,7 @@
           </div>
         </div>
 
-        <div class="settings-section" id="sec-library">
-          <div class="settings-section-header" data-toggle="sec-library">
-            <div class="settings-section-left">
-              <div>
-                <div class="settings-section-title">Library</div>
-                <div class="settings-section-desc">Gallery, Notes, Learning &amp; Guides</div>
-              </div>
-            </div>
-            <span class="settings-section-arrow"></span>
-          </div>
-          <div class="settings-section-body">
-            <div class="lib-subsections">
-              <div class="lib-subsection">
-                <div class="lib-sub-header" data-lib="recap">
-                  <span class="lib-sub-title">Recap</span>
-                  <span class="lib-sub-arrow"></span>
-                </div>
-                <div class="lib-sub-body" id="lib-recap">
-                  <p class="settings-placeholder">Your weekly and monthly recaps with insights and progress tracking will appear here.</p>
-                </div>
-              </div>
-              <div class="lib-subsection">
-                <div class="lib-sub-header" data-lib="gallery">
-                  <span class="lib-sub-title">Gallery</span>
-                  <span class="lib-sub-arrow"></span>
-                </div>
-                <div class="lib-sub-body" id="lib-gallery">
-                  <p class="settings-placeholder">Your saved images and media will appear here.</p>
-                </div>
-              </div>
-              <div class="lib-subsection">
-                <div class="lib-sub-header" data-lib="notes">
-                  <span class="lib-sub-title">Notes</span>
-                  <span class="lib-sub-arrow"></span>
-                </div>
-                <div class="lib-sub-body" id="lib-notes">
-                  <div id="notes-list"><p class="settings-placeholder">No notes yet. Use ** prefix in chat or Markdown to save.</p></div>
-                </div>
-              </div>
-              <div class="lib-subsection">
-                <div class="lib-sub-header" data-lib="learning">
-                  <span class="lib-sub-title">Learning</span>
-                  <span class="lib-sub-arrow"></span>
-                </div>
-                <div class="lib-sub-body" id="lib-learning">
-                  <p class="settings-placeholder">Your AI learning insights and behavior patterns will appear here as you use the app.</p>
-                </div>
-              </div>
-              <div class="lib-subsection">
-                <div class="lib-sub-header" data-lib="howto">
-                  <span class="lib-sub-title">How to Use</span>
-                  <span class="lib-sub-arrow"></span>
-                </div>
-                <div class="lib-sub-body" id="lib-howto">
-                  <div class="syntax-cards">
-                    <div class="syntax-card"><span class="syntax-token">**</span><span class="syntax-desc">Permanent note — saved to vault with topic tags. Use in chat or Markdown.</span></div>
-                    <div class="syntax-card"><span class="syntax-token">##</span><span class="syntax-desc">Scratchpad — temporary notes that auto-expire after 24 hours.</span></div>
-                    <div class="syntax-card"><span class="syntax-token">//</span><span class="syntax-desc">Silent automation — background processing, no visible output.</span></div>
-                    <div class="syntax-card"><span class="syntax-token">??</span><span class="syntax-desc">Knowledge Bank query — search your saved notes instantly.</span></div>
-                    <div class="syntax-card"><span class="syntax-token">!!</span><span class="syntax-desc">Priority flag — pin important items to the top.</span></div>
-                  </div>
-                  <p class="settings-placeholder" style="margin-top:14px;font-size:12px;line-height:1.6;">
-                    <strong style="color:var(--text);">Markdown Guide:</strong><br>
-                    <code># Heading</code> = large title · <code>## Subheading</code> = medium · <code>**bold**</code> · <code>*italic*</code><br>
-                    <code>- list item</code> · <code>\\\`code\\\`</code> · <code>[link](url)</code> · <code>\`\`\`code block\`\`\`</code><br>
-                    All work in both the chat bar and the Markdown page.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="settings-section" id="sec-theme">
+          <div class="settings-section" id="sec-theme">
           <div class="settings-section-header" data-toggle="sec-theme">
             <div class="settings-section-left">
               <div>
@@ -122,27 +43,6 @@
             
           </div>
         </div>
-        <div class="settings-section" id="sec-localai">
-          <div class="settings-section-header" data-toggle="sec-localai">
-            <div class="settings-section-left">
-              <div>
-                <div class="settings-section-title">Local AI</div>
-                <div class="settings-section-desc">Voice-to-text & model management</div>
-              </div>
-            </div>
-            <span class="settings-section-arrow"></span>
-          </div>
-          <div class="settings-section-body">
-            <p class="settings-placeholder" id="whisper-status">No speech model loaded. Select a model below to enable offline voice-to-text.</p>
-            <div class="whisper-models" id="whisper-models"></div>
-            <div class="whisper-progress" id="whisper-progress" style="display:none;">
-              <div class="whisper-progress-bar"><div class="whisper-progress-fill" id="whisper-progress-fill"></div></div>
-              <span class="whisper-progress-text" id="whisper-progress-text">Downloading...</span>
-            </div>
-            <p class="whisper-hint">Models run entirely on-device. No data leaves your device. Download once, use offline.</p>
-          </div>
-        </div>
-
         <div class="settings-section" id="sec-models">
           <div class="settings-section-header" data-toggle="sec-models">
             <div class="settings-section-left">
@@ -155,30 +55,52 @@
           </div>
           <div class="settings-section-body">
             <p class="settings-placeholder" id="models-status">No micro models downloaded. These run entirely on-device for enhanced AI capabilities.</p>
-            <div class="model-list" id="model-list">
-              <div class="model-item">
-                <div class="model-info">
-                  <div class="model-name">TinyLLM — 20M params</div>
-                  <div class="model-desc">Lightweight text generation, <span class="model-size">~25MB</span></div>
+            <div class="micro-models-container">
+              <div class="micro-model-group">
+                <div class="micro-model-group-title">Grammar &amp; Punctuation Cleanup</div>
+                <div class="micro-model-item">
+                  <div class="micro-model-info">
+                    <div class="micro-model-name">t5-efficient-tiny-grammar-correction</div>
+                    <div class="micro-model-desc">Cleans up speech-to-text output, <span class="model-size">~60-100MB</span></div>
+                  </div>
+                  <button class="micro-model-download-btn" data-model="t5-grammar-correction" type="button">Download</button>
                 </div>
-                <button class="model-download-btn" data-model="tinyllm-20m" type="button">Download</button>
               </div>
-              <div class="model-item">
-                <div class="model-info">
-                  <div class="model-name">MiniSTT — Whisper Tiny</div>
-                  <div class="model-desc">Speech-to-text, <span class="model-size">~75MB</span></div>
+              <div class="micro-model-group">
+                <div class="micro-model-group-title">Multilingual Translation</div>
+                <div class="micro-model-item">
+                  <div class="micro-model-info">
+                    <div class="micro-model-name">German ↔ English</div>
+                    <div class="micro-model-desc">Xenova/opus-mt-de-en + opus-mt-en-de, <span class="model-size">~40-90MB</span></div>
+                  </div>
+                  <button class="micro-model-download-btn" data-model="opus-mt-de-en" type="button">Download</button>
                 </div>
-                <button class="model-download-btn" data-model="ministt-75m" type="button">Download</button>
+                <div class="micro-model-item">
+                  <div class="micro-model-info">
+                    <div class="micro-model-name">Japanese ↔ English</div>
+                    <div class="micro-model-desc">Xenova/opus-mt-ja-en + opus-mt-en-ja, <span class="model-size">~40-90MB</span></div>
+                  </div>
+                  <button class="micro-model-download-btn" data-model="opus-mt-ja-en" type="button">Download</button>
+                </div>
+                <div class="micro-model-item">
+                  <div class="micro-model-info">
+                    <div class="micro-model-name">Korean ↔ English</div>
+                    <div class="micro-model-desc">Xenova/opus-mt-ko-en + opus-mt-en-ko, <span class="model-size">~40-90MB</span></div>
+                  </div>
+                  <button class="micro-model-download-btn" data-model="opus-mt-ko-en" type="button">Download</button>
+                </div>
               </div>
-              <div class="model-item">
-                <div class="model-info">
-                  <div class="model-name">CodeHelper — 50M params</div>
-                  <div class="model-desc">Code completion & assistance, <span class="model-size">~50MB</span></div>
+              <div class="micro-model-group">
+                <div class="micro-model-group-title">Speech-to-Text</div>
+                <p class="settings-placeholder" id="whisper-status">No speech model loaded. Select a model below to enable offline voice-to-text.</p>
+                <div id="whisper-models" class="whisper-models-dyn"></div>
+                <div class="whisper-progress" id="whisper-progress" style="display:none;">
+                  <div class="whisper-progress-bar"><div class="whisper-progress-fill" id="whisper-progress-fill"></div></div>
+                  <span class="whisper-progress-text" id="whisper-progress-text">Downloading…</span>
                 </div>
-                <button class="model-download-btn" data-model="codehelper-50m" type="button">Download</button>
               </div>
             </div>
-            <p class="whisper-hint">All models run locally. No data leaves your device.</p>
+            <p class="whisper-hint">All models run entirely on-device. No data leaves your device. Download once, use offline.</p>
           </div>
         </div>
 
@@ -199,33 +121,34 @@
             <button class="byok-add-btn" id="adaptive-refine" type="button">Refine Profile Now</button>
           </div>
         </div>
-        <div class="settings-section" id="sec-custom">
-          <div class="settings-section-header" data-toggle="sec-custom">
+        <div class="settings-section" id="sec-byok">
+          <div class="settings-section-header" data-toggle="sec-byok">
             <div class="settings-section-left">
               <div>
-                <div class="settings-section-title">Custom</div>
-                <div class="settings-section-desc">Integrations &amp; extensions</div>
+                <div class="settings-section-title">BYOK</div>
+                <div class="settings-section-desc">Bring Your Own Key — OpenAI, Claude, Gemini & more</div>
               </div>
             </div>
             <span class="settings-section-arrow"></span>
           </div>
-                    <div class="settings-section-body">
+          <div class="settings-section-body">
             <button class="byok-add-btn" id="byok-add" type="button">+ Add Provider</button>
             <div id="byok-list"></div>
-            <div class="settings-list-item">
-              <div class="settings-list-left">
-                <span class="settings-list-label">Webhooks</span>
-                <span class="settings-list-desc">Configure event callbacks</span>
+          </div>
+        </div>
+
+        <div class="settings-section" id="sec-export">
+          <div class="settings-section-header" data-toggle="sec-export">
+            <div class="settings-section-left">
+              <div>
+                <div class="settings-section-title">Data Export</div>
+                <div class="settings-section-desc">Download your data</div>
               </div>
-              <span class="settings-list-arrow"></span>
             </div>
-            <div class="settings-list-item">
-              <div class="settings-list-left">
-                <span class="settings-list-label">Data Export</span>
-                <span class="settings-list-desc">Download your data</span>
-              </div>
-              <span class="settings-list-arrow"></span>
-            </div>
+            <span class="settings-section-arrow"></span>
+          </div>
+          <div class="settings-section-body">
+            <button class="byok-add-btn" id="export-data" type="button">Download My Data</button>
           </div>
         </div>
 
@@ -251,61 +174,53 @@
           </div>
         </div>
 
-        <div class="settings-section" id="sec-hooks">
-          <div class="settings-section-header" data-toggle="sec-hooks">
-            <div class="settings-section-left">
-              <div>
-                <div class="settings-section-title">Hooks</div>
-                <div class="settings-section-desc">Web monitor & keyword tracking</div>
-              </div>
-            </div>
-            <span class="settings-section-arrow"></span>
-          </div>
-          <div class="settings-section-body">
-            <div class="hooks-sub-section">
-              <h4 class="hooks-sub-title">Web Monitor Hooks</h4>
-              <p class="settings-placeholder">Monitor web pages for changes. Add a URL, describe what to watch for in natural language, and set a schedule (3-7 days).</p>
-              <div class="hook-list" id="hook-list-web">
-                <p class="settings-placeholder-small">No web monitors configured.</p>
-              </div>
-              <button class="byok-add-btn" id="hook-add-web" type="button">+ Add Web Monitor</button>
-            </div>
-            <div class="hooks-sub-section">
-              <h4 class="hooks-sub-title">Keyword Hooks</h4>
-              <p class="settings-placeholder">Track keywords across the web — people, brands, topics, languages. Results refresh automatically.</p>
-              <div class="hook-list" id="hook-list-keywords">
-                <p class="settings-placeholder-small">No keyword hooks configured.</p>
-              </div>
-              <button class="byok-add-btn" id="hook-add-keyword" type="button">+ Add Keyword Hook</button>
-            </div>
-          </div>
-        </div>
+         <div class="settings-section" id="sec-applock">
+           <div class="settings-section-header" data-toggle="sec-applock">
+             <div class="settings-section-left">
+               <div>
+                 <div class="settings-section-title">App Lock</div>
+                 <div class="settings-section-desc">PIN or biometric lock for the entire app</div>
+               </div>
+             </div>
+             <span class="settings-section-arrow"></span>
+           </div>
+           <div class="settings-section-body">
+             <div style="display:flex;gap:8px;flex-wrap:wrap;">
+               <button class="byok-add-btn" id="applock-enable" type="button" style="flex:1">Enable App PIN</button>
+               <button class="byok-add-btn" id="applock-disable" type="button" style="flex:1">Disable</button>
+             </div>
+             <p class="settings-placeholder" style="margin-top:8px;font-size:12px;">
+               Your PIN is stored locally and hashed with SHA-256. Biometric support requires native Capacitive plugins.
+             </p>
+           </div>
+         </div>
 
-        <div class="settings-section" id="sec-about">
-          <div class="settings-section-header" data-toggle="sec-about">
-            <div class="settings-section-left">
-              <div>
-                <div class="settings-section-title">About</div>
-                <div class="settings-section-desc">App info & legal</div>
-              </div>
-            </div>
-            <span class="settings-section-arrow"></span>
-          </div>
-          <div class="settings-section-body">
-            <div class="settings-about-card">
-              <div class="settings-about-brand">
-                <img class="matey-logo-sm" src="./images/matey-logo.png" alt="Matey" />
-              </div>
-              <div class="settings-about-version">Version 0.1.0 · Build 1</div>
-              <div class="settings-about-links">
-                <a class="settings-about-link" href="#">Privacy Policy </a>
-                <a class="settings-about-link" href="#">Terms of Service </a>
-                <a class="settings-about-link" href="#">Open Source Licenses </a>
-                <a class="settings-about-link" href="#">Contact Support </a>
-              </div>
-            </div>
-          </div>
-        </div>
+         <div class="settings-section" id="sec-about">
+           <div class="settings-section-header" data-toggle="sec-about">
+             <div class="settings-section-left">
+               <div>
+                 <div class="settings-section-title">About</div>
+                 <div class="settings-section-desc">App info & legal</div>
+               </div>
+             </div>
+             <span class="settings-section-arrow"></span>
+           </div>
+           <div class="settings-section-body">
+             <div class="settings-about-card">
+               <div class="settings-about-brand">
+                 <img class="matey-logo-sm" src="./images/matey-logo.png" alt="Matey" />
+               </div>
+               <div class="settings-about-version">Version 0.1.0 · Build 1</div>
+               <div class="settings-about-links">
+                  <a class="settings-about-link" href="./privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                  <a class="settings-about-link" href="#">Terms of Service </a>
+                 <a class="settings-about-link" href="#">Open Source Licenses </a>
+                 <a class="settings-about-link" href="#">Contact Support </a>
+               </div>
+             </div>
+           </div>
+         </div>
+
 
       </div>
     </aside>`;
@@ -326,10 +241,19 @@
         <label class="byok-label" for="byok-key">API Key</label>
         <input class="byok-input" id="byok-key" type="password" placeholder="sk-..." autocomplete="off" />
       </div>
-      <div class="byok-field">
-        <label class="byok-label" for="byok-model">Model (optional)</label>
-        <input class="byok-input" id="byok-model" type="text" placeholder="auto-detect if empty" autocomplete="off" />
-      </div>
+       <div class="byok-field">
+         <label class="byok-label" for="byok-model">Model (optional)</label>
+         <input class="byok-input" id="byok-model" type="text" placeholder="auto-detect if empty" autocomplete="off" />
+       </div>
+       <div class="byok-field">
+         <label class="byok-label">Capabilities</label>
+         <div class="byok-capabilities">
+           <label class="byok-cap"><input type="checkbox" name="cap_text" value="text" /> Text generation</label>
+           <label class="byok-cap"><input type="checkbox" name="cap_vision" value="vision" /> Vision / image understanding</label>
+           <label class="byok-cap"><input type="checkbox" name="cap_stt" value="stt" /> Speech-to-text</label>
+           <label class="byok-cap"><input type="checkbox" name="cap_imagegen" value="imagegen" /> Image generation</label>
+         </div>
+       </div>
       <div class="byok-dialog-actions">
         <button class="byok-btn byok-btn-secondary" id="byok-test" type="button">Test</button>
         <button class="byok-btn byok-btn-secondary" id="byok-cancel" type="button">Cancel</button>
@@ -340,47 +264,6 @@
 </div>`;
 
   function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-
-  /* ---------- Recap: real data ---------- */
-  function renderRecap() {
-    var el = document.getElementById('lib-recap');
-    if (!el || !window.MateySyntax) return;
-    var d = MateySyntax.getAllNotes();
-    var perm = d.permanent || [], scr = d.scratchpads || [], pri = d.priorities || [], rec = d.recap || [];
-    var total = perm.length + scr.length + pri.length;
-    if (!total && !rec.length) { el.innerHTML = '<p class="settings-placeholder">Your weekly and monthly recaps with insights will appear here as you use Matey.</p>'; return; }
-    var topics = {};
-    perm.forEach(function (n) { if (n.topic) topics[n.topic] = (topics[n.topic] || 0) + 1; });
-    var topTopics = Object.keys(topics).sort(function (a, b) { return topics[b] - topics[a]; }).slice(0, 3);
-    var week = 0, day = 0, now = Date.now();
-    rec.forEach(function (r) { var t = now - (r.time || 0); if (t < 86400000) day++; if (t < 7 * 86400000) week++; });
-    var days = {};
-    rec.forEach(function (r) { var k = new Date(r.time || 0).toLocaleDateString([], { weekday: 'short' }); days[k] = (days[k] || 0) + 1; });
-    var max = Math.max.apply(null, Object.keys(days).map(function (k) { return days[k]; }).concat([1]));
-    var bars = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(function () { return 0; });
-    var order = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    var barHtml = order.map(function (k) {
-      var v = days[k] || 0;
-      var h = Math.round(4 + (v / max) * 28);
-      return '<div class="recap-bar-col"><div class="recap-bar" style="height:' + h + 'px;' + (v ? 'background:var(--accent);' : '') + '"></div><span>' + k[0] + '</span></div>';
-    }).join('');
-    var html = '';
-    html += '<div class="recap-stats">';
-    html += '<div class="recap-stat"><span class="recap-stat-num">' + total + '</span><span class="recap-stat-label">Notes</span></div>';
-    html += '<div class="recap-stat"><span class="recap-stat-num">' + day + '</span><span class="recap-stat-label">Today</span></div>';
-    html += '<div class="recap-stat"><span class="recap-stat-num">' + week + '</span><span class="recap-stat-label">This week</span></div>';
-    html += '<div class="recap-stat"><span class="recap-stat-num">' + pri.length + '</span><span class="recap-stat-label">Priority</span></div>';
-    html += '</div>';
-    html += '<div class="recap-bars">' + barHtml + '</div>';
-    if (topTopics.length) html += '<div class="recap-topics">Top topics: ' + topTopics.map(function (t) { return '<span class="recap-topic">' + esc(t) + '</span>'; }).join(' ') + '</div>';
-    var recent = rec.slice(0, 6);
-    if (recent.length) {
-      html += '<div class="recap-recent">' + recent.map(function (r) {
-        return '<div class="recap-item"><span>' + esc((r.text || '').substring(0, 70)) + '</span><span class="recap-time">' + new Date(r.time).toLocaleDateString([], { month: 'short', day: 'numeric' }) + '</span></div>';
-      }).join('') + '</div>';
-    }
-    el.innerHTML = html;
-  }
 
   function renderAdaptive() {
     var el = document.getElementById('adaptive-stats');
@@ -432,7 +315,6 @@
       settings.classList[willOpen ? 'add' : 'remove']('open');
       if (willOpen) {
         if (window.MateyThemes) MateyThemes.build(settings);
-        renderRecap();
         renderAdaptive();
         if (window.MateyByok) MateyByok.render();
       }
@@ -471,70 +353,62 @@
       updateFSSetup({ ok: false, error: 'cleared' });
     });
 
-    /* Settings menu (three lines) */
-    var settingsMenu = document.getElementById('settings-menu');
-    if (settingsMenu) {
-      settingsMenu.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var menu = document.querySelector('.settings-context-menu');
-        if (!menu) {
-          var m = document.createElement('div');
-          m.className = 'settings-context-menu';
-          m.innerHTML =
-            '<button data-action="incognito" type="button">Incognito Mode</button>' +
-            '<button data-action="theme" type="button">Change Theme</button>' +
-            '<button data-action="language" type="button">Language</button>';
-          settingsMenu.parentNode.appendChild(m);
-
-          m.querySelectorAll('button').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-              if (btn.dataset.action === 'incognito') {
-                var inc = document.querySelector('.incognito-trigger');
-                if (inc) inc.click();
-              } else if (btn.dataset.action === 'theme') {
-                var t = document.getElementById('sec-theme');
-                if (t) t.classList.add('open');
-              } else if (btn.dataset.action === 'language') {
-                var l = document.getElementById('lang-select');
-                if (l) l.focus();
-              }
-              m.remove();
-            });
-          });
-
-          var rect = settingsMenu.getBoundingClientRect();
-          m.style.position = 'fixed';
-          m.style.top = (rect.bottom + 8) + 'px';
-          m.style.right = (window.innerWidth - rect.right - 8) + 'px';
-
-          document.addEventListener('click', function closeMenu(e2) {
-            if (!m.contains(e2.target) && e2.target !== settingsMenu) {
-              m.remove();
-              document.removeEventListener('click', closeMenu);
-            }
+    var appLockEnable = document.getElementById('applock-enable');
+    if (appLockEnable && window.MateyAppLock) {
+      appLockEnable.addEventListener('click', function () {
+        var pin = prompt('Set a 4-digit PIN for app lock:');
+        if (pin && pin.length >= 4) {
+          MateyAppLock.setPin(pin).then(function () {
+            alert('App lock enabled. You will be prompted on next app start.');
           });
         }
       });
     }
 
+    var appLockDisable = document.getElementById('applock-disable');
+    if (appLockDisable && window.MateyAppLock) {
+      appLockDisable.addEventListener('click', function () {
+        MateyAppLock.removeLock();
+        alert('App lock disabled.');
+      });
+    }
+
     updateFSSetup(null);
+
+    var exportBtn = document.getElementById('export-data');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', function () {
+        try {
+          var data = localStorage.getItem('matey-vots-data') || '{}';
+          var blob = new Blob([data], { type: 'application/json' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'matey-export-' + Date.now() + '.json';
+          a.click();
+          URL.revokeObjectURL(url);
+        } catch (e) {
+          console.error('Export failed', e);
+        }
+      });
+    }
 
     document.querySelectorAll('[data-toggle]').forEach(function (el) {
         el.addEventListener('click', function () {
-        var t = document.getElementById(el.dataset.toggle);
-        if (t) t.classList.toggle('open');
-        setTimeout(renderRecap, 50);
-      });
+    var t = document.getElementById(el.dataset.toggle);
+         if (t) t.classList.toggle('open');
+         setTimeout(renderAdaptive, 50);
+       });
     });
     var pf = document.getElementById('profile-form');
     if (pf && window.SnapProfile) pf.addEventListener('submit', SnapProfile.save);
 
     /* Micro model download handlers */
-    var downloadBtns = document.querySelectorAll('.model-download-btn');
+    var downloadBtns = document.querySelectorAll('.micro-model-download-btn');
     downloadBtns.forEach(function (btn) {
       btn.addEventListener('click', function () {
         var modelId = btn.dataset.model;
-        var modelName = btn.closest('.model-item').querySelector('.model-name').textContent;
+        var modelName = btn.closest('.micro-model-item').querySelector('.micro-model-name').textContent;
         btn.textContent = 'Downloading…';
         btn.disabled = true;
 
@@ -564,13 +438,16 @@
   function inject() {
     if (document.getElementById('settings')) { wire(); return; }
     document.body.insertAdjacentHTML('beforeend', SETTINGS_HTML + BYOK_HTML);
+    if (window.MateyByok && typeof MateyByok.render === 'function') {
+      MateyByok.render();
+    }
     wire();
     if (window.MateyByok && typeof MateyByok.wireDynamic === 'function') {
       MateyByok.wireDynamic();
     }
   }
 
-  window.MateySettings = { renderRecap: renderRecap };
+  window.MateySettings = {};
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inject);
   else inject();
 })();

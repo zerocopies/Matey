@@ -12,83 +12,154 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./matey-preview.css?v=13" />
-    <script src="./matey-boot.js?v=13"></script>
+    <link rel="stylesheet" href="./matey-preview.css?v=69" />
+    <script src="./matey-boot.js?v=69"></script>
+    <script src="./matey-sentry.js?v=69"></script>
   </head>
   <body>
     <div class="app-shell">
-      <div class="pull-hint" id="pull-hint"></div>
       <header class="header">
         <div class="header-top">
           <img class="matey-logo" src="./images/matey-logo.png" alt="Matey" />
+          <div class="workspace-display-container" id="workspace-display-container">
+            <div class="workspace-dropdown" id="workspace-dropdown">
+              <span class="workspace-name" id="workspace-display">Workspace</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="workspace-selector" id="workspace-selector"></div>
+          </div>
           <div class="header-actions">
+            <svg class="usage-ring" viewBox="0 0 36 36" id="usage-ring" aria-hidden="true"><circle class="usage-ring-track" cx="18" cy="18" r="15"></circle><g id="usage-ring-segments"><circle class="usage-ring-segment s1" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(0 18 18)"></circle><circle class="usage-ring-segment s2" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(90 18 18)"></circle><circle class="usage-ring-segment s3" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(180 18 18)"></circle><circle class="usage-ring-segment s4" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(270 18 18)"></circle></g><text x="18" y="21" text-anchor="middle" id="usage-ring-text">65</text></svg>
             <button class="incognito-trigger" type="button" aria-label="Incognito" title="Incognito">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.5 2 3 6 3 9c0 2 1 3 1 5 0 2-1 3-2 4s-1 2 0 3c1 1 2 0 3-1s2-2 3-1 2 1 3 1 2-1 3-1 2 1 3 1c1 0 2-1 2-2s-1-2-2-3-2-2-2-4c0-2 1-3 1-5 0-3-3.5-7-8.5-7z"/>
-              </svg>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3.5 0-6 2.5-6 6v9.5c0 .3.3.6.7.4l1.3-1 1.3 1c.4.3 1 .3 1.4 0l1.3-1 1.3 1c.4.3 1 .3 1.4 0l1.3-1 1.3 1c.4.2.7-.1.7-.4V9c0-3.5-2.5-6-6-6z"/><circle cx="9.5" cy="10" r="1.5"/><circle cx="14.5" cy="10" r="1.5"/></svg>
             </button>
-            <button class="icon-btn settings-trigger" type="button" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button class="icon-btn settings-trigger" type="button" aria-label="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6"/>
                 <line x1="3" y1="12" x2="21" y2="12"/>
                 <line x1="3" y1="18" x2="21" y2="18"/>
               </svg></button>
           </div>
         </div>
-        <div class="greeting-row">
-          <p class="greeting" id="greeting">Good evening</p>
-          <span class="greeting-meta" id="greeting-meta"></span>
-        </div>
-        <div class="vibe-prompt" id="vibe-prompt"></div>
-        <div class="workspace-bar" id="workspace-bar">
-          <span class="workspace-name">No workspace set</span>
-          <button class="workspace-btn" id="workspace-btn" type="button" aria-label="Set Workspace" title="Set Workspace">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><circle cx="10" cy="8" r="2"></circle><path d="M2 12l8-8v8l-8 8z"></path></svg>
-          </button>
-        </div>
-        <div class="usage-block">
-          <div class="usage-row"><span>Usage</span><span>65%</span></div>
-          <div class="usage-bar"><div class="usage-fill"></div></div>
-        </div>
       </header>
 
-      <nav class="tabs-wrap">
+            <nav class="tabs-wrap" id="tabs-wrap">
         <div class="tabs">
-          <a class="tab" href="./starring.html">Starring</a>
-          <a class="tab" href="./hooks.html">Hooks</a>
+          <a class="tab" href="./lifestyle.html">Lifestyle</a>
+          <a class="tab" href="./vots.html">My-VOTS</a>
           <a class="tab active" href="./markdown.html">Markdown</a>
-          <a class="tab" href="./living.html">Living</a>
-          <a class="tab" href="./preview.html#agent">AGENTIC-AI</a>
+          <a class="tab" href="./journal.html">Journal</a>
+          <a class="tab" href="./preview.html#agent">Agent</a>
         </div>
       </nav>
 
       <main class="md-page">
         <textarea class="md-editor md-editor-full" id="md-editor" placeholder="# Type freely — Markdown &amp; syntax supported&#10;&#10;** Permanent note — saved to vault&#10;## Scratchpad — auto-expires 24h&#10;// Silent automation&#10;?? Search your knowledge bank&#10;!! Priority flag&#10;&#10;Standard markdown formatting also works."></textarea>
+        <div class="md-composer" id="md-composer">
+          <div class="md-symbol-toolbar" id="md-symbol-toolbar">
+            <button type="button" data-key="*">* </button>
+            <button type="button" data-key="/">/</button>
+            <button type="button" data-key="#"># </button>
+            <button type="button" data-key="$">$</button>
+            <button type="button" data-key="?">?</button>
+            <button type="button" data-key="!">!</button>
+            <button type="button" data-key="=">=</button>
+            <button type="button" data-key="+">+</button>
+            <button type="button" data-key="-">-</button>
+            <button type="button" data-key="÷">÷</button>
+            <button type="button" data-key="(">(</button>
+            <button type="button" data-key=")">)</button>
+          </div>
+          <div class="md-compose-box">
+            <input type="file" id="md-attach-input" accept="image/*,.pdf,.doc,.docx" style="display:none" />
+            <button class="md-attach-btn" id="md-attach" type="button" aria-label="Attach file">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+            <button class="md-voice-btn" id="md-voice" type="button" aria-label="Voice input">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </button>
+            <textarea class="md-compose-input" id="md-compose-input" autocomplete="off" placeholder="Type and press send..." rows="1"></textarea>
+            <div class="md-compose-actions">
+              <button class="md-send-btn" id="md-send" type="button" aria-label="Send">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="19" y1="12" x2="12" y2="5"></line><line x1="5" y1="12" x2="12" y2="5"></line></svg>
+              </button>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
-    <script src="./matey-themes.js?v=13"></script>
-    <script src="./matey-swipe.js?v=13"></script>
-    <script src="./matey-profile.js?v=13"></script>
-    <script src="./matey-greet.js?v=13"></script>
-    <script src="./matey-feed.js?v=13"></script>
-    <script src="./matey-chat.js?v=13"></script>
-    <script src="./matey-ai.js?v=13"></script>
-    <script src="./matey-md.js?v=13"></script>
-    <script src="./matey-byok.js?v=13"></script>
-    <script src="./matey-living.js?v=13"></script>
-    <script src="./matey-lifestyle.js?v=13"></script>
-    <script src="./matey-syntax.js?v=13"></script>
-    <script src="./matey-whisper.js?v=13"></script>
-<script src="./matey-rss.js?v=13"></script>
-    <script src="./matey-license.js?v=13"></script>
-    <script src="./matey-settings.js?v=13"></script>
-    <script src="./matey-recall.js?v=13"></script>
-    <script src="./matey-behavior.js?v=13"></script>
-    <script src="./matey-adaptive.js?v=13"></script>
-    <script src="./matey-init.js?v=13"></script>
-    <script src="./matey-tabs.js?v=13"></script>
-    <script src="./matey-keyboard.js?v=13"></script>
-    <script src="./matey-fs.js?v=13"></script>
-    <script src="./matey-hooks-manager.js?v=13"></script>
+    <script src="./matey-themes.js?v=69"></script>
+    <script src="./matey-swipe.js?v=69"></script>
+    <script src="./matey-profile.js?v=69"></script>
+     <script src="./matey-greet.js?v=69"></script>
+     <script src="./matey-feed.js?v=69"></script>
+     <script src="./matey-ai.js?v=69"></script>
+     <script src="./matey-md.js?v=69"></script>
+    <script>
+      var attachBtn = document.getElementById('md-attach');
+      var attachInput = document.getElementById('md-attach-input');
+      if (attachBtn && attachInput) {
+        attachBtn.addEventListener('click', function () { attachInput.click(); });
+        attachInput.addEventListener('change', function () {
+          var file = this.files[0];
+          if (!file) return;
+          var el = document.querySelector('.md-attach-hint');
+          if (!el) {
+            el = document.createElement('div');
+            el.className = 'md-attach-hint';
+            el.style.cssText = 'font-size:12px;color:var(--accent);margin:4px 0;';
+            attachBtn.parentNode.insertBefore(el, attachBtn.nextSibling);
+          }
+          el.textContent = 'Attached: ' + file.name + ' (' + Math.round(file.size/1024) + 'KB)';
+          this.value = '';
+        });
+      }
+    </script>
+    <script>
+      var voiceBtn = document.getElementById('md-voice');
+      var mInput = document.getElementById('md-compose-input');
+      var recognizing = false;
+      var recognition;
+      var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SR) {
+        recognition = new SR();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        recognition.onresult = function (e) {
+          var finals = '';
+          for (var i = e.resultIndex; i < e.results.length; i++) {
+            var t = e.results[i][0].transcript;
+            if (e.results[i].isFinal) finals += t;
+            else if (mInput) mInput.value += t;
+          }
+          if (finals && mInput) mInput.value += finals;
+        };
+        recognition.onerror = function () { recognizing = false; if (voiceBtn) voiceBtn.style.opacity = ''; };
+        recognition.onend = function () { recognizing = false; if (voiceBtn) voiceBtn.style.opacity = ''; };
+      }
+      if (voiceBtn && recognition) {
+        voiceBtn.addEventListener('click', function () {
+          if (recognizing) { recognition.stop(); recognizing = false; voiceBtn.style.opacity = ''; }
+          else { if (mInput) mInput.focus(); recognizing = true; voiceBtn.style.opacity = '0.5'; recognition.start(); }
+        });
+      } else if (voiceBtn) { voiceBtn.style.display = 'none'; }
+    </script>
+    <script src="./matey-byok.js?v=69"></script>
+    <script src="./matey-beat.js?v=69"></script>
+    <script src="./matey-lifestyle.js?v=69"></script>
+    <script src="./matey-syntax.js?v=69"></script>
+    <script src="./matey-whisper.js?v=69"></script>
+<script src="./matey-rss.js?v=69"></script>
+    <script src="./matey-license.js?v=69"></script>
+    <script src="./matey-settings.js?v=69"></script>
+    <script src="./matey-recall.js?v=69"></script>
+    <script src="./matey-behavior.js?v=69"></script>
+    <script src="./matey-adaptive.js?v=69"></script>
+    <script src="./matey-init.js?v=69"></script>
+    <script src="./matey-tabs.js?v=69"></script>
+    <script src="./matey-keyboard.js?v=69"></script>
+    <script src="./matey-fs.js?v=69"></script>
+    <script src="./matey-hooks-manager.js?v=69"></script>
 
   </body>
 </html>

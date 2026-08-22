@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Matey — Privacy Policy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+      html, body { margin: 0; padding: 0; background: #0a0a0a; color: #e8e8e8; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif; line-height: 1.6; }
+      .container { max-width: 720px; margin: 0 auto; padding: 40px 20px 60px; }
+      h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
+      h2 { font-size: 20px; font-weight: 600; margin: 28px 0 12px; border-bottom: 1px solid #2a2a2a; padding-bottom: 6px; }
+      h3 { font-size: 16px; font-weight: 500; margin: 18px 0 8px; }
+      p { font-size: 14px; color: #b8b8b8; margin: 0 0 14px; }
+      ul { padding-left: 20px; margin: 0 0 14px; }
+      li { margin-bottom: 6px; font-size: 14px; color: #b8b8b8; }
+      .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-left: 6px; }
+      .updated { font-size: 12px; color: #666; margin-top: 24px; padding-top: 16px; border-top: 1px solid #2a2a2a; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Privacy Policy</h1>
+      <p><strong>Last Updated:</strong> August 23, 2026</p>
+
+      <h2>Overview</h2>
+      <p>Matey is a privacy-first application. Your personal data, journal entries, My-VOTS responses, photos, and AI conversations stay on your device. We do not sell, rent, or monetize your data in any way.</p>
+
+      <h2>What Is NOT Collected</h2>
+      <p>The following data is never seen, stored, or transmitted to any server operated by the Matey developer:</p>
+      <ul>
+        <li>Journal entries — all content, titles, tags, and attachments</li>
+        <li>My-VOTS entries — all response content, source links, and attachments</li>
+        <li>Wardrobe/Grooming/Living photos — all captured or selected images</li>
+        <li>BYOK API keys — your OpenAI, Anthropic, Gemini, or other provider credentials</li>
+        <li>File contents from Agent DKI's workspace</li>
+        <li>Any content processed through your user-configured AI providers</li>
+        <li>Usage analytics, behavioral tracking, or session recordings</li>
+        </ul>
+
+      <h2>What IS Collected</h2>
+      <p><strong>Anonymous crash/error reports via Sentry <span class="badge">Crash Reporting Only</span></strong></p>
+      <p>When the app crashes or encounters an unhandled error, we collect anonymous technical data to help fix the issue:</p>
+      <ul>
+        <li>Stack traces and error messages</li>
+        <li>Device type and model (e.g., "Pixel 8", "iPhone 15 Pro")</li>
+        <li>Operating system version (e.g., "Android 15", "iOS 18.1")</li>
+        <li>App version number</li>
+        </ul>
+      <p>This data is anonymized at collection time. Sentry is configured with <code>sendDefaultPii: false</code> and all sensitive data is scrubbed before transmission.</p>
+
+      <h2>BYOK (Bring Your Own Key) Disclosure</h2>
+      <p>When you connect your own AI provider (OpenAI, Anthropic, Gemini, etc.) for features like Grooming, Wardrobe, Living, or Agent DKI:</p>
+      <ul>
+        <li>Your data is sent directly from your device to that provider using your own credentials</li>
+        <li>The Matey developer is never part of that data flow</li>
+        <li>The Matey developer never has access to your API keys or the data sent to your provider</li>
+        <li>All provider interactions happen over encrypted HTTPS connections</li>
+        </ul>
+
+      <h2>Local Storage</h2>
+      <p>All personal data is stored locally on your device only:</p>
+      <ul>
+        <li>Journal entries, My-VOTS entries, tags, and covers are stored in `localStorage` and `IndexedDB` on your device</li>
+        <li>Photos and attachments are stored in local device storage</li>
+        <li>No cloud backup is provided by the app</li>
+        <li>You may optionally back up entries manually to your own cloud storage (e.g., Google Drive, iCloud) at your own discretion</li>
+        </ul>
+
+      <h2>No Analytics</h2>
+      <p>Matey does not include any analytics SDK (Firebase Analytics, Mixpanel, Amplitude, etc.). No usage, behavioral, or session tracking of any kind is performed.</p>
+
+      <h2>Contact</h2>
+      <p>For privacy-related questions or requests:</p>
+      <p><a href="mailto:privacy@Matey.app" style="color:#f5c700">privacy@Matey.app</a></p>
+
+      <p style="color:#666; font-size:12px;">Note: This policy may be revised over time. Material changes will be communicated via app update notes.</p>
+    </div>
+  </body>
+</html>

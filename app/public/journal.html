@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+    <style>
+      html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
+      .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; display: flex; flex-direction: column; }
+    </style>
+    <meta name="theme-color" content="#000000" />
+    <title>Matey - Journal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./matey-preview.css?v=69" />
+    <script src="./matey-boot.js?v=69"></script>
+    <script src="./matey-sentry.js?v=69"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="header">
+        <div class="header-top">
+          <img class="matey-logo" src="./images/matey-logo.png" alt="Matey" />
+          <div class="workspace-display-container" id="workspace-display-container">
+            <div class="workspace-dropdown" id="workspace-dropdown">
+              <span class="workspace-name" id="workspace-display">Workspace</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="workspace-selector" id="workspace-selector"></div>
+          </div>
+          <div class="header-actions">
+            <svg class="usage-ring" viewBox="0 0 36 36" id="usage-ring" aria-hidden="true"><circle class="usage-ring-track" cx="18" cy="18" r="15"></circle><g id="usage-ring-segments"><circle class="usage-ring-segment s1" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(0 18 18)"></circle><circle class="usage-ring-segment s2" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(90 18 18)"></circle><circle class="usage-ring-segment s3" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(180 18 18)"></circle><circle class="usage-ring-segment s4" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(270 18 18)"></circle></g><text x="18" y="21" text-anchor="middle" id="usage-ring-text">65</text></svg>
+            <button class="incognito-trigger" type="button" aria-label="Incognito" title="Incognito">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3.5 0-6 2.5-6 6v9.5c0 .3.3.6.7.4l1.3-1 1.3 1c.4.3 1 .3 1.4 0l1.3-1 1.3 1c.4.3 1 .3 1.4 0l1.3-1 1.3 1c.4.2.7-.1.7-.4V9c0-3.5-2.5-6-6-6z"/><circle cx="9.5" cy="10" r="1.5"/><circle cx="14.5" cy="10" r="1.5"/></svg>
+            </button>
+            <button class="icon-btn settings-trigger" type="button" aria-label="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+              </svg></button>
+          </div>
+        </div>
+      </header>
+
+      <nav class="tabs-wrap" id="tabs-wrap">
+        <div class="tabs">
+          <a class="tab" href="./lifestyle.html">Lifestyle</a>
+          <a class="tab" href="./vots.html">My-VOTS</a>
+          <a class="tab" href="./markdown.html">Markdown</a>
+          <a class="tab active" href="./journal.html">Journal</a>
+          <a class="tab" href="./preview.html#agent">Agent</a>
+        </div>
+      </nav>
+
+      <div class="tab-border" style="height:1px;background:#1a1a1a;width:100%"></div>
+
+      <main class="journal-page" id="journal-page">
+        <!-- Lock Screen -->
+        <div class="journal-lock-screen" id="journal-lock-screen">
+          <div class="journal-lock-content">
+            <div class="journal-lock-icon">🔒</div>
+            <h2 class="journal-lock-title">Journal Locked</h2>
+            <p class="journal-lock-desc">Enter your PIN to unlock your encrypted journal</p>
+            <input type="password" id="journal-pin-input" inputmode="numeric" pattern="[0-9]*" placeholder="••••" />
+            <button class="journal-btn journal-btn-primary" id="journal-unlock-btn" type="button">Unlock</button>
+            <button class="journal-btn journal-btn-secondary" id="journal-setup-lock-btn" type="button" style="display:none">Set Up Journal PIN</button>
+          </div>
+        </div>
+
+        <!-- Journal Main -->
+        <div class="journal-main" id="journal-main" style="display:none">
+        <!-- Toolbar -->
+        <div class="journal-toolbar">
+          <div class="journal-search-box">
+            <input type="text" id="journal-search-input" placeholder="Search entries..." />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+          </div>
+          <div class="journal-toolbar-actions">
+            <button class="journal-toolbar-btn" id="journal-view-toggle" type="button" aria-label="Toggle view" title="Toggle list/grid view">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <span class="journal-hint" id="journal-view-hint" style="display:none">List/Grid</span>
+            <button class="journal-toolbar-btn" id="journal-calendar-btn" type="button" aria-label="Filter by date" title="Filter by date">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </button>
+            <span class="journal-hint" id="journal-calendar-hint" style="display:none">Date filter</span>
+            <button class="journal-toolbar-btn" id="journal-settings-btn" type="button" aria-label="Journal settings" title="Journal settings">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9" fill="none" transform="rotate(45 12 12)"/></svg>
+            </button>
+            <span class="journal-hint" id="journal-settings-hint" style="display:none">Settings</span>
+          </div>
+        </div>
+
+        <!-- New Entry FAB -->
+        <button class="journal-fab" id="journal-fab" type="button" aria-label="New entry" title="New entry">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <span class="journal-fab-hint" id="journal-fab-hint" style="display:none">New entry</span>
+          <!-- Tags Filter -->
+          <div class="journal-tags-filter" id="journal-tags-filter" style="display:none"></div>
+
+          <!-- Entries List -->
+          <div class="journal-entries" id="journal-entries">
+            <p class="journal-empty-state">No journal entries yet. Tap the + button to start writing.</p>
+          </div>
+        </div>
+
+        <!-- New/Edit Entry Form -->
+        <div class="journal-entry-form" id="journal-entry-form" style="display:none">
+          <div class="journal-entry-header">
+            <button class="journal-btn journal-btn-secondary" id="journal-back-btn" type="button">Back</button>
+            <button class="journal-btn journal-btn-primary" id="journal-save-btn" type="button">Save</button>
+          </div>
+          <div class="journal-cover-selector" id="journal-cover-selector">
+            <div class="journal-cover-label">Cover:</div>
+            <div class="journal-cover-options">
+              <button type="button" class="journal-cover-color" style="background:var(--journal-cover-1)" data-cover-color="1"></button>
+              <button type="button" class="journal-cover-color" style="background:var(--journal-cover-2)" data-cover-color="2"></button>
+              <button type="button" class="journal-cover-color" style="background:var(--journal-cover-3)" data-cover-color="3"></button>
+              <button type="button" class="journal-cover-color" style="background:var(--journal-cover-4)" data-cover-color="4"></button>
+              <button type="button" class="journal-cover-color" style="background:var(--journal-cover-5)" data-cover-color="5"></button>
+              <button type="button" class="journal-cover-icon" data-cover-icon="book" style="background:var(--journal-cover-1)">📖</button>
+              <button type="button" class="journal-cover-icon" data-cover-icon="heart" style="background:var(--journal-cover-2)">❤️</button>
+              <button type="button" class="journal-cover-icon" data-cover-icon="star" style="background:var(--journal-cover-3)">⭐</button>
+              <button type="button" class="journal-cover-icon" data-cover-icon="sun" style="background:var(--journal-cover-4)">☀️</button>
+              <button type="button" class="journal-cover-icon" data-cover-icon="cloud" style="background:var(--journal-cover-5)">☁️</button>
+            </div>
+          </div>
+          <textarea class="journal-title-input" id="journal-title-input" placeholder="Entry title..." rows="1"></textarea>
+          <div class="journal-tags-input">
+            <input type="text" id="journal-tags-input" placeholder="Add tags (comma-separated)..." />
+          </div>
+          <div class="journal-attachments" id="journal-attachments"></div>
+          <input type="file" id="journal-attach-input" accept="image/*" style="display:none" />
+          <textarea class="journal-content-input" id="journal-content-input" placeholder="Write your entry..." rows="8"></textarea>
+        </div>
+
+        <!-- Settings Modal -->
+        <div class="journal-settings-overlay" id="journal-settings-overlay" style="display:none">
+          <div class="journal-settings-modal">
+            <div class="journal-settings-header">
+              <h3>Journal Settings</h3>
+              <button class="journal-settings-close" id="journal-settings-close" type="button">✕</button>
+            </div>
+            <div class="journal-settings-body">
+              <div class="journal-settings-section">
+                <h4>Lock & Security</h4>
+                <div class="journal-setting-row">
+                  <label>PIN Lock for Journal</label>
+                  <button class="journal-setting-btn" id="journal-lock-toggle" type="button" data-locked="false">Enable</button>
+                </div>
+                <div class="journal-setting-row">
+                  <label>Change PIN</label>
+                  <button class="journal-setting-btn" id="journal-change-pin" type="button">Change</button>
+                </div>
+                <div class="journal-setting-row">
+                  <label>App Lock (PIN/Biometric)</label>
+                  <button class="journal-setting-btn" id="journal-app-lock-toggle" type="button">Configure</button>
+                </div>
+              </div>
+              <div class="journal-settings-section">
+                <h4>Reminders</h4>
+                <div class="journal-setting-row">
+                  <label>Daily Reminder</label>
+                  <button class="journal-setting-btn" id="journal-reminder-toggle" type="button" data-enabled="false">Enable</button>
+                </div>
+              </div>
+              <div class="journal-settings-section">
+                <h4>Data</h4>
+                <div class="journal-setting-row">
+                  <label>Export Journal</label>
+                  <button class="journal-setting-btn" id="journal-export" type="button">Export</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Calendar Dropdown (outside scroll container) -->
+      <div class="journal-calendar-dropdown" id="journal-calendar-dropdown" style="display:none">
+        <div class="journal-calendar-option" data-filter="all">All Entries</div>
+        <div class="journal-calendar-option" data-filter="today">Today</div>
+        <div class="journal-calendar-option" data-filter="week">This Week</div>
+        <div class="journal-calendar-option" data-filter="month">This Month</div>
+      </div>
+
+      <!-- Compose Box -->
+      <div class="md-composer" id="md-composer">
+        <div class="md-symbol-toolbar" id="md-symbol-toolbar">
+          <button type="button" data-key="*">* </button>
+          <button type="button" data-key="/">/</button>
+          <button type="button" data-key="#"># </button>
+          <button type="button" data-key="$">$</button>
+          <button type="button" data-key="?">?</button>
+          <button type="button" data-key="!">!</button>
+          <button type="button" data-key="=">=</button>
+          <button type="button" data-key="+">+</button>
+          <button type="button" data-key="-">-</button>
+          <button type="button" data-key="÷">÷</button>
+          <button type="button" data-key="(">(</button>
+          <button type="button" data-key=")">)</button>
+        </div>
+        <div class="md-compose-box">
+          <input type="file" id="md-attach-input" accept="image/*,.pdf,.doc,.docx" style="display:none" />
+          <button class="md-attach-btn" id="md-attach" type="button" aria-label="Attach file">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+          <button class="md-voice-btn" id="md-voice" type="button" aria-label="Voice input">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <textarea class="md-compose-input" id="md-compose-input" autocomplete="off" placeholder="Type and press send..." rows="1"></textarea>
+          <div class="md-compose-actions">
+            <button class="md-send-btn" id="md-send" type="button" aria-label="Send">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="19" y1="12" x2="12" y2="5"></line><line x1="5" y1="12" x2="12" y2="5"></line></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="./matey-themes.js?v=69"></script>
+    <script src="./matey-swipe.js?v=69"></script>
+    <script src="./matey-profile.js?v=69"></script>
+    <script src="./matey-greet.js?v=69"></script>
+    <script src="./matey-feed.js?v=69"></script>
+    <script src="./matey-ai.js?v=69"></script>
+    <script src="./matey-md.js?v=69"></script>
+    <script src="./matey-byok.js?v=69"></script>
+    <script src="./matey-beat.js?v=69"></script>
+    <script src="./matey-lifestyle.js?v=69"></script>
+    <script src="./matey-syntax.js?v=69"></script>
+    <script src="./matey-whisper.js?v=69"></script>
+    <script src="./matey-journal.js?v=69"></script>
+    <script src="./matey-rss.js?v=69"></script>
+    <script src="./matey-license.js?v=69"></script>
+    <script src="./matey-settings.js?v=69"></script>
+    <script src="./matey-recall.js?v=69"></script>
+    <script src="./matey-behavior.js?v=69"></script>
+    <script src="./matey-adaptive.js?v=69"></script>
+    <script src="./matey-init.js?v=69"></script>
+    <script src="./matey-tabs.js?v=69"></script>
+    <script src="./matey-keyboard.js?v=69"></script>
+    <script src="./matey-fs.js?v=69"></script>
+    <script src="./matey-hooks-manager.js?v=69"></script>
+    <script>
+      (function () {
+        'use strict';
+        var lockScreen = document.getElementById('journal-lock-screen');
+        var journalMain = document.getElementById('journal-main');
+        var pinInput = document.getElementById('journal-pin-input');
+        var unlockBtn = document.getElementById('journal-unlock-btn');
+        var setupBtn = document.getElementById('journal-setup-lock-btn');
+        var entriesEl = document.getElementById('journal-entries');
+        var fabBtn = document.getElementById('journal-fab');
+        var viewToggleBtn = document.getElementById('journal-view-toggle');
+        var calendarBtn = document.getElementById('journal-calendar-btn');
+        var calendarDropdown = document.getElementById('journal-calendar-dropdown');
+        var entryForm = document.getElementById('journal-entry-form');
+        var backBtn = document.getElementById('journal-back-btn');
+        var saveBtn = document.getElementById('journal-save-btn');
+        var settingsBtn = document.getElementById('journal-settings-btn');
+        var settingsOverlay = document.getElementById('journal-settings-overlay');
+        var settingsClose = document.getElementById('journal-settings-close');
+        var titleInput = document.getElementById('journal-title-input');
+        var contentInput = document.getElementById('journal-content-input');
+        var tagsInput = document.getElementById('journal-tags-input');
+        var attachInput = document.getElementById('journal-attach-input');
+        var attachmentsEl = document.getElementById('journal-attachments');
+        var searchInput = document.getElementById('journal-search-input');
+        var tagsFilter = document.getElementById('journal-tags-filter');
+        var lockToggle = document.getElementById('journal-lock-toggle');
+        var changePinBtn = document.getElementById('journal-change-pin');
+        var appLockToggle = document.getElementById('journal-app-lock-toggle');
+        var reminderToggle = document.getElementById('journal-reminder-toggle');
+        var exportBtn = document.getElementById('journal-export');
+
+        var currentEditId = null;
+        var currentAttachments = [];
+        var currentCover = null;
+        var selectedCoverColor = '1';
+        var selectedCoverIcon = 'book';
+        var currentTags = [];
+        var currentSearch = '';
+        var activeTagFilter = null;
+        var currentDateFilter = 'all';
+        var viewMode = localStorage.getItem('journal-view-mode') || 'list';
+
+        function escapeHtml(s) {
+          return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        function esc(s) { return escapeHtml(s); }
+
+        function formatDate(ts) {
+          var d = new Date(ts);
+          var now = Date.now();
+          var diff = now - ts;
+          if (diff < 86400000) return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+          if (diff < 86400000 * 7) return d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'});
+          return d.toLocaleDateString([], {month:'short',day:'numeric',year:'numeric'});
+        }
+
+        function renderEntries(query, tagFilter) {
+          entriesEl.className = 'journal-entries ' + (viewMode === 'grid' ? 'grid-view' : 'list-view');
+          MateyJournal.getEntries().then(function (entries) {
+            if (query) {
+              entries = entries.filter(function (e) {
+                return (e.title && e.title.toLowerCase().indexOf(query.toLowerCase()) !== -1) ||
+                       (e.content && e.content.toLowerCase().indexOf(query.toLowerCase()) !== -1);
+              });
+            }
+            if (tagFilter) {
+              entries = entries.filter(function (e) {
+                return e.tags && e.tags.indexOf(tagFilter) !== -1;
+              });
+            }
+            if (currentDateFilter !== 'all') {
+              var now = new Date();
+              var cutoff;
+              if (currentDateFilter === 'today') cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+              else if (currentDateFilter === 'week') cutoff = new Date(now.getTime() - 7 * 86400000);
+              else if (currentDateFilter === 'month') cutoff = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+              if (cutoff) entries = entries.filter(function (e) { return e.createdAt >= cutoff.getTime(); });
+            }
+            if (!entries.length) {
+              entriesEl.innerHTML = '<p class="journal-empty-state">No entries' + (query ? ' matching "' + query + '"' : '') + '.</p>';
+              return;
+            }
+            var isGrid = viewMode === 'grid';
+            entriesEl.innerHTML = entries.map(function (e) {
+              var preview = (e.content || '').substring(0, 120);
+              if (e.content && e.content.length > 120) preview += '…';
+              var tagsHtml = (e.tags || []).map(function (t) {
+                return '<span class="journal-entry-tag">' + escapeHtml(t) + '</span>';
+              }).join('');
+              var hasAttachments = e.attachments && e.attachments.length;
+              var cover = MateyJournal.getCover(e.id);
+              return '<div class="journal-entry-card ' + (isGrid ? 'grid-card' : 'list-card') + '" data-id="' + e.id + '">' +
+                (isGrid ? '<div class="journal-cover-preview" style="background:' + cover.color + ';display:flex;align-items:center;justify-content:center;font-size:16px">' + esc(cover.icon || '📖') + '</div>' : '') +
+                '<div class="journal-entry-date">' + formatDate(e.createdAt) + '</div>' +
+                '<div class="journal-entry-title">' + escapeHtml(e.title || 'Untitled') + '</div>' +
+                (isGrid ? '' : '<div class="journal-entry-preview">' + escapeHtml(preview) + '</div>') +
+                (tagsHtml ? '<div class="journal-entry-tags">' + tagsHtml + '</div>' : '') +
+                (hasAttachments ? '<div class="journal-entry-count">' + hasAttachments + '</div>' : '') +
+              '</div>';
+            }).join('');
+            entriesEl.querySelectorAll('.journal-entry-card').forEach(function (card) {
+              card.addEventListener('click', function () {
+                var id = card.getAttribute('data-id');
+                loadEntryIntoView(id);
+              });
+            });
+          }).catch(function (e) {
+            entriesEl.innerHTML = '<p class="journal-empty-state">Error loading entries.</p>';
+          });
+        }
+
+        function loadEntryIntoView(id) {
+          MateyJournal.getEntry(id).then(function (entry) {
+            if (!entry) return;
+            currentEditId = id;
+            titleInput.value = entry.title || '';
+            contentInput.value = entry.content || '';
+            tagsInput.value = (entry.tags || []).join(', ');
+            currentTags = entry.tags || [];
+            currentAttachments = entry.attachments || [];
+            currentCover = MateyJournal.getCover(id);
+            selectedCoverColor = '1';
+            selectedCoverIcon = 'book';
+             entryForm.style.display = 'block';
+             entriesEl.style.display = 'none';
+             document.querySelector('.journal-toolbar').style.display = 'none';
+             tagsFilter.style.display = 'none';
+             if (fabBtn) fabBtn.classList.add('hidden');
+             attachmentsEl.innerHTML = currentAttachments.map(function (a) {
+              if (a.type && a.type.indexOf('image/') === 0) return '<img src="' + a.id + '" class="journal-attachment-thumb" />';
+              return '<div class="journal-attachment-name">' + escapeHtml(a.name) + '</div>';
+            }).join('');
+          });
+        }
+
+        function showNewEntryForm() {
+          currentEditId = null;
+          titleInput.value = '';
+          contentInput.value = '';
+          tagsInput.value = '';
+          currentTags = [];
+          currentAttachments = [];
+          currentCover = null;
+          selectedCoverColor = '1';
+          selectedCoverIcon = 'book';
+          attachmentsEl.innerHTML = '';
+           entryForm.style.display = 'block';
+           entriesEl.style.display = 'none';
+           document.querySelector('.journal-toolbar').style.display = 'none';
+           tagsFilter.style.display = 'none';
+           if (fabBtn) fabBtn.classList.add('hidden');
+         }
+
+         function hideEntryForm() {
+           entryForm.style.display = 'none';
+           entriesEl.style.display = 'block';
+           document.querySelector('.journal-toolbar').style.display = 'flex';
+           tagsFilter.style.display = currentTags.length ? 'flex' : 'none';
+           if (fabBtn) fabBtn.classList.remove('hidden');
+           currentEditId = null;
+         }
+
+        function saveEntry() {
+          var title = titleInput.value.trim() || 'Untitled';
+          var content = contentInput.value;
+          var tags = tagsInput.value.split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+          var cover = { color: selectedCoverColor, pattern: 'solid', icon: selectedCoverIcon };
+
+          if (currentEditId) {
+            MateyJournal.updateEntry(currentEditId, {
+              title: title,
+              content: content,
+              tags: tags,
+              attachments: currentAttachments
+            }).then(function () {
+              MateyJournal.saveCover(currentEditId, cover);
+              hideEntryForm();
+              renderEntries(currentSearch, activeTagFilter);
+            });
+          } else {
+            MateyJournal.createEntry(title, content, tags, currentAttachments).then(function (entry) {
+              MateyJournal.saveCover(entry.id, cover);
+              hideEntryForm();
+              renderEntries(currentSearch, activeTagFilter);
+            });
+          }
+        }
+
+        function refreshTagsFilter() {
+          MateyJournal.getAllTags().then(function (tags) {
+            if (!tags.length) {
+              tagsFilter.style.display = 'none';
+              return;
+            }
+            tagsFilter.style.display = 'flex';
+            tagsFilter.innerHTML = tags.map(function (t) {
+              var active = activeTagFilter === t ? ' active' : '';
+              return '<button class="journal-tag-filter' + active + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</button>';
+            }).join('');
+            tagsFilter.querySelectorAll('.journal-tag-filter').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                activeTagFilter = btn.getAttribute('data-tag') === activeTagFilter ? null : btn.getAttribute('data-tag');
+                renderEntries(currentSearch, activeTagFilter);
+              });
+            });
+          });
+        }
+
+        function setupLockUI() {
+          var locked = MateyJournal.isLockEnabled();
+          if (locked) {
+            lockScreen.style.display = 'block';
+            journalMain.style.display = 'none';
+          } else {
+            lockScreen.style.display = 'none';
+            journalMain.style.display = 'block';
+            renderEntries();
+          }
+          if (locked) {
+            setupBtn.style.display = 'block';
+            unlockBtn.textContent = 'Unlock';
+          } else {
+            setupBtn.style.display = 'none';
+          }
+          lockToggle.textContent = locked ? 'Disable' : 'Enable';
+          lockToggle.setAttribute('data-locked', locked ? 'true' : 'false');
+        }
+
+        function setupCoverSelector() {
+          var coverColors = document.querySelectorAll('.journal-cover-color');
+          var coverIcons = document.querySelectorAll('.journal-cover-icon');
+          coverColors.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              selectedCoverColor = btn.getAttribute('data-cover-color');
+              coverColors.forEach(function (b) { b.classList.toggle('selected', b === btn); });
+            });
+          });
+          coverIcons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              selectedCoverIcon = btn.getAttribute('data-cover-icon');
+              coverIcons.forEach(function (b) { b.classList.toggle('selected', b === btn); });
+            });
+          });
+        }
+
+        // Event listeners
+        if (unlockBtn) {
+          unlockBtn.addEventListener('click', function () {
+            var pin = pinInput.value;
+            if (!pin) {
+              if (setupBtn.style.display !== 'none') {
+                // Set up PIN flow
+                var newPin = prompt('Set a 4-digit PIN for your journal:');
+                if (newPin && newPin.length >= 4) {
+                  MateyJournal.setLock(pin || newPin).then(function () {
+                    pinInput.value = '';
+                    setupLockUI();
+                  });
+                }
+                return;
+              }
+              alert('Please enter your PIN');
+              return;
+            }
+            MateyJournal.unlock(pin).then(function (valid) {
+              if (valid) {
+                pinInput.value = '';
+                lockScreen.style.display = 'none';
+                journalMain.style.display = 'block';
+                renderEntries();
+              } else {
+                pinInput.value = '';
+                alert('Incorrect PIN');
+              }
+            });
+          });
+        }
+
+        if (setupBtn) {
+          setupBtn.addEventListener('click', function () {
+            var pin = prompt('Set a 4-digit PIN for your journal:');
+            if (pin && pin.length >= 4) {
+              MateyJournal.setLock(pin).then(function () {
+                setupLockUI();
+              });
+            }
+          });
+        }
+
+        if (pinInput) {
+          pinInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              unlockBtn.click();
+            }
+          });
+        }
+
+        if (fabBtn) {
+          fabBtn.addEventListener('click', showNewEntryForm);
+        }
+
+        if (viewToggleBtn) {
+          viewToggleBtn.classList.toggle('active', viewMode === 'grid');
+          viewToggleBtn.addEventListener('click', function () {
+            viewMode = viewMode === 'list' ? 'grid' : 'list';
+            localStorage.setItem('journal-view-mode', viewMode);
+            viewToggleBtn.classList.toggle('active', viewMode === 'grid');
+            renderEntries(currentSearch, activeTagFilter);
+          });
+        }
+
+        if (calendarBtn && calendarDropdown) {
+          calendarBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (calendarDropdown.style.display === 'block') {
+              calendarDropdown.style.display = 'none';
+              return;
+            }
+            var rect = calendarBtn.getBoundingClientRect();
+            calendarDropdown.style.display = 'block';
+            calendarDropdown.style.position = 'fixed';
+            var dropdownWidth = Math.min(200, Math.floor(rect.width * 5));
+            calendarDropdown.style.width = dropdownWidth + 'px';
+            calendarDropdown.style.maxWidth = 'calc(100vw - 16px)';
+            var top = rect.bottom + 8;
+            var left = rect.left;
+            if (left + dropdownWidth > window.innerWidth - 8) {
+              left = Math.max(8, window.innerWidth - dropdownWidth - 8);
+            }
+            calendarDropdown.style.top = top + 'px';
+            calendarDropdown.style.left = left + 'px';
+            calendarDropdown.style.zIndex = '1000';
+          });
+          calendarDropdown.addEventListener('click', function (e) {
+            var opt = e.target.closest('.journal-calendar-option');
+            if (!opt) return;
+            var filter = opt.getAttribute('data-filter');
+            if (filter) {
+              currentDateFilter = filter;
+              renderEntries(currentSearch, activeTagFilter);
+            }
+            calendarDropdown.style.display = 'none';
+          });
+          document.addEventListener('click', function () {
+            calendarDropdown.style.display = 'none';
+          });
+        }
+
+        // First-use inline hints — show once, then auto-fade
+        (function () {
+          try {
+            var hintsSeen = JSON.parse(localStorage.getItem('journal-hints') || '{}');
+            function showHint(hintId) {
+              var hint = document.getElementById(hintId);
+              if (!hint) return;
+              hint.style.display = 'inline-block';
+              setTimeout(function () {
+                hint.style.transition = 'opacity 0.4s';
+                hint.style.opacity = '0';
+                setTimeout(function () {
+                  hint.style.display = 'none';
+                  hint.style.opacity = '';
+                  hint.style.transition = '';
+                  hintsSeen[hintId] = true;
+                  localStorage.setItem('journal-hints', JSON.stringify(hintsSeen));
+                }, 400);
+              }, 2000);
+            }
+            requestAnimationFrame(function () {
+              setTimeout(function () {
+                if (!hintsSeen['journal-view-hint'] && viewToggleBtn) showHint('journal-view-hint');
+                if (!hintsSeen['journal-calendar-hint'] && calendarBtn) showHint('journal-calendar-hint');
+                if (!hintsSeen['journal-settings-hint'] && settingsBtn) showHint('journal-settings-hint');
+                if (!hintsSeen['journal-fab-hint'] && fabBtn) showHint('journal-fab-hint');
+              }, 300);
+            });
+          } catch (e) {}
+        })();
+
+        if (backBtn) {
+          backBtn.addEventListener('click', hideEntryForm);
+        }
+
+        if (saveBtn) {
+          saveBtn.addEventListener('click', saveEntry);
+        }
+
+        if (settingsBtn) {
+          settingsBtn.addEventListener('click', function () {
+            settingsOverlay.style.display = 'flex';
+          });
+        }
+
+        if (settingsClose) {
+          settingsClose.addEventListener('click', function () {
+            settingsOverlay.style.display = 'none';
+          });
+        }
+
+        if (searchInput) {
+          searchInput.addEventListener('input', function () {
+            currentSearch = this.value;
+            renderEntries(currentSearch, activeTagFilter);
+          });
+        }
+
+        setupCoverSelector();
+
+        if (lockToggle) {
+          lockToggle.addEventListener('click', function () {
+            var locked = MateyJournal.isLockEnabled();
+            if (locked) {
+              MateyJournal.removeLock();
+              setupLockUI();
+            } else {
+              var pin = prompt('Set a 4-digit PIN for your journal:');
+              if (pin && pin.length >= 4) {
+                MateyJournal.setLock(pin).then(function () {
+                  setupLockUI();
+                });
+              }
+            }
+          });
+        }
+
+        if (changePinBtn) {
+          changePinBtn.addEventListener('click', function () {
+            var currentPin = prompt('Enter current PIN:');
+            if (!currentPin) return;
+            MateyJournal.verifyPin(currentPin).then(function (valid) {
+              if (!valid) {
+                alert('Incorrect PIN');
+                return;
+              }
+              var newPin = prompt('Enter new PIN:');
+              if (newPin && newPin.length >= 4) {
+                // Update PIN by removing old and setting new
+                MateyJournal.removeLock();
+                MateyJournal.setLock(newPin).then(function () {
+                  alert('PIN updated');
+                });
+              }
+            });
+          });
+        }
+
+        if (appLockToggle) {
+          appLockToggle.addEventListener('click', function () {
+            var enabled = MateyAppLock.isLockEnabled();
+            if (enabled) {
+              MateyAppLock.removeLock();
+              appLockToggle.textContent = 'Enable';
+            } else {
+              var pin = prompt('Set an app PIN:');
+              if (pin && pin.length >= 4) {
+                MateyAppLock.setPin(pin).then(function () {
+                  appLockToggle.textContent = 'Disable';
+                });
+              }
+            }
+          });
+        }
+
+        if (reminderToggle) {
+          reminderToggle.addEventListener('click', function () {
+            var enabled = reminderToggle.getAttribute('data-enabled') === 'true';
+            if (enabled) {
+              MateyJournal.saveReminderSettings({ enabled: false });
+              reminderToggle.textContent = 'Enable';
+              reminderToggle.setAttribute('data-enabled', 'false');
+            } else {
+              var timeStr = prompt('Daily reminder time (HH:MM, 24h):', '09:00');
+              if (timeStr) {
+                var parts = timeStr.split(':');
+                var hour = parseInt(parts[0], 10);
+                var minute = parseInt(parts[1], 10);
+                if (!isNaN(hour) && !isNaN(minute)) {
+                  MateyJournal.saveReminderSettings({
+                    enabled: true,
+                    hour: hour,
+                    minute: minute,
+                    title: 'Journal Time',
+                    message: 'Time to write in your journal.'
+                  });
+                  reminderToggle.textContent = 'Disable';
+                  reminderToggle.setAttribute('data-enabled', 'true');
+                }
+              }
+            }
+          });
+        }
+
+        if (exportBtn) {
+          exportBtn.addEventListener('click', function () {
+            MateyJournal.getEntries().then(function (entries) {
+              var data = JSON.stringify(entries, null, 2);
+              var blob = new Blob([data], { type: 'application/json' });
+              var url = URL.createObjectURL(blob);
+              var a = document.createElement('a');
+              a.href = url;
+              a.download = 'matey-journal-export-' + Date.now() + '.json';
+              a.click();
+              URL.revokeObjectURL(url);
+            });
+          });
+        }
+
+        if (attachInput) {
+          attachInput.addEventListener('change', function () {
+            var files = this.files;
+            if (!files || !files.length) return;
+            Array.from(files).forEach(function (file) {
+              var reader = new FileReader();
+              reader.onload = function (e) {
+                var dataUrl = e.target.result;
+                currentAttachments.push({
+                  id: dataUrl,
+                  name: file.name,
+                  size: file.size,
+                  type: file.type
+                });
+                renderAttachmentList();
+              };
+              reader.readAsDataURL(file);
+            });
+            this.value = '';
+          });
+        }
+
+        function renderAttachmentList() {
+          attachmentsEl.innerHTML = currentAttachments.map(function (a, i) {
+            var isImage = a.type && a.type.indexOf('image/') === 0;
+            if (isImage) {
+              return '<img src="' + a.id + '" class="journal-attachment-thumb" />' +
+                     '<button class="journal-attachment-remove" data-index="' + i + '">✕</button>';
+            }
+            return '<div class="journal-attachment-name">' + escapeHtml(a.name) + '</div>' +
+                   '<button class="journal-attachment-remove" data-index="' + i + '">✕</button>';
+          }).join('');
+          attachmentsEl.querySelectorAll('.journal-attachment-remove').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var idx = parseInt(btn.getAttribute('data-index'), 10);
+              currentAttachments.splice(idx, 1);
+              renderAttachmentList();
+            });
+          });
+        }
+
+        // Compose box handlers (same as markdown page)
+        var attachBtn = document.getElementById('md-attach');
+        var composeAttachInput = document.getElementById('md-attach-input');
+        if (composeAttachInput) {
+          composeAttachInput.addEventListener('change', function () {
+            var file = this.files[0];
+            if (!file) return;
+            var hint = document.querySelector('.md-attach-hint');
+            if (!hint) {
+              var h = document.createElement('div');
+              h.className = 'md-attach-hint';
+              h.style.cssText = 'font-size:12px;color:var(--accent);margin:4px 0;';
+              attachBtn.parentNode.insertBefore(h, attachBtn.nextSibling);
+            }
+            document.querySelector('.md-attach-hint').textContent = 'Attached: ' + file.name + ' (' + Math.round(file.size/1024) + 'KB)';
+            this.value = '';
+          });
+        }
+
+        var voiceBtn = document.getElementById('md-voice');
+        var composeInput = document.getElementById('md-compose-input');
+        var recognizing = false;
+        var recognition;
+        var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SR) {
+          recognition = new SR();
+          recognition.continuous = false;
+          recognition.interimResults = true;
+          recognition.lang = 'en-US';
+          recognition.onresult = function (e) {
+            var finals = '';
+            for (var i = e.resultIndex; i < e.results.length; i++) {
+              var t = e.results[i][0].transcript;
+              if (e.results[i].isFinal) finals += t;
+              else if (composeInput) composeInput.value += t;
+            }
+            if (finals && composeInput) composeInput.value += finals;
+          };
+          recognition.onerror = function () { recognizing = false; if (voiceBtn) voiceBtn.style.opacity = ''; };
+          recognition.onend = function () { recognizing = false; if (voiceBtn) voiceBtn.style.opacity = ''; };
+        }
+        if (voiceBtn && recognition) {
+          voiceBtn.addEventListener('click', function () {
+            if (recognizing) { recognition.stop(); recognizing = false; voiceBtn.style.opacity = ''; }
+            else { if (composeInput) composeInput.focus(); recognizing = true; voiceBtn.style.opacity = '0.5'; recognition.start(); }
+          });
+        } else if (voiceBtn) { voiceBtn.style.display = 'none'; }
+
+        // Initialize
+        setupLockUI();
+        RefreshTagsFilter = refreshTagsFilter;
+      })();
+    </script>
+  </body>
+</html>
