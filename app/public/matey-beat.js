@@ -125,7 +125,7 @@
     var container = $('living-results');
     if (!container) return;
     var html = '<div class="living-results-title">Best Layout: ' + esc(data.best_layout || 'Recommended') + '</div>';
-    if (data.living_type) html += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Detected: ' + esc(data.living_type) + '</div>';
+    if (data.living_type) html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Detected: ' + esc(data.living_type) + '</div>';
     html += '<ul class="living-option-moves">' + (data.moves || []).map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>';
     if (data.why) html += '<div class="living-option-why">' + esc(data.why) + '</div>';
     container.innerHTML = html;
@@ -164,7 +164,7 @@
     if (!container) return;
     var missing = VIEWS.filter(function (v, i) { return !imgs[i]; });
     if (missing.length) {
-      container.innerHTML = '<p style="color:var(--muted);text-align:center;padding:24px;">Please upload all 4 space photos: ' + missing.map(function (m) { return m.label; }).join(', ') + '.</p>';
+      container.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:24px;">Please upload all 4 space photos: ' + missing.map(function (m) { return m.label; }).join(', ') + '.</p>';
       container.style.display = 'block';
       return;
     }

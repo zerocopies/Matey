@@ -167,7 +167,7 @@
         var validation = await MateyByok.chatVision(messages);
         var parsed = (function () { try { return JSON.parse(validation); } catch (e) { return null; } })();
         if (!parsed || parsed.sufficient === false) {
-          resultEl.innerHTML = '<div class="lifestyle-result"><p style="color:var(--muted);margin-bottom:8px;">This photo needs improvement:</p><p style="font-weight:500;">' + esc(parsed && parsed.reason ? parsed.reason : 'Please upload a clearer front-facing selfie.') + '</p><p style="font-size:12px;color:var(--muted);margin-top:8px;">Tips: Use natural light, face the camera directly, ensure your full face is visible.</p></div>';
+          resultEl.innerHTML = '<div class="lifestyle-result"><p style="color:var(--text-secondary);margin-bottom:8px;">This photo needs improvement:</p><p style="font-weight:500;">' + esc(parsed && parsed.reason ? parsed.reason : 'Please upload a clearer front-facing selfie.') + '</p><p style="font-size:12px;color:var(--text-secondary);margin-top:8px;">Tips: Use natural light, face the camera directly, ensure your full face is visible.</p></div>';
           return;
         }
 
@@ -266,12 +266,12 @@
       var tops = items.filter(function (x) { return x.type === 'top'; });
       var bottoms = items.filter(function (x) { return x.type === 'bottom'; });
       if (!tops.length && !bottoms.length) {
-        grid.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">No items yet. Add your first clothing item with a photo.</p>';
+        grid.innerHTML = '<p style="color:var(--text-secondary);font-size:13px;text-align:center;padding:16px;">No items yet. Add your first clothing item with a photo.</p>';
         return;
       }
       var html = '';
       if (tops.length) {
-        html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Tops</div>' +
+        html += '<div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Tops</div>' +
           '<div class="lifestyle-wardrobe-row">' +
           tops.map(function (t) {
             return '<div class="lifestyle-wardrobe-item"><img src="' + esc(t.image) + '" /><div class="lifestyle-wardrobe-name">' + esc(t.name || t.color || 'Item') + '</div></div>';
@@ -279,7 +279,7 @@
           '</div>';
       }
       if (bottoms.length) {
-        html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin:12px 0 8px;">Bottoms</div>' +
+        html += '<div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.1em;margin:12px 0 8px;">Bottoms</div>' +
           '<div class="lifestyle-wardrobe-row">' +
           bottoms.map(function (b) {
             return '<div class="lifestyle-wardrobe-item"><img src="' + esc(b.image) + '" /><div class="lifestyle-wardrobe-name">' + esc(b.name || b.color || 'Item') + '</div></div>';
@@ -417,7 +417,7 @@
         if (outfits && Array.isArray(outfits)) {
           var html = '<div class="lifestyle-suggestions">';
           outfits.forEach(function (o, i) {
-            html += '<div class="lifestyle-suggestion" data-id="outfit-' + i + '"><strong>' + esc(o.name || 'Outfit ' + (i + 1)) + '</strong><div style="font-size:12px;color:var(--muted);margin-top:4px;">' + esc(o.top) + ' + ' + esc(o.bottom) + '</div><div style="font-size:13px;margin-top:6px;">' + esc(o.why) + '</div>' + likeDislikeBtns('outfit-' + i, 'wardrobe') + '</div>';
+            html += '<div class="lifestyle-suggestion" data-id="outfit-' + i + '"><strong>' + esc(o.name || 'Outfit ' + (i + 1)) + '</strong><div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">' + esc(o.top) + ' + ' + esc(o.bottom) + '</div><div style="font-size:13px;margin-top:6px;">' + esc(o.why) + '</div>' + likeDislikeBtns('outfit-' + i, 'wardrobe') + '</div>';
           });
           html += '</div>';
           resultEl.innerHTML = html;
@@ -468,7 +468,7 @@
         if (recipes && Array.isArray(recipes)) {
           var html = '<div class="lifestyle-suggestions">';
           recipes.forEach(function (r, i) {
-            html += '<div class="lifestyle-suggestion" data-id="recipe-' + i + '"><strong>' + esc(r.name || 'Recipe ' + (i + 1)) + '</strong><div style="font-size:13px;color:var(--muted);margin-top:4px;">' + esc(r.description || '') + '</div><div style="font-size:12px;margin-top:6px;"><strong>Uses:</strong> ' + esc((r.ingredients_used || []).join(', ')) + '</div>' + likeDislikeBtns('recipe-' + i, 'culinary') + '</div>';
+            html += '<div class="lifestyle-suggestion" data-id="recipe-' + i + '"><strong>' + esc(r.name || 'Recipe ' + (i + 1)) + '</strong><div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">' + esc(r.description || '') + '</div><div style="font-size:12px;margin-top:6px;"><strong>Uses:</strong> ' + esc((r.ingredients_used || []).join(', ')) + '</div>' + likeDislikeBtns('recipe-' + i, 'culinary') + '</div>';
           });
           html += '</div>';
           resultEl.innerHTML = html;
@@ -517,7 +517,7 @@
             if (result.moves && result.moves.length) {
               html += '<div class="lifestyle-suggestions-title">Layout Moves</div><div class="lifestyle-suggestions">' + result.moves.map(function (m) { return '<div class="lifestyle-suggestion">' + esc(m) + '</div>'; }).join('') + '</div>';
             }
-            if (result.why) html += '<div style="font-size:13px;color:var(--muted);margin-top:8px;">' + esc(result.why) + '</div>';
+            if (result.why) html += '<div style="font-size:13px;color:var(--text-secondary);margin-top:8px;">' + esc(result.why) + '</div>';
             html += '</div>';
             resultEl.innerHTML = html;
           }

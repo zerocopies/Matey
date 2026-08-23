@@ -15,7 +15,7 @@
   --border-subtle: #f0f0f0;
   --text: #f0f0f0;
   --text-secondary: #b0b0b0;
-  --muted: #6b6b6b;
+  --muted: #8a8a8a;
   --text-on-card: #121212;
   --accent: #f5c542;
   --accent-dim: rgba(245, 197, 66, 0.12);
@@ -80,10 +80,9 @@
   --border-subtle: #f0f0f0;
   --text: #ffffff;
   --text-secondary: #b0b0b0;
-  --muted: #8f8f8f;
+  --muted: #aaaaaa;
   --text-on-card: #121212;
   --accent: #f92672;
-  --accent-green: #aeff0d;
   --accent-green-dim: rgba(174,255,13,0.12);
   --accent-green-text: #aeff0d;
 }
@@ -96,7 +95,7 @@
   --border-subtle: #f0f0f0;
   --text: #cdd6f4;
   --text-secondary: #a0a0a0;
-  --muted: #7f849c;
+  --muted: #8a8fa8;
   --text-on-card: #121212;
   --accent: #cba6f7;
   --accent-green: #a6e3a1;
@@ -111,13 +110,13 @@
   --border: #a0b8ab;
   --border-subtle: #b0c8b7;
   --text: #b8e6d8;
-  --text-secondary: #7db8a7;
-  --muted: #3d7065;
+  --text-secondary: #a8d8c8;
+  --muted: #7db8a7;
   --text-on-card: #121212;
   --accent: #2caf93;
   --border: rgba(255,255,255,0.12);
   --text: #ffffff;
-  --muted: rgba(255,255,255,0.55);
+  --muted: rgba(255,255,255,0.8);
   --accent: #0ccfa5;
   --accent-green: #0ccfa5;
   --accent-green-dim: rgba(12,207,165,0.15);
@@ -132,7 +131,7 @@
   --border-subtle: #555555;
   --text: #dddddd;
   --text-secondary: #b0b0b0;
-  --muted: #8f8f8f;
+  --muted: #aaaaaa;
   --text-on-card: #121212;
   --accent: #50e6a5;
   --accent-green: #50e6a5;
@@ -148,7 +147,7 @@
   --border-subtle: rgba(255,255,255,0.1);
   --text: #ffffff;
   --text-secondary: #b0b0b0;
-  --muted: rgba(255,255,255,0.7);
+  --muted: rgba(255,255,255,0.8);
   --text-on-card: #121212;
   --accent: #dbff00;
   --accent-green: #dbff00;
@@ -164,10 +163,9 @@
   --border-subtle: #1a6166;
   --text: #d1b897;
   --text-secondary: #a89e87;
-  --muted: #7d9a92;
+  --muted: #a0a8a5;
   --text-on-card: #121212;
   --accent: #87dcd5;
-  --accent-green: #31b72c;
   --accent-green-dim: rgba(49,183,44,0.15);
   --accent-green-text: #87dcd5;
 }
@@ -180,10 +178,9 @@
   --border-subtle: #b8a889;
   --text: #282828;
   --text-secondary: #4a4240;
-  --muted: #4a4240;
+  --muted: #3a3331;
   --text-on-card: #121212;
   --accent: #b57614;
-  --accent-green: #22ff22;
   --accent-green-dim: rgba(34,255,34,0.15);
   --accent-green-text: #22ff22;
 }
@@ -3488,7 +3485,7 @@ body {
   }
  /* ===== Agent Chat ===== */
 .agent-page { display: flex; flex-direction: column; width: 100%; height: 100%; flex: 1; min-height: 0; }
-.agent-chat { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.agent-chat { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 
 .agent-welcome {
   display: flex;
@@ -3535,6 +3532,44 @@ body {
   border-radius: 4px 18px 18px 18px;
   align-self: flex-start;
   border: 1px solid var(--border);
+  min-width: 0;
+}
+.agent-msg h1,
+.agent-msg h2,
+.agent-msg h3,
+.agent-msg h4,
+.agent-msg h5,
+.agent-msg h6 {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 12px 0 6px;
+}
+.agent-msg h1 { font-size: 22px; }
+.agent-msg h2 { font-size: 20px; }
+.agent-msg p { margin: 8px 0; line-height: 1.6; }
+.agent-msg ul,
+.agent-msg ol { margin: 8px 0 8px 20px; padding: 0; }
+.agent-msg li { margin: 4px 0; line-height: 1.5; }
+.agent-msg code {
+  background: rgba(245,197,66,0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--accent);
+}
+.agent-msg pre > code {
+  background: var(--bg);
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: block;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.agent-msg a {
+  color: var(--accent-green);
+  text-decoration: underline;
 }
 
 /* ===== Markdown Page Composer ===== */
@@ -3715,6 +3750,21 @@ body {
 .vots-link-prompt svg { flex-shrink: 0; margin-top: 2px; opacity: 0.5; width: 18px; height: 18px; }
 .vots-link-gate-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
 .vots-link-gate-desc { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+/* ===== Card Surface Context — overrides text variables for content on white card surfaces (--surface-raised) ===== */
+/* This is the single root-level fix for the recurring low-contrast / dimming bug. */
+/* The Settings-screen fix (commit 3423040) introduced --text-on-card and applied it to */
+/* specific static CSS selectors, but dynamically-generated content from JS files used */
+/* inline color:var(--muted), which bypassed those overrides. By defining a contextual */
+/* class that redefines --muted for white-card contexts, ALL inline var(--muted) */
+/* references within these containers automatically get the correct dark-on-white value. */
+.card-surface,
+.surface-raised {
+  --muted: #4a4a4a;
+  --text-secondary: #6b6b6b;
+  --text: var(--text-on-card);
+  --text-on-card: #121212;
+}
 .vots-link-field { display: flex; gap: 8px; }
 .vots-link-input {
   flex: 1;
@@ -4883,7 +4933,7 @@ body {
 }
 
 /* Dark text on white card backgrounds */
-.category-item,
+.card-surface,
 .coach-tip-dismiss,
 .feature-card,
 feed-card,

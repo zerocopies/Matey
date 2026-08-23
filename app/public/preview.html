@@ -144,8 +144,109 @@
       function createMsgBubble(cls, content) {
         var div = document.createElement('div');
         div.className = cls;
-        div.textContent = content;
+        div.innerHTML = renderMarkdown(content);
         return div;
+      }
+
+      function renderMarkdown(text) {
+        var esc = function (s) {
+          var d = document.createElement('div');
+          d.textContent = s;
+          return d.innerHTML;
+        };
+
+        var lines = esc(text).split('\n');
+        var html = [];
+        var inCode = false;
+        var codeBuf = [];
+        var inList = false;
+        var listType = null;
+
+        function closeList() {
+          if (inList) {
+            html.push(listType === 'ol' ? '</ol>' : '</ul>');
+            inList = false;
+            listType = null;
+          }
+        }
+
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i];
+
+          if (inCode) {
+            if (line.trim() === '```' || line.trim() === '~~~') {
+              html.push('<code>' + codeBuf.join('\n') + '</code>');
+              codeBuf = [];
+              inCode = false;
+            } else {
+              codeBuf.push(line);
+            }
+            continue;
+          }
+
+          var codeMatch = line.match(/^```(\w*)$/);
+          if (codeMatch) {
+            closeList();
+            inCode = true;
+            codeBuf = [];
+            continue;
+          }
+
+          var headerMatch = line.match(/^(#{1,6})\s+(.*)$/);
+          if (headerMatch) {
+            closeList();
+            var level = headerMatch[1].length;
+            html.push('<h' + level + '>' + inlineMarkdown(headerMatch[2]) + '</h' + level + '>');
+            continue;
+          }
+
+          var olMatch = line.match(/^(\d+)\.\s+(.*)$/);
+          if (olMatch) {
+            if (!inList || listType !== 'ol') {
+              closeList();
+              inList = true;
+              listType = 'ol';
+              html.push('<ol>');
+            }
+            html.push('<li>' + inlineMarkdown(olMatch[2]) + '</li>');
+            continue;
+          }
+
+          var ulMatch = line.match(/^[-*]\s+(.*)$/);
+          if (ulMatch) {
+            if (!inList || listType !== 'ul') {
+              closeList();
+              inList = true;
+              listType = 'ul';
+              html.push('<ul>');
+            }
+            html.push('<li>' + inlineMarkdown(ulMatch[1]) + '</li>');
+            continue;
+          }
+
+          if (line.trim() === '') {
+            closeList();
+            continue;
+          }
+
+          closeList();
+          html.push('<p>' + inlineMarkdown(line) + '</p>');
+        }
+
+        closeList();
+        return html.join('\n');
+      }
+
+      function inlineMarkdown(text) {
+        text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+        text = text.replace(/```([\s\S]*?)```/g, '<code>$1</code>');
+        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+        text = text.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+        text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        text = text.replace(/__(.*?)__/g, '<strong>$1</strong>');
+        text = text.replace(/_(.*?)_/g, '<em>$1</em>');
+        return text;
       }
 
       async function extractFileText(file) {
@@ -268,20 +369,20 @@
           scrollToBottom();
 
           if (!window.MateyByok) {
-            resp.textContent = 'No BYOK provider configured. Add one in Settings → BYOK Models.';
+            resp.innerHTML = renderMarkdown('No BYOK provider configured. Add one in Settings → BYOK Models.');
             return;
           }
 
           try {
             MateyByok.chat(convHistory).then(function (reply) {
-              resp.textContent = reply || 'No response from provider.';
+              resp.innerHTML = renderMarkdown(reply || 'No response from provider.');
               convHistory.push({ role: 'assistant', content: reply || 'No response from provider.' });
             }).catch(function (err) {
-              resp.textContent = 'Error: ' + (err.message || err);
+              resp.innerHTML = renderMarkdown('Error: ' + (err.message || err));
               convHistory.push({ role: 'assistant', content: 'Error: ' + (err.message || err) });
             });
           } catch (err) {
-            resp.textContent = 'Error: ' + (err.message || err);
+            resp.innerHTML = renderMarkdown('Error: ' + (err.message || err));
             convHistory.push({ role: 'assistant', content: 'Error: ' + (err.message || err) });
           }
         }).catch(function (err) {
