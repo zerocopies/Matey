@@ -202,22 +202,7 @@
 .content > *:nth-child(4) { animation-delay: 120ms; }
 
 /* Tab active indicator bar */
-.tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 3px;
-  background: var(--accent);
-  border-radius: 2px 2px 0 0;
-  transition: width var(--duration-base) var(--ease-out);
-}
-.tab.active:hover::after,
-.tab.active:focus-visible::after {
-  width: 32px;
-}
+.tab.active::after { display: none; }
 
 /* Settings accordion — smooth open/close with max-height */
 .settings-section-body {
@@ -475,17 +460,13 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   position: relative;
-  border-bottom: 2px solid transparent;
   transition: color var(--duration-base) var(--ease-out);
   touch-action: manipulation;
 }
 
 .tab.active {
-  background: var(--surface-raised, #ffffff);
   color: var(--text);
-  border-bottom: 2px solid var(--accent, #f5c542);
-  border-radius: 6px 6px 0 0;
-  margin-bottom: -1px;
+  font-weight: var(--font-weight-bold);
 }
 
 /* Draggable tabs */
@@ -3066,9 +3047,9 @@ body {
 }
 
 .lifestyle-tab.active {
-  background: var(--text);
-  color: var(--bg);
-  border-color: var(--text);
+  color: var(--text);
+  font-weight: var(--font-weight-bold);
+  border-color: var(--border);
 }
 
 .lifestyle-result-container {
