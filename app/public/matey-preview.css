@@ -2920,25 +2920,25 @@ body {
    padding: 18px 20px;
    border-bottom: 1px solid var(--border);
  }
- .lifestyle-back {
-   width: 32px;
-   height: 32px;
+.lifestyle-back {
+   width: auto;
+   height: auto;
+   border-radius: 0;
    border: none;
    background: transparent;
-   color: var(--muted);
-   border-radius: 50%;
-   font-size: 20px;
+   color: var(--text);
+   font-size: 34px;
+   font-weight: 300;
    cursor: pointer;
    display: flex;
    align-items: center;
    justify-content: center;
-   opacity: 0.5;
-   transition: all 0.15s;
+   flex-shrink: 0;
+   line-height: 1;
+   padding: 0 8px 0 0;
  }
  .lifestyle-back:hover {
-   opacity: 1;
-   color: var(--text);
-   background: var(--surface);
+   opacity: 0.7;
  }
  .lifestyle-title {
    font-size: 17px;
@@ -2953,7 +2953,7 @@ body {
   height: 32px;
   border: none;
   background: var(--surface);
-  color: var(--muted);
+  color: var(--text);
   border-radius: 50%;
   font-size: 20px;
   cursor: pointer;
@@ -5032,7 +5032,6 @@ feed-card,
 .lifestyle-item,
 .lifestyle-suggestion,
 .lifestyle-suggestion-list,
-.lifestyle-title,
 .usage-ring-text,
 .usage-ring-segment,
 .workspace-selector,
