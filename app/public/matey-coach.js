@@ -1,209 +1,298 @@
-/* Matey AI Prompting Coach — observes user prompts and offers gentle,
-   plain-language tips for getting better results from the AI.
-   Non-intrusive banner delivery, progressive (never repeats shown tips). */
+/* Matey Prompt Coach — 5-stage skill progression
+   Stages: Specificity → Context → One Ask → Outcome → Iterate
+   Progression: detect improvement in current stage, then quietly advance
+   Delivery: one dismissible banner at natural pauses, never repeats
+*/
 (function () {
   'use strict';
 
-  var SHOWN_KEY = 'matey-coach-shown';
+  var STATE_KEY = 'matey-coach-state';
   var PROMPT_LOG_KEY = 'matey-coach-prompts';
   var MIN_PROMPTS_BEFORE_TIPS = 3;
   var MIN_INTERVAL = 40000;
 
-  function ls(key, fallback) {
-    try { return JSON.parse(localStorage.getItem(key) || fallback); }
-    catch (e) { return fallback; }
-  }
-  function ss(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+  var state = {
+    stage: 0,
+    lastTipTime: 0,
+    tipsShown: []
+  };
 
-  /* ---- Tip Library ---- */
-  var TIPS = [
+  /* ---- State persistence ---- */
+  function loadState() {
+    try {
+      var s = localStorage.getItem(STATE_KEY);
+      if (s) {
+        var parsed = JSON.parse(s);
+        state.stage = typeof parsed.stage === 'number' ? parsed.stage : 0;
+        state.lastTipTime = typeof parsed.lastTipTime === 'number' ? parsed.lastTipTime : 0;
+        state.tipsShown = Array.isArray(parsed.tipsShown) ? parsed.tipsShown : [];
+      }
+    } catch (e) {}
+  }
+  function saveState() {
+    try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  function loadPrompts() {
+    try { return JSON.parse(localStorage.getItem(PROMPT_LOG_KEY) || '[]'); }
+    catch (e) { return []; }
+  }
+  function savePrompts(arr) {
+    try { localStorage.setItem(PROMPT_LOG_KEY, JSON.stringify(arr.slice(-30))); } catch (e) {}
+  }
+
+  /* ---- 5-Stage Skill Progression ---- */
+  var STAGES = [
     {
-      id: 'be_specific',
+      id: 'specificity',
       detect: function (text) {
         var t = text.trim().toLowerCase();
-        return t.length < 25 &&
-               (t.indexOf('help') !== -1 || t.indexOf('do') !== -1 ||
-                t.split(/\s+/).length <= 2);
+        var words = t.split(/\s+/).filter(Boolean);
+        var vagueStarts = /^(help|do|fix|make|give|write|tell|show|explain)\b/;
+        var vagueOnly = /^(help|fix it|do something|make it|give me)\s*$/i;
+        return words.length < 10 || vagueStarts.test(t) && words.length < 15 || vagueOnly.test(text.trim());
       },
-      tip: "Hey, I noticed that was pretty short. The more you tell me about what you need, the better I can help. Try adding a bit more context next time.",
+      improve: function (text) {
+        var words = text.trim().split(/\s+/).filter(Boolean);
+        if (words.length >= 10) return true;
+        var vagueStarts = /^(help|do|fix|make|give|write|tell|show|explain)\b/;
+        return !vagueStarts.test(text.trim().toLowerCase());
+      },
+      tip: "Hey, I noticed that was pretty short. The more you tell me about what you need, the better I can help you.",
       example: "Instead of 'help me' try 'I need to write a quick summary of my meeting notes for my team.'"
     },
     {
-      id: 'one_thing_at_a_time',
+      id: 'context',
+      detect: function (text) {
+        var t = text.trim().toLowerCase();
+        var words = t.split(/\s+/).filter(Boolean);
+        if (words.length < 10) return false;
+        var contextWords = ['context', 'background', 'situation', 'for ', 'need', 'want', 'audience', 'purpose', 'trying', 'working', 'goal', 'project', 'team', 'client', 'deadline'];
+        var hasContext = contextWords.some(function (w) { return t.indexOf(w) !== -1; });
+        return words.length >= 10 && words.length < 25 && !hasContext;
+      },
+      improve: function (text) {
+        var t = text.toLowerCase();
+        var contextWords = ['context', 'background', 'situation', 'for ', 'need', 'want', 'audience', 'purpose', 'trying', 'working', 'goal', 'project', 'team', 'client', 'deadline'];
+        var hasContext = contextWords.some(function (w) { return t.indexOf(w) !== -1; });
+        return hasContext;
+      },
+      tip: "A bit of background goes a long way. Just telling me what you're working on or who it's for helps me give you something that actually fits.",
+      example: "Like 'I'm writing a blog post for developers' or 'This is for a client presentation.'"
+    },
+    {
+      id: 'one_ask',
       detect: function (text) {
         var sentences = text.trim().split(/[.!?]+/).filter(function (s) { return s.trim().length > 3; });
         return sentences.length >= 3;
       },
-      tip: "You had a few ideas in there — that's fine! For faster answers, try asking one thing at a time. I can pick up the thread and answer your next point right after.",
+      improve: function (text) {
+        var sentences = text.trim().split(/[.!?]+/).filter(function (s) { return s.trim().length > 3; });
+        return sentences.length <= 2;
+      },
+      tip: "You had a few ideas in there — that's fine! For faster, more focused answers, try asking one thing at a time. I'll pick up right where we left off.",
       example: "If you need both a summary and action items, send them in two messages."
     },
     {
-      id: 'add_context',
+      id: 'outcome',
       detect: function (text) {
         var t = text.toLowerCase();
-        var contextWords = ['context', 'background', 'situation', 'for', 'need', 'want'];
-        var hasContext = contextWords.some(function (w) { return t.indexOf(w) !== -1; });
-        var wordCount = t.trim().split(/\s+/).length;
-        return wordCount < 8 && !hasContext;
+        var outcomeWords = ['format', 'length', 'tone', 'style', 'like', 'similar to', 'example', 'bullet', 'list', 'table', 'short', 'long', 'brief', 'detailed', 'casual', 'formal', 'friendly', 'professional'];
+        var startsOpen = (t.indexOf('how') === 0 || t.indexOf('what') === 0 || t.indexOf('can you') !== -1 || t.indexOf('could you') !== -1);
+        return startsOpen && !outcomeWords.some(function (w) { return t.indexOf(w) !== -1; });
       },
-      tip: "A bit more background goes a long way. Just telling me what you're working on or who it's for helps me give you something that actually fits.",
-      example: "Mention who the audience is or what you're trying to achieve."
+      improve: function (text) {
+        var t = text.toLowerCase();
+        var outcomeWords = ['format', 'length', 'tone', 'style', 'like', 'similar to', 'example', 'bullet', 'list', 'table', 'short', 'long', 'brief', 'detailed', 'casual', 'formal', 'friendly', 'professional'];
+        return outcomeWords.some(function (w) { return t.indexOf(w) !== -1; });
+      },
+      tip: "If you know what you want it to look like, just tell me. 'Give me 3 bullet points' or 'write a short email' — I'll match that exactly.",
+      example: "Try saying 'in 3 quick bullet points' or 'as a brief email to my team.'"
     },
     {
-      id: 'ask_for_format',
+      id: 'iterate',
       detect: function (text) {
-        var t = text.toLowerCase();
-        var formatHints = ['list', 'table', 'short', 'summary', 'step', 'example'];
-        return (t.indexOf('how') === 0 || t.indexOf('what') === 0) &&
-               !(formatHints.some(function (w) { return t.indexOf(w) !== -1; }));
+        var prompts = loadPrompts();
+        if (prompts.length < 2) return false;
+        var prev = prompts[prompts.length - 2];
+        if (!prev || !prev.text) return false;
+        var prevWords = prev.text.trim().toLowerCase().split(/\s+/).filter(Boolean);
+        var curWords = text.trim().toLowerCase().split(/\s+/).filter(Boolean);
+        if (prevWords.length === 0 || curWords.length === 0) return false;
+        var overlap = prevWords.filter(function (w) { return curWords.indexOf(w) !== -1; }).length;
+        var similarity = overlap / Math.max(prevWords.length, curWords.length);
+        return similarity > 0.6 && prev.text.trim().length > text.trim().length;
       },
-      tip: "If you want it a certain way, just say so. 'Give me 3 bullet points' or 'write it as a quick email' — I'll match that.",
-      example: "Try: 'Give me 3 quick bullet points on...'"
-    },
-    {
-      id: 'specify_tone',
-      detect: function (text) {
+      improve: function (text) {
         var t = text.toLowerCase();
-        return (t.indexOf('explain') !== -1 || t.indexOf('write') !== -1 || t.indexOf('tell') !== -1) &&
-               t.indexOf('tone') === -1 && t.indexOf('formal') === -1 &&
-               t.indexOf('casual') === -1 && t.indexOf('like') === -1 &&
-               t.indexOf('friendly') === -1;
+        var refineWords = ['make it', 'more', 'less', 'change', 'instead', 'but', 'however', 'tweak', 'adjust', 'better', 'shorter', 'longer', 'clearer'];
+        return refineWords.some(function (w) { return t.indexOf(w) !== -1; });
       },
-      tip: "Just letting me know the tone helps a ton. Formal email? Casual chat? Friendly explanation? A quick hint makes it yours.",
-      example: "Add 'in a friendly, conversational tone' or 'make it brief and professional.'"
-    },
-    {
-      id: 'include_deadline',
-      detect: function (text) {
-        var t = text.toLowerCase();
-        var timeWords = ['urgent', 'deadline', 'asap', 'today', 'tomorrow', 'soon', 'quick'];
-        return (t.indexOf('help') !== -1 || t.indexOf('need') !== -1 || t.indexOf('do') !== -1) &&
-               !timeWords.some(function (w) { return t.indexOf(w) !== -1; });
-      },
-      tip: "Next time, try telling me any deadline or timeframe upfront. I can prioritize better that way.",
-      example: "Like 'I need this by Friday' or 'something I can finish in 10 minutes.'"
+      tip: "You don't need to say everything again. Just tell me what to change from the last response, and I'll adjust it right away.",
+      example: "Like 'make that more concise' or 'try a friendlier tone this time.'"
     }
   ];
 
-  function getShownTips() { return ls(SHOWN_KEY, '[]'); }
-  function markShown(tipId) {
-    var shown = getShownTips();
-    if (shown.indexOf(tipId) === -1) shown.push(tipId);
-    ss(SHOWN_KEY, shown);
-  }
-
+  /* ---- Prompt logging & analysis ---- */
   function logPrompt(text) {
-    var prompts = ls(PROMPT_LOG_KEY, '[]');
-    if (!Array.isArray(prompts)) prompts = [];
+    var prompts = loadPrompts();
     prompts.push({ text: text, time: Date.now() });
-    ss(PROMPT_LOG_KEY, prompts.slice(-20));
+    savePrompts(prompts);
   }
 
-  function analyzePrompt(text) {
-    if (!text || text.trim().length < 3) return null;
-    var matches = [];
-    TIPS.forEach(function (tip) {
-      if (getShownTips().indexOf(tip.id) !== -1) return;
-      if (tip.detect(text)) matches.push(tip);
-    });
-    return matches.length ? matches[0] : null;
+  function checkImprovement(currentStage) {
+    var prompts = loadPrompts();
+    if (prompts.length < 3) return false;
+    var stage = STAGES[currentStage];
+    if (!stage || !stage.improve) return false;
+    var recent = prompts.slice(-3);
+    var improved = recent.map(function (p) { return stage.improve(p.text); });
+    return improved.filter(Boolean).length >= 2;
+  }
+
+  function maybeAdvanceStage() {
+    var currentStage = state.stage;
+    if (currentStage >= STAGES.length - 1) return false;
+    if (!checkImprovement(currentStage)) return false;
+    state.stage++;
+    saveState();
+    return true;
+  }
+
+  function currentStageInfo() {
+    return STAGES[Math.min(state.stage, STAGES.length - 1)];
   }
 
   function maybeShowTip(text) {
     logPrompt(text);
 
-    var prompts = ls(PROMPT_LOG_KEY, '[]');
-    if (!Array.isArray(prompts) || prompts.length < MIN_PROMPTS_BEFORE_TIPS) return;
+    var prompts = loadPrompts();
+    if (prompts.length < MIN_PROMPTS_BEFORE_TIPS) return;
 
-    var tip = analyzePrompt(text);
-    if (!tip) return;
+    if (Date.now() - state.lastTipTime < MIN_INTERVAL) return;
 
-    var shown = getShownTips();
-    if (shown.indexOf(tip.id) !== -1) return;
+    maybeAdvanceStage();
 
-    var lastShown = 0;
-    prompts.forEach(function (p) {
-      if (p.tipShown) {
-        if (p.time > lastShown) lastShown = p.time;
-      }
-    });
-    if (Date.now() - lastShown < MIN_INTERVAL) return;
+    var stage = currentStageInfo();
+    if (!stage || !stage.detect || !stage.tip) return;
 
-    markShown(tip.id);
-    showCoachTip(tip);
+    if (state.tipsShown.indexOf(stage.id) !== -1) return;
+
+    if (!stage.detect(text)) return;
+
+    state.tipsShown.push(stage.id);
+    state.lastTipTime = Date.now();
+    saveState();
+
+    showCoachBanner(stage.tip, stage.example);
   }
 
-  function showCoachTip(tip) {
-    var container = document.querySelector('.agent-chat');
-    if (!container) return;
+  /* ---- Banner display ---- */
+  function showCoachBanner(tipText, exampleText) {
+    removeExistingBanner();
 
-    var card = document.createElement('div');
-    card.className = 'coach-tip-card';
-    card.innerHTML =
-      '<div class="coach-tip-header">' +
-        '<span class="coach-tip-icon">💡</span>' +
-        '<span class="coach-tip-label">Quick tip</span>' +
-      '</div>' +
-      '<div class="coach-tip-text">' + tip.tip + '</div>' +
-      '<div class="coach-tip-example">' + tip.example + '</div>' +
-      '<button class="coach-tip-dismiss" type="button" aria-label="Dismiss tip">×</button>';
+    var banner = document.createElement('div');
+    banner.className = 'coach-banner';
+    banner.setAttribute('role', 'status');
+    banner.setAttribute('aria-live', 'polite');
 
-    container.appendChild(card);
+    var icon = document.createElement('span');
+    icon.className = 'coach-banner-icon';
+    icon.textContent = '💡';
 
-    var dismissed = false;
-    var dismissBtn = card.querySelector('.coach-tip-dismiss');
-    dismissBtn.addEventListener('click', function () {
-      if (dismissed) return;
-      dismissed = true;
-      card.classList.add('dismissing');
-      setTimeout(function () { card.remove(); }, 200);
-    });
+    var content = document.createElement('div');
+    content.className = 'coach-banner-content';
 
-    setTimeout(function () {
-      if (dismissed) return;
-      card.classList.add('peek');
+    var tip = document.createElement('div');
+    tip.className = 'coach-banner-tip';
+    tip.textContent = tipText;
+
+    var example = document.createElement('div');
+    example.className = 'coach-banner-example';
+    example.textContent = exampleText;
+
+    content.appendChild(tip);
+    content.appendChild(example);
+
+    var dismiss = document.createElement('button');
+    dismiss.className = 'coach-banner-dismiss';
+    dismiss.setAttribute('aria-label', 'Dismiss tip');
+    dismiss.innerHTML = '×';
+
+    var dismissFn = function () {
+      banner.classList.add('coach-banner-hiding');
       setTimeout(function () {
-        if (dismissed) return;
-        card.classList.remove('peek');
-      }, 2000);
-    }, 500);
+        if (banner.parentNode) banner.parentNode.removeChild(banner);
+      }, 200);
+    };
+
+    dismiss.addEventListener('click', dismissFn);
+
+    banner.appendChild(icon);
+    banner.appendChild(content);
+    banner.appendChild(dismiss);
+
+    var target = document.querySelector('.agent-chat') ||
+                 document.querySelector('.content') ||
+                 document.querySelector('.md-composer') ||
+                 document.body;
+
+    target.insertBefore(banner, target.firstChild);
 
     setTimeout(function () {
-      if (dismissed) return;
-      dismissed = true;
-      card.classList.add('dismissing');
-      setTimeout(function () { card.remove(); }, 200);
-    }, 12000);
-
-    container.scrollTop = container.scrollHeight;
+      var closeFn = function () {
+        dismissFn();
+        document.removeEventListener('touchstart', closeFn);
+        document.removeEventListener('click', closeFn);
+      };
+      setTimeout(closeFn, 12000);
+    }, 100);
   }
 
-  /* ---- Public API for integration ---- */
+  function removeExistingBanner() {
+    var existing = document.querySelector('.coach-banner');
+    if (existing) {
+      existing.classList.add('coach-banner-hiding');
+      setTimeout(function () {
+        if (existing.parentNode) existing.parentNode.removeChild(existing);
+      }, 200);
+    }
+  }
+
+  /* ---- Public API ---- */
   function recordPrompt(text) {
+    if (typeof MateyBehavior !== 'undefined' && typeof MateyBehavior.record === 'function') {
+      MateyBehavior.record('user_prompt', { text: text });
+    }
     maybeShowTip(text);
   }
 
-  function resetTips() {
-    ss(SHOWN_KEY, []);
-    ss(PROMPT_LOG_KEY, []);
+  function resetCoach() {
+    state.stage = 0;
+    state.lastTipTime = 0;
+    state.tipsShown = [];
+    saveState();
+    savePrompts([]);
   }
 
-  function getTipCount() {
-    return ls(PROMPT_LOG_KEY, '[]').length;
+  function getState() {
+    return { stage: state.stage, tipsShown: state.tipsShown, promptCount: loadPrompts().length };
   }
 
   var api = {
     recordPrompt: recordPrompt,
-    resetTips: resetTips,
-    getTipCount: getTipCount,
-    getShownTips: getShownTips
+    resetCoach: resetCoach,
+    getState: getState,
+    STAGES: STAGES
   };
 
   if (typeof window !== 'undefined') {
     window.MateyCoach = api;
   }
 
-  /* ---- Hook into MateyBehavior if available ---- */
+  loadState();
+
+  /* ---- Auto-hook into MateyBehavior if available ---- */
   if (typeof window !== 'undefined' && window.MateyBehavior && typeof MateyBehavior.record === 'function') {
     var origRecord = MateyBehavior.record;
     MateyBehavior.record = function (type, data) {
@@ -213,5 +302,72 @@
       }
     };
   }
+
+  /* ---- Auto-hook into input events across the app ---- */
+  function hookInputs() {
+    var submitBtn = document.getElementById('md-send');
+    if (submitBtn && !submitBtn.hasAttribute('data-coach-wired')) {
+      submitBtn.setAttribute('data-coach-wired', 'true');
+      submitBtn.addEventListener('click', function () {
+        var input = document.getElementById('md-compose-input');
+        if (input && input.value.trim()) {
+          recordPrompt(input.value.trim());
+        }
+      });
+    }
+
+    var journalSave = document.getElementById('journal-save-btn');
+    if (journalSave && !journalSave.hasAttribute('data-coach-wired')) {
+      journalSave.setAttribute('data-coach-wired', 'true');
+      journalSave.addEventListener('click', function () {
+        var contentInput = document.getElementById('journal-content-input');
+        if (contentInput && contentInput.value.trim()) {
+          recordPrompt(contentInput.value.trim());
+        }
+        var titleInput = document.getElementById('journal-title-input');
+        if (titleInput && titleInput.value.trim()) {
+          recordPrompt(titleInput.value.trim());
+        }
+      });
+    }
+
+    var votsSave = document.getElementById('vots-save-btn');
+    if (votsSave && !votsSave.hasAttribute('data-coach-wired')) {
+      votsSave.setAttribute('data-coach-wired', 'true');
+      votsSave.addEventListener('click', function () {
+        var textArea = document.getElementById('vots-textarea');
+        if (textArea && textArea.value.trim()) {
+          recordPrompt(textArea.value.trim());
+        }
+      });
+    }
+
+    var mdSend = document.getElementById('md-send');
+    if (mdSend && !mdSend.hasAttribute('data-coach-wired-md')) {
+      mdSend.setAttribute('data-coach-wired-md', 'true');
+      mdSend.addEventListener('click', function () {
+        var input = document.getElementById('md-compose-input');
+        if (input && input.value.trim()) {
+          recordPrompt(input.value.trim());
+        }
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hookInputs);
+  } else {
+    hookInputs();
+  }
+
+  /* ---- Also hook into keypress for Enter submission ---- */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+      var active = document.activeElement;
+      if (active && active.tagName === 'TEXTAREA' && active.value.trim()) {
+        recordPrompt(active.value.trim());
+      }
+    }
+  });
 
 })();
