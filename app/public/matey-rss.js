@@ -44,13 +44,21 @@
     });
   }
 
-  function refreshAll(onItem) {
-    feeds().forEach(function (f) {
+  function refreshAll(onItem, onError, onDone) {
+    var feedList = feeds();
+    var pending = feedList.length;
+    if (pending === 0) return;
+    feedList.forEach(function (f) {
       fetchFeed(f.url).then(function (items) {
         return filterAgainstProfile(items);
       }).then(function (filtered) {
         filtered.forEach(function (item) { if (onItem) onItem(item, f.name); });
-      }).catch(function () {});
+      }).catch(function (err) {
+        if (onError) onError(err, f.name);
+      }).finally(function () {
+        pending--;
+        if (pending === 0 && typeof onDone === 'function') onDone();
+      });
     });
   }
 

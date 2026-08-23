@@ -111,7 +111,7 @@
           '<div class="feed-body">' + esc(it.body) + '</div>';
         if (it.link) inner += '<a class="feed-link" href="' + esc(it.link) + '" target="_blank" rel="noopener">Read more</a>';
         return '<div class="feed-item' + (it.saved ? ' saved' : '') + '" data-id="' + esc(it.id) + '">' + inner + '</div>';
-      }).join('') || '<p class="settings-placeholder">Your daily brief will appear here.</p>';
+       }).join('') || '<div class="feed-loading"><p class="settings-placeholder">Loading your daily brief...</p></div>';
       list.querySelectorAll('.feed-item').forEach(function (el) {
         el.addEventListener('click', function (e) {
           if (e.target.classList.contains('feed-link')) return;
@@ -122,7 +122,12 @@
     }
     paint(feed);
     pullRSS(function (rssItems) {
-      if (rssItems.length) paint(rssItems.concat(feed));
+      if (rssItems.length) {
+        paint(rssItems.concat(feed));
+      } else {
+        var list = document.getElementById('feed-list');
+        if (list) list.innerHTML = '<p class="settings-placeholder">No new articles matching your interests.</p>';
+      }
     });
   }
 

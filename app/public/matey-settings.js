@@ -403,34 +403,55 @@
     var pf = document.getElementById('profile-form');
     if (pf && window.SnapProfile) pf.addEventListener('submit', SnapProfile.save);
 
-    /* Micro model download handlers */
+    /* Micro model download handlers — real downloads via Transformers.js */
     var downloadBtns = document.querySelectorAll('.micro-model-download-btn');
     downloadBtns.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var modelId = btn.dataset.model;
-        var modelName = btn.closest('.micro-model-item').querySelector('.micro-model-name').textContent;
-        btn.textContent = 'Downloading…';
+      var modelId = btn.dataset.model;
+      var itemEl = btn.closest('.micro-model-item');
+      var nameEl = itemEl ? itemEl.querySelector('.micro-model-name') : null;
+      var modelName = nameEl ? nameEl.textContent : modelId;
+
+      /* Check if already loaded */
+      if (window.MateyModels && MateyModels.isModelLoaded(modelId)) {
+        btn.textContent = '✓ Downloaded';
         btn.disabled = true;
+      }
 
-        /* Simulate download progress */
-        var progress = 0;
-        var interval = setInterval(function () {
-          progress += Math.random() * 15;
-          if (progress >= 100) {
-            progress = 100;
-            clearInterval(interval);
-            btn.textContent = 'Downloaded';
-            btn.style.background = 'var(--accent, rgba(245, 197, 67, 0.2))';
-            btn.style.color = 'var(--accent)';
+      btn.addEventListener('click', async function () {
+        if (!window.MateyModels) {
+          btn.textContent = 'Error';
+          return;
+        }
+        var btnText = btn.textContent;
+        btn.textContent = 'Downloading… 0%';
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
 
-            /* Update status */
-            var status = document.getElementById('models-status');
-            if (status) {
-              status.textContent = '1 model ready: ' + modelName;
-              status.style.color = 'var(--accent)';
-            }
+        try {
+          await MateyModels.downloadModel(modelId, function (progress) {
+            btn.textContent = 'Downloading… ' + Math.round(progress) + '%';
+          });
+          btn.textContent = '✓ Downloaded';
+          btn.disabled = true;
+          btn.style.opacity = '';
+          btn.style.background = 'var(--accent-dim)';
+          btn.style.color = 'var(--accent)';
+
+          var status = document.getElementById('models-status');
+          if (status) {
+            status.textContent = 'Models ready — ' + MateyModels.getAvailableModels().filter(function (m) { return m.loaded; }).length + ' downloaded';
+            status.style.color = 'var(--accent)';
           }
-        }, 300);
+        } catch (err) {
+          btn.textContent = 'Retry';
+          btn.disabled = false;
+          btn.style.opacity = '';
+          var status = document.getElementById('models-status');
+          if (status) {
+            status.textContent = 'Download failed: ' + (err.message || err);
+            status.style.color = '#ff4444';
+          }
+        }
       });
     });
   }

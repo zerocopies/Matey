@@ -16,19 +16,6 @@
     updateUsageRing(65);
     window.MateyUsage = { update: updateUsageRing };
 
-    var dropdown = document.getElementById('workspace-dropdown');
-    if (dropdown) {
-      dropdown.addEventListener('click', function() {
-        dropdown.classList.toggle('open');
-      });
-    }
-
-    document.addEventListener('click', function(e) {
-      if (e.target.closest('.workspace-dropdown')) return;
-      var open = document.querySelector('.workspace-dropdown.open');
-      if (open) open.classList.remove('open');
-    });
-
     var incBtn = document.querySelector('.incognito-trigger');
     if (incBtn) {
       incBtn.addEventListener('click', function() {
@@ -36,6 +23,8 @@
         document.body.classList.toggle('incognito-active');
       });
     }
+    // Workspace dropdown click handler is managed by matey-fs.js (with stopPropagation)
+    // to prevent double-toggle conflicts when both scripts attach handlers.
   }
 
   if (document.readyState === 'loading') {

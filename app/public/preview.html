@@ -7,14 +7,16 @@
       html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
       .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; }
     </style>
+    <meta name="description" content="Matey — your on-device personal AI assistant with BYOK AI providers, offline Whisper STT, encrypted journal, and syntax-driven note vault." />
+    <link rel="icon" href="./images/matey-logo.png" type="image/png" />
     <meta name="theme-color" content="#000000" />
     <title>Matey - Preview</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./matey-preview.css?v=69" />
-    <script src="./matey-boot.js?v=69"></script>
-    <script src="./matey-sentry.js?v=69"></script>
+    <link rel="stylesheet" href="./matey-preview.css?v=71" />
+    <script src="./matey-boot.js?v=71"></script>
+    <script src="./matey-sentry.js?v=71"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -53,7 +55,12 @@
       </nav>
 
       <main class="agent-page">
-        <div class="agent-chat" id="agent-chat"></div>
+        <div class="agent-chat" id="agent-chat">
+          <div class="agent-welcome" id="agent-welcome">
+            <img src="./images/matey-logo.png" alt="Matey" class="agent-welcome-logo" id="agent-welcome-logo" />
+            <div class="agent-welcome-text">Hi, I'm <strong>Matey Agent</strong> — your on-device AI assistant. How can I help you today?</div>
+          </div>
+        </div>
         <div class="md-composer" id="md-composer">
           <div class="md-compose-box">
             <input type="file" id="md-attach-input" accept="image/*,.pdf,.doc,.docx" style="display:none" />
@@ -73,76 +80,233 @@
         </div>
       </main>
     </div>
-    <script src="./matey-themes.js?v=69"></script>
-    <script src="./matey-swipe.js?v=69"></script>
-    <script src="./matey-profile.js?v=69"></script>
-    <script src="./matey-greet.js?v=69"></script>
-    <script src="./matey-feed.js?v=69"></script>
-    <script src="./matey-ai.js?v=69"></script>
-    <script src="./matey-tabs.js?v=69"></script>
-    <script src="./matey-byok.js?v=69"></script>
-    <script src="./matey-beat.js?v=69"></script>
-    <script src="./matey-lifestyle.js?v=69"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.2/mammoth.min.js"></script>
+    <script src="./matey-themes.js?v=71"></script>
+    <script src="./matey-swipe.js?v=71"></script>
+    <script src="./matey-profile.js?v=71"></script>
+    <script src="./matey-greet.js?v=71"></script>
+    <script src="./matey-feed.js?v=71"></script>
+    <script src="./matey-ai.js?v=71"></script>
+    <script src="./matey-tabs.js?v=71"></script>
+    <script src="./matey-byok.js?v=71"></script>
+    <script src="./matey-beat.js?v=71"></script>
+    <script src="./matey-lifestyle.js?v=71"></script>
     <script>
-      var hash = location.hash.replace('#', '');
       var chat = document.getElementById('agent-chat');
       var input = document.getElementById('md-compose-input');
       var sendBtn = document.getElementById('md-send');
       var attachBtn = document.getElementById('md-attach');
       var attachInput = document.getElementById('md-attach-input');
+      var pendingFiles = [];
+      var convHistory = [];
+      var pendingAttachmentText = null;
+
+      function scrollToBottom() {
+        if (chat) chat.scrollTop = chat.scrollHeight;
+      }
+
+      function clearInput() {
+        if (input) { input.value = ''; input.style.height = ''; }
+      }
+
+      function resizeTextarea() {
+        if (!input) return;
+        input.style.height = 'auto';
+        input.style.height = input.scrollHeight + 'px';
+        if (input.scrollHeight > 160) input.style.height = '160px';
+      }
+
+      function escapeHtml(str) {
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+      }
+
+      function createMsgBubble(cls, content) {
+        var div = document.createElement('div');
+        div.className = cls;
+        div.textContent = content;
+        return div;
+      }
+
+      async function extractFileText(file) {
+        var reader = new FileReader();
+        return new Promise(function (resolve) {
+          reader.onload = function (e) {
+            var result = e.target.result;
+            var lower = file.type.toLowerCase();
+
+            if (lower.indexOf('text/') !== -1 || lower.indexOf('json') !== -1) {
+              resolve(result);
+            } else if (lower.indexOf('image/') === 0) {
+              resolve('[Image attached: ' + file.name + ']');
+            } else if (lower === 'application/pdf') {
+              try {
+                var loadingTask = pdfjsLib.getDocument({ data: result });
+                loadingTask.promise.then(function (pdf) {
+                  var text = '';
+                  var pageCount = pdf.numPages;
+                  var pages = [];
+                  for (var i = 1; i <= pageCount; i++) {
+                    pages.push(pdf.getPage(i));
+                  }
+                  Promise.all(pages).then(function (pageResults) {
+                    var getText = function (page) {
+                      return page.getTextContent().then(function (tc) {
+                        return tc.items.map(function (item) { return item.str; }).join('');
+                      });
+                    };
+                    Promise.all(pageResults.map(getText)).then(function (texts) {
+                      resolve(texts.join('\n\n'));
+                    }).catch(function () { resolve('[Could not extract text from PDF]'); });
+                  });
+                }).catch(function () { resolve('[Could not parse PDF]'); });
+              } catch (e) {
+                resolve('[PDF parse error]');
+              }
+            } else if (lower === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+              try {
+                var data = new Uint8Array(result.slice(0, result.length));
+                if (window.mammoth) {
+                  mammoth.extract_raw_text({ data: data }).then(function (r) {
+                    resolve(r.value);
+                  }).catch(function () { resolve('[Could not extract text from DOCX]'); });
+                } else {
+                  resolve('[Mammoth library not loaded]');
+                }
+              } catch (e) {
+                resolve('[DOCX parse error]');
+              }
+            } else {
+              resolve('[File: ' + file.name + ' (' + file.type + ', ' + formatFileSize(file.size) + ')]');
+            }
+          };
+          reader.onerror = function () { resolve('[Error reading file]'); };
+
+          if (file.type.indexOf('image/') === 0) {
+            reader.readAsDataURL(file);
+          } else if (file.type === 'application/pdf') {
+            reader.readAsArrayBuffer(file);
+          } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+            reader.readAsArrayBuffer(file);
+          } else {
+            reader.readAsText(file);
+          }
+        });
+      }
+
+      async function buildUserMessage(text) {
+        var content = text;
+        var attachments = pendingFiles.slice();
+
+        if (attachments.length > 0) {
+          var attachmentContexts = [];
+          for (var i = 0; i < attachments.length; i++) {
+            var f = attachments[i];
+            var extracted = await extractFileText(f);
+            if (extracted && extracted.indexOf('[') !== 0) {
+              attachmentContexts.push('File "' + f.name + '":\n' + extracted);
+            } else {
+              attachmentContexts.push(extracted);
+            }
+          }
+          content = text + '\n\n[Context from attached files:\n' + attachmentContexts.join('\n---\n') + '\n]';
+        }
+        return { role: 'user', content: content };
+      }
+
       function sendMessage() {
         var text = input ? input.value.trim() : '';
-        if (!text || !chat) return;
+        if ((!text && pendingFiles.length === 0) || !chat) return;
+
+        var welcome = document.getElementById('agent-welcome');
+        if (welcome) welcome.style.display = 'none';
+
         if (window.MateyBehavior) MateyBehavior.record('user_prompt', { text: text });
         if (window.MateyCoach) MateyCoach.recordPrompt(text);
-        var msg = document.createElement('div');
-        msg.className = 'agent-msg agent-user';
-        msg.textContent = text;
-        chat.appendChild(msg);
-        input.value = '';
-        setTimeout(function () {
-          var resp = document.createElement('div');
-          resp.className = 'agent-msg agent-reply';
-          resp.textContent = 'Hello — I am your Agent. (demo response)';
+
+        buildUserMessage(text).then(function (userMsg) {
+          convHistory.push(userMsg);
+
+          if (text) {
+            chat.appendChild(createMsgBubble('agent-msg agent-user', text));
+          }
+          if (pendingFiles.length > 0) {
+            pendingFiles.forEach(function (f) {
+              var bubble = createMsgBubble('agent-msg agent-user', f.name + ' (' + formatFileSize(f.size) + ')');
+              bubble.style.cssText = 'opacity:0.7;font-size:13px;';
+              chat.appendChild(bubble);
+            });
+          }
+
+          clearInput();
+          pendingFiles = [];
+
+          var resp = createMsgBubble('agent-msg agent-reply', '...');
           chat.appendChild(resp);
-          chat.scrollTop = chat.scrollHeight;
-        }, 300);
+          scrollToBottom();
+
+          if (!window.MateyByok) {
+            resp.textContent = 'No BYOK provider configured. Add one in Settings → BYOK Models.';
+            return;
+          }
+
+          MateyByok.chat(convHistory).then(function (reply) {
+            resp.textContent = reply || 'No response from provider.';
+            convHistory.push({ role: 'assistant', content: reply || 'No response from provider.' });
+          }).catch(function (err) {
+            resp.textContent = 'Error: ' + (err.message || err);
+            convHistory.push({ role: 'assistant', content: 'Error: ' + (err.message || err) });
+          });
+        });
       }
+
       if (sendBtn) sendBtn.addEventListener('click', sendMessage);
       if (attachBtn && attachInput) {
         attachBtn.addEventListener('click', function () { attachInput.click(); });
         attachInput.addEventListener('change', function () {
-          var file = this.files[0];
-          if (!file || !chat) return;
-          var url = URL.createObjectURL(file);
-          var msg = document.createElement('div');
-          if (file.type.indexOf('image/') === 0) {
-            msg.className = 'agent-msg agent-user';
-            var img = document.createElement('img');
-            img.src = url;
-            img.style.maxWidth = '200px';
-            img.style.borderRadius = '8px';
-            msg.appendChild(img);
-          } else {
-            msg.className = 'agent-msg agent-user';
-            msg.innerHTML = '<small style="opacity:0.7">' + file.name + ' (' + Math.round(file.size/1024) + 'KB)</small>';
-          }
-          chat.appendChild(msg);
-          chat.scrollTop = chat.scrollHeight;
+          var files = Array.prototype.slice.call(this.files || []);
+          files.forEach(function (file) {
+            pendingFiles.push(file);
+            if (file.type.indexOf('image/') === 0) {
+              var url = URL.createObjectURL(file);
+              var msg = document.createElement('div');
+              msg.className = 'agent-msg agent-user';
+              msg.style.cssText = 'max-width:220px;';
+              var img = document.createElement('img');
+              img.src = url;
+              img.style.maxWidth = '200px';
+              img.style.borderRadius = '8px';
+              msg.appendChild(img);
+              chat.appendChild(msg);
+              scrollToBottom();
+            } else {
+              var msg2 = document.createElement('div');
+              msg2.className = 'agent-msg agent-user';
+              msg2.innerHTML = '<small style="opacity:0.7;">📎 ' + escapeHtml(file.name) + ' (' + formatFileSize(file.size) + ')</small>';
+              chat.appendChild(msg2);
+              scrollToBottom();
+            }
+          });
           this.value = '';
         });
       }
       if (input) {
+        input.addEventListener('input', resizeTextarea);
         input.addEventListener('keypress', function (e) {
           if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
         });
       }
       var voiceBtn = document.getElementById('md-voice');
       var recognizing = false;
-      var recognition;
       var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SR) {
-        recognition = new SR();
+        var recognition = new SR();
         recognition.continuous = false;
         recognition.interimResults = true;
         recognition.lang = 'en-US';
@@ -153,15 +317,10 @@
             if (e.results[i].isFinal) finals += t;
             else if (input) input.value += t;
           }
-          if (finals && input) input.value += finals;
+          if (finals && input) { input.value += finals; resizeTextarea(); }
         };
-        recognition.onerror = function () { recognizing = false; voiceBtn.style.opacity = ''; };
-        recognition.onend = function () {
-          recognizing = false;
-          voiceBtn.style.opacity = '';
-        };
-      }
-      if (voiceBtn && recognition) {
+        recognition.onerror = function () { recognizing = false; if (voiceBtn) voiceBtn.style.opacity = ''; };
+        recognition.onend = function () { recognizing = false; if (voiceBtn) voiceBtn.style.opacity = ''; };
         voiceBtn.addEventListener('click', function () {
           if (recognizing) {
             recognition.stop();
@@ -177,21 +336,26 @@
       } else if (voiceBtn) {
         voiceBtn.style.display = 'none';
       }
+
+      if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.worker.min.js';
+      }
     </script>
 
-    <script src="./matey-settings.js?v=69"></script>
-    <script src="./matey-syntax.js?v=69"></script>
-    <script src="./matey-whisper.js?v=69"></script>
-<script src="./matey-rss.js?v=69"></script>
-    <script src="./matey-license.js?v=69"></script>
-    <script src="./matey-recall.js?v=69"></script>
-    <script src="./matey-behavior.js?v=69"></script>
-    <script src="./matey-adaptive.js?v=69"></script>
-    <script src="./matey-coach.js?v=69"></script>
-    <script src="./matey-init.js?v=69"></script>
-    <script src="./matey-hooks.js?v=69"></script>
-    <script src="./matey-keyboard.js?v=69"></script>
-    <script src="./matey-fs.js?v=69"></script>
-    <script src="./matey-hooks-manager.js?v=69"></script>
+    <script src="./matey-settings.js?v=71"></script>
+    <script src="./matey-syntax.js?v=71"></script>
+    <script src="./matey-whisper.js?v=71"></script>
+    <script src="./matey-models.js?v=71"></script>
+<script src="./matey-rss.js?v=71"></script>
+    <script src="./matey-license.js?v=71"></script>
+    <script src="./matey-recall.js?v=71"></script>
+    <script src="./matey-behavior.js?v=71"></script>
+    <script src="./matey-adaptive.js?v=71"></script>
+    <script src="./matey-coach.js?v=71"></script>
+    <script src="./matey-init.js?v=71"></script>
+    <script src="./matey-hooks.js?v=71"></script>
+    <script src="./matey-keyboard.js?v=71"></script>
+    <script src="./matey-fs.js?v=71"></script>
+    <script src="./matey-hooks-manager.js?v=71"></script>
   </body>
 </html>

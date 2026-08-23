@@ -7,15 +7,16 @@
   --space-xl: 32px;
   --space-2xl: 48px;
 
-  /* Colors — high-contrast dark palette */
+  /* Colors — high-contrast dark palette with white cards */
   --bg: #000000;
   --surface: #0a0a0a;
-  --surface-raised: #111111;
-  --border: #1c1c1c;
-  --border-subtle: #141414;
+  --surface-raised: #ffffff;
+  --border: #e0e0e0;
+  --border-subtle: #f0f0f0;
   --text: #f0f0f0;
   --text-secondary: #b0b0b0;
   --muted: #6b6b6b;
+  --text-on-card: #121212;
   --accent: #f5c542;
   --accent-dim: rgba(245, 197, 66, 0.12);
   --accent-green: #7aa2f7;
@@ -480,9 +481,11 @@ body {
 }
 
 .tab.active {
-  background: transparent;
+  background: var(--surface-raised, #ffffff);
   color: var(--text);
-  border-bottom-color: transparent;
+  border-bottom: 2px solid var(--accent, #f5c542);
+  border-radius: 6px 6px 0 0;
+  margin-bottom: -1px;
 }
 
 /* Draggable tabs */
@@ -1623,6 +1626,12 @@ body {
   stroke: none;
 }
 
+.incognito-trigger.active {
+  background: var(--accent-dim);
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
 /* ===== Workspace Dropdown (Simple) ===== */
 .workspace-display-container {
   display: flex;
@@ -1638,7 +1647,7 @@ body {
   border: 1px solid var(--border);
   background: var(--surface);
   border-radius: 10px;
-  color: var(--muted);
+  color: var(--text);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -3310,8 +3319,8 @@ body {
 .micro-model-download-btn {
   padding: 8px 16px;
   border: 1px solid var(--border);
-  background: var(--surface, rgba(255,255,255,0.04));
-  color: var(--text);
+  background: var(--surface-raised, #ffffff);
+  color: var(--text-on-card);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
@@ -3441,6 +3450,33 @@ body {
  /* ===== Agent Chat ===== */
 .agent-page { display: flex; flex-direction: column; width: 100%; height: 100%; flex: 1; min-height: 0; }
 .agent-chat { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+.agent-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  gap: 16px;
+  padding: 32px 16px 0;
+  flex-shrink: 0;
+}
+.agent-welcome-logo {
+  width: 64px;
+  height: 64px;
+  opacity: 0.7;
+  object-fit: contain;
+  display: block;
+}
+.agent-welcome-text {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 280px;
+  line-height: 1.5;
+}
+.agent-welcome-text strong {
+  color: var(--accent);
+}
 .agent-msg {
   max-width: 75%;
   padding: 10px 16px;
@@ -4690,4 +4726,142 @@ body {
 @keyframes coachFadeOut {
   from { opacity: 1; transform: translateY(0); }
   to { opacity: 0; transform: translateY(-8px); }
+}
+
+.main-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 16px 0;
+  overflow: hidden;
+}
+
+.inner-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-raised, #ffffff);
+  border: 1px solid var(--border, #1c1c1c);
+  border-top: 1px solid var(--border, #1c1c1c);
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  padding: 20px;
+  overflow: hidden;
+}
+
+.inner-panel-header {
+  margin-bottom: 16px;
+}
+
+.inner-panel-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text, #ffffff);
+}
+
+.inner-panel-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.feed-loading {
+  padding: 32px 16px;
+  text-align: center;
+}
+
+/* Dark text on white card backgrounds */
+.category-item,
+.coach-tip-dismiss,
+.feature-card,
+feed-card,
+.journal-attachment-name,
+.journal-attachments,
+.journal-attachment-thumb,
+.journal-calendar-option,
+.journal-content-input,
+.journal-cover-icon.selected,
+.journal-search-box,
+.journal-search-box input,
+.journal-setting-btn,
+.journal-setting-row,
+.journal-setting-row label,
+.journal-tag-filter,
+.journal-tags-filter,
+.journal-tags-input,
+.journal-tags-input input,
+.journal-toolbar,
+.journal-tooltip,
+.lifestyle-actions,
+.lifestyle-dislike,
+.lifestyle-like,
+.lifestyle-suggestion strong,
+.md-symbol-toolbar button,
+.settings-section + .settings-section,
+.toast,
+.vots-badge-article,
+.vots-badge-instagram,
+.vots-badge-video,
+.vots-btn-danger,
+.vots-btn-secondary,
+.vots-confirm-actions,
+.vots-confirm-desc,
+.vots-confirm-icon,
+.vots-confirm-title,
+.vots-link-gate-note,
+.vots-link-journal,
+.vots-link-ref,
+.vots-source-card,
+.vots-your-version-header,
+.vots-setting-row label,
+.journal-entry-card,
+.journal-cover,
+.journal-cover.selected,
+.journal-cover-selector,
+.journal-editor,
+.journal-entry-content,
+.journal-entry-header,
+.journal-entry-meta,
+.journal-entry-title,
+.journal-search-result,
+.lifestyle-card,
+.lifestyle-category,
+.lifestyle-content,
+.lifestyle-header,
+.lifestyle-item,
+.lifestyle-suggestion,
+.lifestyle-suggestion-list,
+.lifestyle-title,
+.settings-body,
+.settings-card,
+.settings-item,
+.settings-section,
+.settings-title,
+.usage-ring-text,
+.usage-ring-segment,
+.workspace-selector,
+.workspace-selector button,
+.workspace-selector button:hover,
+.ws-create,
+.ws-usb,
+.ws-clear,
+.micro-model-item,
+.micro-model-info,
+.micro-model-name,
+.micro-model-desc,
+.micro-model-download-btn,
+.micro-model-download-btn:hover,
+.micro-model-group-title,
+.micro-model-size,
+.micro-models-container,
+.whisper-models-dyn,
+.whisper-model-btn,
+.whisper-status,
+.whisper-progress-text,
+.models-status {
+  color: var(--text-on-card);
 }

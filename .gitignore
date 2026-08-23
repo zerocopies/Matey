@@ -12,3 +12,6 @@ app/dist/
 .cache/
 *.log
 .DS_Store
+matey_*.png
+*.apk
+*.aab

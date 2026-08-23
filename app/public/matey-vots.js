@@ -170,7 +170,10 @@
       window.__votsIncognito = true;
     } catch (e) {}
     var incBtn = document.querySelector('.incognito-trigger');
-    if (incBtn) incBtn.style.display = 'none';
+    if (incBtn) {
+      incBtn.classList.add('active');
+      incBtn.setAttribute('title', 'Incognito mode is ON');
+    }
   }
 
    function isValidUrl(str) {
@@ -703,14 +706,14 @@
       currentView = JSON.parse(localStorage.getItem(VIEWS_KEY) || '"list"');
     } catch (e) {}
 
-    /* PIN lock check */
-    if (isLockEnabled()) {
-      await showLockScreen();
-      if (isLocked()) {
-        renderEntryHistory();
-        return;
-      }
-    }
+     /* PIN lock check */
+     if (isLockEnabled()) {
+       await showLockScreen();
+       if (isLocked()) {
+         await renderEntryHistory();
+         return;
+       }
+     }
 
     await initPinLockConfig();
     initLinkGate();

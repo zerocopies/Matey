@@ -10,10 +10,10 @@
     <meta name="description" content="Matey — your on-device personal AI assistant with BYOK AI providers, offline Whisper STT, encrypted journal, and syntax-driven note vault." />
     <link rel="icon" href="./images/matey-logo.png" type="image/png" />
     <meta name="theme-color" content="#000000" />
-    <title>Matey - Semantic Hooks</title>
+    <title>Matey - Home</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./matey-preview.css?v=71" />
     <script src="./matey-boot.js?v=71"></script>
     <script src="./matey-sentry.js?v=71"></script>
@@ -23,18 +23,8 @@
       <header class="header">
         <div class="header-top">
           <img class="matey-logo" src="./images/matey-logo.png" alt="Matey" />
-          <div class="workspace-display-container" id="workspace-display-container">
-            <div class="workspace-dropdown" id="workspace-dropdown">
-              <span class="workspace-name" id="workspace-display">Workspace</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </div>
-            <div class="workspace-selector" id="workspace-selector"></div>
-          </div>
           <div class="header-actions">
             <svg class="usage-ring" viewBox="0 0 36 36" id="usage-ring" aria-hidden="true"><circle class="usage-ring-track" cx="18" cy="18" r="15"></circle><g id="usage-ring-segments"><circle class="usage-ring-segment s1" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(0 18 18)"></circle><circle class="usage-ring-segment s2" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(90 18 18)"></circle><circle class="usage-ring-segment s3" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(180 18 18)"></circle><circle class="usage-ring-segment s4" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(270 18 18)"></circle></g><text x="18" y="21" text-anchor="middle" id="usage-ring-text">65</text></svg>
-            <button class="incognito-trigger" type="button" aria-label="Incognito" title="Incognito">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3.5 0-6 2.5-6 6v9.5c0 .3.3.6.7.4l1.3-1 1.3 1c.4.3 1 .3 1.4 0l1.3-1 1.3 1c.4.3 1 .3 1.4 0l1.3-1 1.3 1c.4.2.7-.1.7-.4V9c0-3.5-2.5-6-6-6z"/><circle cx="9.5" cy="10" r="1.5"/><circle cx="14.5" cy="10" r="1.5"/></svg>
-            </button>
             <button class="icon-btn settings-trigger" type="button" aria-label="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6"/>
                 <line x1="3" y1="12" x2="21" y2="12"/>
@@ -44,48 +34,32 @@
         </div>
       </header>
 
-            <nav class="tabs-wrap" id="tabs-wrap">
+      <nav class="tabs-wrap" id="tabs-wrap">
         <div class="tabs">
-          <a class="tab" href="./lifestyle.html">Lifestyle</a>
-          <a class="tab" href="./vots.html">My-VOTS</a>
-          <a class="tab" href="./markdown.html">Markdown</a>
+          <a class="tab" href="./index.html">Starting</a>
           <a class="tab" href="./journal.html">Journal</a>
           <a class="tab" href="./preview.html#agent">Agent</a>
         </div>
       </nav>
 
-      <main class="content" style="display:flex;flex-direction:column;">
-         <div class="feed-scroll" id="intel-feed"></div>
-       </main>
-    </main>
+      <main class="main-shell">
+        <div class="inner-panel" id="inner-panel">
+          <div class="inner-panel-header">
+            <h2 class="inner-panel-title">Welcome to Matey</h2>
+          </div>
+          <div class="inner-panel-content">
+            <p style="color: var(--muted); font-size: var(--font-sm); line-height: 1.6;">
+              Your on-device AI assistant. Choose a tab above to get started.
+            </p>
+          </div>
+        </div>
+      </main>
     </div>
     <script src="./matey-themes.js?v=71"></script>
     <script src="./matey-swipe.js?v=71"></script>
     <script src="./matey-profile.js?v=71"></script>
-    <script src="./matey-greet.js?v=71"></script>
-    <script src="./matey-feed.js?v=71"></script>
-    <script src="./matey-ai.js?v=71"></script>
-    <script src="./matey-tabs.js?v=71"></script>
-    <script src="./matey-byok.js?v=71"></script>
-    <script src="./matey-beat.js?v=71"></script>
-    <script src="./matey-lifestyle.js?v=71"></script>
-    <script src="./matey-syntax.js?v=71"></script>
-    <script src="./matey-whisper.js?v=71"></script>
-    <script src="./matey-models.js?v=71"></script>
-<script src="./matey-rss.js?v=71"></script>
-    <script src="./matey-license.js?v=71"></script>
-    <script src="./matey-hooks.js?v=71"></script>
-    <script src="./matey-recall.js?v=71"></script>
     <script src="./matey-settings.js?v=71"></script>
-    <script src="./matey-behavior.js?v=71"></script>
-    <script src="./matey-adaptive.js?v=71"></script>
+    <script src="./matey-models.js?v=71"></script>
     <script src="./matey-init.js?v=71"></script>
-    <script src="./matey-keyboard.js?v=71"></script>
-    <script src="./matey-fs.js?v=71"></script>
-    <script src="./matey-hooks-manager.js?v=71"></script>
-    <script>
-      // Hooks page behavior is owned by matey-hooks.js (keyword -> news -> AI briefs)
-    </script>
-
   </body>
 </html>

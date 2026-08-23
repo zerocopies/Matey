@@ -7,15 +7,17 @@
       html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: #e8e8e8; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif; }
       .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; display: flex; flex-direction: column; }
     </style>
+    <meta name="description" content="Matey — your on-device personal AI assistant with BYOK AI providers, offline Whisper STT, encrypted journal, and syntax-driven note vault." />
+    <link rel="icon" href="./images/matey-logo.png" type="image/png" />
     <meta name="theme-color" content="#000000" />
     <title>Matey - My-VOTS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./matey-preview.css?v=69" />
+    <link rel="stylesheet" href="./matey-preview.css?v=71" />
 
-    <script src="./matey-boot.js?v=69"></script>
-    <script src="./matey-sentry.js?v=69"></script>
+    <script src="./matey-boot.js?v=71"></script>
+    <script src="./matey-sentry.js?v=71"></script>
   </head>
   <body>
 
@@ -120,7 +122,7 @@
             </div>
           </div>
 
-       <div class="vots-history-section">
+        <div class="vots-history-section" id="vots-history-section">
          <div class="journal-toolbar" id="vots-toolbar">
            <div class="journal-search-box" style="margin-bottom:8px">
              <input type="text" id="vots-search-input" placeholder="Search My-VOTS entries..." />
@@ -146,7 +148,7 @@
     </div>
 
     <!-- PIN Lock Screen -->
-    <div class="journal-lock-screen" id="vots-lock-screen">
+    <div class="journal-lock-screen" id="vots-lock-screen" style="display:none">
       <div class="journal-lock-content">
         <div class="journal-lock-icon">🔒</div>
         <div class="journal-lock-title">My-VOTS Locked</div>
@@ -157,7 +159,7 @@
     </div>
 
     <!-- Settings Modal (PIN lock) -->
-    <div class="journal-settings-overlay" id="vots-settings-overlay">
+    <div class="journal-settings-overlay" id="vots-settings-overlay" style="display:none">
       <div class="journal-settings-modal">
         <div class="journal-settings-header">
           <h3>My-VOTS Settings</h3>
@@ -201,30 +203,31 @@
       </div>
     </div>
 
-    <script src="./matey-themes.js?v=69"></script>
-    <script src="./matey-swipe.js?v=69"></script>
-    <script src="./matey-profile.js?v=69"></script>
-    <script src="./matey-greet.js?v=69"></script>
-    <script src="./matey-feed.js?v=69"></script>
-    <script src="./matey-settings.js?v=69"></script>
-    <script src="./matey-fs.js?v=69"></script>
-    <script src="./matey-keyboard.js?v=69"></script>
-    <script src="./matey-init.js?v=69"></script>
-    <script src="./matey-recall.js?v=69"></script>
-    <script src="./matey-rss.js?v=69"></script>
-    <script src="./matey-license.js?v=69"></script>
-    <script src="./matey-adaptive.js?v=69"></script>
-    <script src="./matey-behavior.js?v=69"></script>
-    <script src="./matey-ai.js?v=69"></script>
-    <script src="./matey-hooks-manager.js?v=69"></script>
-    <script src="./matey-vots.js?v=69"></script>
-    <script src="./matey-tabs.js?v=69"></script>
-    <script src="./matey-byok.js?v=69"></script>
-    <script src="./matey-beat.js?v=69"></script>
-    <script src="./matey-lifestyle.js?v=69"></script>
-    <script src="./matey-md.js?v=69"></script>
-    <script src="./matey-syntax.js?v=69"></script>
-    <script src="./matey-whisper.js?v=69"></script>
+    <script src="./matey-themes.js?v=71"></script>
+    <script src="./matey-swipe.js?v=71"></script>
+    <script src="./matey-profile.js?v=71"></script>
+    <script src="./matey-greet.js?v=71"></script>
+    <script src="./matey-feed.js?v=71"></script>
+    <script src="./matey-settings.js?v=71"></script>
+    <script src="./matey-fs.js?v=71"></script>
+    <script src="./matey-keyboard.js?v=71"></script>
+    <script src="./matey-init.js?v=71"></script>
+    <script src="./matey-recall.js?v=71"></script>
+    <script src="./matey-rss.js?v=71"></script>
+    <script src="./matey-license.js?v=71"></script>
+    <script src="./matey-adaptive.js?v=71"></script>
+    <script src="./matey-behavior.js?v=71"></script>
+    <script src="./matey-ai.js?v=71"></script>
+    <script src="./matey-hooks-manager.js?v=71"></script>
+    <script src="./matey-vots.js?v=71"></script>
+    <script src="./matey-tabs.js?v=71"></script>
+    <script src="./matey-byok.js?v=71"></script>
+    <script src="./matey-beat.js?v=71"></script>
+    <script src="./matey-lifestyle.js?v=71"></script>
+    <script src="./matey-md.js?v=71"></script>
+    <script src="./matey-syntax.js?v=71"></script>
+    <script src="./matey-whisper.js?v=71"></script>
+    <script src="./matey-models.js?v=71"></script>
     <script>
     /* Usage ring */
     (function () {

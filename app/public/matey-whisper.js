@@ -10,11 +10,28 @@
   function loadFromCDN() {
     return new Promise(function (resolve, reject) {
       if (window.pipeline) return resolve();
+      if (document.querySelector('script[data-transformers-cdn]')) {
+        var check = function () {
+          if (typeof window.pipeline === 'function') resolve();
+          else if (window.pipelineLoadError) reject(window.pipelineLoadError);
+          else setTimeout(check, 200);
+        };
+        check();
+        return;
+      }
       var s = document.createElement('script');
       s.type = 'module';
-      s.textContent = "import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js'; window.pipeline = pipeline;";
-      s.onload = function () { setTimeout(resolve, 500); };
-      s.onerror = reject;
+      s.setAttribute('data-transformers-cdn', 'true');
+      s.textContent = "import * as t from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.2.2/dist/transformers.min.js'; window.pipeline = t.pipeline;";
+      s.onload = function () { setTimeout(function () {
+        if (typeof window.pipeline === 'function') resolve();
+        else if (window.pipelineLoadError) reject(window.pipelineLoadError);
+        else setTimeout(arguments.callee, 200);
+      }, 500); };
+      s.onerror = function (e) {
+        window.pipelineLoadError = new Error('Failed to load Transformers.js from CDN — check network');
+        reject(window.pipelineLoadError);
+      };
       document.head.appendChild(s);
     });
   }
