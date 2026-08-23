@@ -3102,10 +3102,16 @@ body {
 .lifestyle-spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  object-fit: contain;
+  animation: spin 1.2s linear infinite;
+}
+
+.ai-thinking-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  animation: spin 1.2s linear infinite;
+  flex-shrink: 0;
 }
 
 @keyframes spin {

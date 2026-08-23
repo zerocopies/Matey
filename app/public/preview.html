@@ -247,7 +247,9 @@
           clearInput();
           pendingFiles = [];
 
-          var resp = createMsgBubble('agent-msg agent-reply', '...');
+          var resp = document.createElement('div');
+          resp.className = 'agent-msg agent-reply';
+          resp.innerHTML = '<img src="./images/matey-logo.png" class="ai-thinking-logo" alt="Thinking…" />';
           chat.appendChild(resp);
           scrollToBottom();
 

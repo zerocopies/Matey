@@ -107,7 +107,7 @@
       return;
     }
 
-    container.innerHTML = '<div class="lifestyle-loading"><div class="lifestyle-spinner"></div><p>Analyzing space…</p></div>';
+    container.innerHTML = '<div class="lifestyle-loading"><img src="./images/matey-logo.png" class="ai-thinking-logo" alt="Thinking…" /><p>Analyzing space…</p></div>';
     container.style.display = 'block';
 
     sendToVisionProvider(imgs, prompt)

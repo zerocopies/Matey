@@ -86,7 +86,7 @@
   }
 
   function showLoading(container) {
-    container.innerHTML = '<div class="lifestyle-loading"><div class="lifestyle-spinner"></div><p>Analyzing…</p></div>';
+    container.innerHTML = '<div class="lifestyle-loading"><img src="./images/matey-logo.png" class="ai-thinking-logo" alt="Thinking…" /><p>Analyzing…</p></div>';
   }
 
   function showResult(container, text) {
