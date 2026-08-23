@@ -13,6 +13,59 @@
   function $(id) { return document.getElementById(id); }
   function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
+  /* Strip markdown link formatting from a URL string.
+     e.g. [label](https://example.com/v1) → https://example.com/v1 */
+  /* Native HTTP wrapper that bypasses CORS on Android/iOS by using
+     CapacitorHttp (native HTTP stack) instead of the browser fetch().
+     Falls back to fetch() on pure web. */
+  function nativeFetch(url, options) {
+    var opts = options || {};
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp) {
+      var reqOpts = {
+        method: (opts.method || 'GET').toUpperCase(),
+        url: url,
+        headers: opts.headers || {}
+      };
+      if (opts.body) {
+        if (typeof opts.body === 'string') {
+          try { reqOpts.data = JSON.parse(opts.body); }
+          catch (e) { reqOpts.data = opts.body; reqOpts.headers['Content-Type'] = reqOpts.headers['Content-Type'] || 'text/plain'; }
+        } else {
+          reqOpts.data = opts.body;
+        }
+      }
+      return window.Capacitor.Plugins.CapacitorHttp.request(reqOpts).then(function (resp) {
+        return {
+          ok: resp.status >= 200 && resp.status < 300,
+          status: resp.status,
+          statusText: resp.status,
+          headers: resp.headers || {},
+          url: resp.url || url,
+          json: function () { return Promise.resolve(resp.data); },
+          text: function () { return Promise.resolve(typeof resp.data === 'string' ? resp.data : JSON.stringify(resp.data)); }
+        };
+      });
+    }
+    return fetch(url, opts);
+  }
+
+  function cleanBaseUrl(raw) {
+    var s = (raw || '').trim();
+    var mdMatch = s.match(/\]\(([^)]+)\)/);
+    if (mdMatch) s = mdMatch[1];
+    s = s.replace(/^\[.*\]\(/, '').replace(/\)[^)]*$/, '');
+    s = s.replace(/[\[\]]/g, '').trim();
+    s = s.replace(/\/+$/, '');
+    return s;
+  }
+
+  /* Build clean API URL from base + endpoint, avoiding duplicate /v1 path */
+  function buildApiUrl(baseUrl, endpoint) {
+    var base = cleanBaseUrl(baseUrl || '');
+    base = base.replace(/\/v1\/?$/, '');
+    return base + endpoint;
+  }
+
   function readFile(file) {
     return new Promise(function (resolve) {
       var reader = new FileReader();
@@ -32,6 +85,23 @@
     var providers = [];
     try { providers = JSON.parse(localStorage.getItem('matey-providers') || '[]'); } catch (e) {}
     return providers[0];
+  }
+
+  var BAZAARLINK_BASE = 'https://api.bazaarlink.ai/v1';
+
+  function resolveModelForProvider(p) {
+    if (p.model) return Promise.resolve(p.model);
+    if (p.baseUrl && p.baseUrl.indexOf('api.bazaarlink.ai') !== -1) {
+      return Promise.resolve('auto:free');
+    }
+    var url = buildApiUrl(p.baseUrl, '/v1/models');
+    return nativeFetch(url, { headers: p.apiKey ? { 'Authorization': 'Bearer ' + p.apiKey } : {} })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var list = (j.data || []).map(function (m) { return m.id; });
+        if (!list.length) throw new Error('No models available');
+        return list[0];
+      });
   }
 
   function analyzeLocally(imgs) {
@@ -65,7 +135,7 @@
   async function sendToVisionProvider(images, prompt) {
     var provider = getVisionProvider();
     if (!provider || !provider.baseUrl) throw new Error('No vision provider configured');
-    var model = provider.model || 'gpt-4o-mini';
+    var model = await resolveModelForProvider(provider);
     var messages = [{
       role: 'user',
       content: [
@@ -75,7 +145,7 @@
     images.forEach(function (img) {
       messages[0].content.push({ type: 'image_url', image_url: { url: img } });
     });
-    var res = await fetch(provider.baseUrl + '/v1/chat/completions', {
+    var res = await nativeFetch(buildApiUrl(provider.baseUrl, '/v1/chat/completions'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

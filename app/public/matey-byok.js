@@ -3,6 +3,116 @@
   'use strict';
   var KEY = 'matey-providers';
 
+  /* Native HTTP wrapper that bypasses CORS on Android/iOS by using
+     CapacitorHttp (native HTTP stack) instead of the browser fetch().
+     Falls back to fetch() on pure web. */
+  function nativeFetch(url, options) {
+    var opts = options || {};
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp) {
+      var reqOpts = {
+        method: (opts.method || 'GET').toUpperCase(),
+        url: url,
+        headers: opts.headers || {}
+      };
+      if (opts.body) {
+        if (typeof opts.body === 'string') {
+          try { reqOpts.data = JSON.parse(opts.body); }
+          catch (e) { reqOpts.data = opts.body; reqOpts.headers['Content-Type'] = reqOpts.headers['Content-Type'] || 'text/plain'; }
+        } else {
+          reqOpts.data = opts.body;
+        }
+      }
+      return window.Capacitor.Plugins.CapacitorHttp.request(reqOpts).then(function (resp) {
+        return {
+          ok: resp.status >= 200 && resp.status < 300,
+          status: resp.status,
+          statusText: resp.status,
+          headers: resp.headers || {},
+          url: resp.url || url,
+          json: function () { return Promise.resolve(resp.data); },
+          text: function () { return Promise.resolve(typeof resp.data === 'string' ? resp.data : JSON.stringify(resp.data)); }
+        };
+      });
+    }
+    return fetch(url, opts);
+  }
+
+  var BAZAARLINK_BASE = 'https://api.bazaarlink.ai/v1';
+
+  /* Auto-register an agent with BazaarLink to get a free API key.
+     Per skill.md: POST /v1/agents/register returns api_key, free_model "auto:free".
+     New agents with 0 credits can immediately use model "auto:free". */
+  function autoRegisterAgent(label) {
+    var name = label || 'Matey Mobile Agent';
+    var url = BAZAARLINK_BASE + '/agents/register';
+    console.log('[BazaarLink] Auto-registering agent:', name);
+    return nativeFetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, description: 'Matey AI assistant running on-device' })
+    }).then(function (r) {
+      if (!r.ok) return r.text().then(function (t) { throw new Error('Registration failed: HTTP ' + r.status + ': ' + t.slice(0, 200)); });
+      return r.json();
+    }).then(function (j) {
+      var key = j.api_key;
+      if (!key) throw new Error('No API key returned from registration');
+      console.log('[BazaarLink] Registered! Key:', key.substring(0, 12) + '...', 'Free model:', j.free_model || 'auto:free');
+      return { apiKey: key, baseUrl: BAZAARLINK_BASE, freeModel: j.free_model || 'auto:free' };
+    }).catch(function (err) {
+      console.warn('[BazaarLink] Registration failed:', err.message || err);
+      throw err;
+    });
+  }
+
+  /* Ensure a provider is available, auto-registering with BazaarLink if none exist. */
+  function ensureProvider() {
+    var providers = load();
+    if (providers.length > 0) return Promise.resolve(providers[0]);
+    console.log('[BazaarLink] No providers configured, attempting auto-registration');
+    return autoRegisterAgent('Matey Agent').then(function (result) {
+      var entry = {
+        name: 'BazaarLink (auto)',
+        baseUrl: result.baseUrl,
+        apiKey: result.apiKey,
+        model: result.freeModel,
+        capabilities: ['text', 'vision', 'stt', 'imagegen']
+      };
+      providers.push(entry);
+      save(providers);
+      console.log('[BazaarLink] Saved auto-registered provider');
+      return entry;
+    }).catch(function (err) {
+      console.warn('[BazaarLink] Could not auto-register:', err.message || err);
+      return null;
+    });
+  }
+
+  /* Strip markdown link formatting from a URL string.
+     e.g. [label](https://example.com/v1) → https://example.com/v1
+          https://example.com/v1 → https://example.com/v1 */
+  function cleanBaseUrl(raw) {
+    var s = (raw || '').trim();
+    /* Extract URL from markdown link syntax [text](url) if present */
+    var mdMatch = s.match(/\]\(([^)]+)\)/);
+    if (mdMatch) s = mdMatch[1];
+    /* If still has markdown link structure at start, strip it */
+    s = s.replace(/^\[.*\]\(/, '').replace(/\)[^)]*$/, '');
+    /* Remove any remaining stray markdown braces/brackets */
+    s = s.replace(/[\[\]]/g, '').trim();
+    /* Strip trailing slashes */
+    s = s.replace(/\/+$/, '');
+    return s;
+  }
+
+  /* Build a clean API URL from base URL + endpoint.
+     Avoids duplicate /v1 when base already contains it. */
+  function buildApiUrl(baseUrl, endpoint) {
+    var base = cleanBaseUrl(baseUrl || '');
+    /* Strip trailing /v1 or /v1/ from base so we control the path */
+    base = base.replace(/\/v1\/?$/, '');
+    return base + endpoint;
+  }
+
   function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
   function save(list) { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {} }
 
@@ -38,13 +148,13 @@
 
   function testConnection() {
     var name = document.getElementById('byok-name').value.trim();
-    var baseUrl = document.getElementById('byok-url').value.trim();
+    var baseUrl = cleanBaseUrl(document.getElementById('byok-url').value);
     var apiKey = document.getElementById('byok-key').value.trim();
     var testBtn = document.getElementById('byok-test');
     if (!baseUrl) return;
     testBtn.textContent = 'Testing…';
     testBtn.disabled = true;
-    fetch(baseUrl + '/v1/models', {
+    nativeFetch(buildApiUrl(baseUrl, '/v1/models'), {
       method: 'GET',
       headers: apiKey ? { 'Authorization': 'Bearer ' + apiKey } : {}
     }).then(function (r) {
@@ -105,8 +215,8 @@
       var el = document.getElementById(id);
       if (el && el.checked) caps.push(el.value);
     });
-     if (!name || !baseUrl) return;
-     baseUrl = baseUrl.replace(/\/+$/, '');
+      if (!name || !baseUrl) return;
+      baseUrl = cleanBaseUrl(baseUrl);
      var providers = load();
     var editIdx = dialog.getAttribute('data-edit-index');
     var entry = { name: name, baseUrl: baseUrl, apiKey: apiKey, model: model, capabilities: caps };
@@ -150,8 +260,13 @@
 
   function resolveModel(p) {
     if (p.model) return Promise.resolve(p.model);
-    var url = (p.baseUrl.replace(/\/+$/, '') || '') + '/v1/models';
-    return fetch(url, { headers: p.apiKey ? { 'Authorization': 'Bearer ' + p.apiKey } : {} })
+    /* BazaarLink auto-router: "auto" (paid) or "auto:free" (free, no credits needed) */
+    if (p.baseUrl && p.baseUrl.indexOf('api.bazaarlink.ai') !== -1) {
+      console.log('[BazaarLink] Using auto:free router for model resolution');
+      return Promise.resolve('auto:free');
+    }
+    var url = buildApiUrl(p.baseUrl, '/v1/models');
+    return nativeFetch(url, { headers: p.apiKey ? { 'Authorization': 'Bearer ' + p.apiKey } : {} })
       .then(function (r) { return r.json(); })
       .then(function (j) {
         var list = (j.data || []).map(function (m) { return m.id; });
@@ -181,95 +296,110 @@
     });
   }
 
-   window.MateyByok = {
+    window.MateyByok = {
     load: load,
     hasProviders: function () { return load().length > 0; },
      getProvider: function (capability) {
        var providers = load();
-       if (!providers.length) return null;
-       for (var i = 0; i < providers.length; i++) {
-         var caps = providers[i].capabilities || [];
-         if (caps.indexOf(capability) !== -1) return providers[i];
+       if (providers.length > 0) {
+         if (!capability) return providers[0];
+         for (var i = 0; i < providers.length; i++) {
+           var caps = providers[i].capabilities || [];
+           if (caps.indexOf(capability) !== -1) return providers[i];
+         }
+         for (var j = 0; j < providers.length; j++) {
+           var caps2 = providers[j].capabilities || [];
+           if (!caps2.length) return providers[j];
+         }
+         return providers[0];
        }
-       for (var j = 0; j < providers.length; j++) {
-         var caps2 = providers[j].capabilities || [];
-         if (!caps2.length) return providers[j];
-       }
-       return providers[0];
+       return null;
      },
     resolveProvider: function (capability) {
       var p = this.getProvider(capability);
-      if (!p) return Promise.reject('No provider configured for capability: ' + capability);
-      return p;
+      if (p) return Promise.resolve(p);
+      return ensureProvider().then(function (result) {
+        if (result) return result;
+        return Promise.reject('No provider configured for capability: ' + capability);
+      });
     },
+    autoRegister: autoRegisterAgent,
     chat: function (messages) {
       return this.send('text', messages);
     },
      chatVision: function (messages) {
        return this.sendVision('vision', messages);
      },
-      send: function (capability, messages) {
-        var p = this.getProvider(capability);
-        if (!p) return Promise.reject('No provider configured for: ' + capability + '. Add one in Settings → Custom.');
-        if (!p.apiKey) return Promise.reject('No API key configured for provider: ' + p.name + '. Check Settings → BYOK.');
-        var baseUrl = (p.baseUrl || '').replace(/\/+$/, '');
-        var apiUrl = baseUrl + '/v1/chat/completions';
-        var converted = convertMessages(messages);
-        return resolveModel(p).then(function (model) {
-          return fetch(apiUrl, {
-            method: 'POST',
-            mode: 'cors',
-            redirect: 'follow',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + p.apiKey },
-            body: JSON.stringify({ model: model, messages: converted, stream: false })
-          }).then(function (r) {
+        send: function (capability, messages) {
+          var self = this;
+          var p = this.getProvider(capability);
+          if (!p) {
+            return this.resolveProvider(capability).then(function (resolved) {
+              return self._doSend(resolved, capability, messages);
+            });
+          }
+          return this._doSend(p, capability, messages);
+        },
+        _doSend: function (p, capability, messages) {
+          var apiUrl = buildApiUrl(p.baseUrl, '/v1/chat/completions');
+         var converted = convertMessages(messages);
+         return resolveModel(p).then(function (model) {
+           return nativeFetch(apiUrl, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + p.apiKey },
+             body: JSON.stringify({ model: model, messages: converted, stream: false })
+           }).then(function (r) {
+            if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 120)); });
+            return r.json();
+           });
+         }).then(function (j) {
+          var txt = j && j.choices && j.choices[0] && (j.choices[0].message && j.choices[0].message.content);
+          if (!txt) throw new Error('Empty response from provider');
+          return txt;
+        }).catch(function (err) {
+          if (err.message && err.message.indexOf('Failed to fetch') !== -1) {
+            throw new Error('Failed to fetch: check URL/key or network. URL=' + apiUrl);
+          }
+          throw err;
+        });
+       },
+       sendVision: function (capability, messages) {
+         var self = this;
+         var p = this.getProvider(capability || 'vision');
+         if (!p) {
+           return this.resolveProvider(capability || 'vision').then(function (resolved) {
+             return self._doSendVision(resolved, capability || 'vision', messages);
+           });
+         }
+         return this._doSendVision(p, capability || 'vision', messages);
+       },
+       _doSendVision: function (p, capability, messages) {
+         var apiUrl = buildApiUrl(p.baseUrl, '/v1/chat/completions');
+         var converted = convertMessages(messages);
+         return resolveModel(p).then(function (model) {
+           return nativeFetch(apiUrl, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + p.apiKey },
+           body: JSON.stringify({ model: model, messages: converted, stream: false })
+         }).then(function (r) {
            if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 120)); });
            return r.json();
-          });
-        }).then(function (j) {
+         });
+       }).then(function (j) {
          var txt = j && j.choices && j.choices[0] && (j.choices[0].message && j.choices[0].message.content);
          if (!txt) throw new Error('Empty response from provider');
          return txt;
        }).catch(function (err) {
-         if (err.message === 'Failed to fetch') {
+         if (err.message && err.message.indexOf('Failed to fetch') !== -1) {
            throw new Error('Failed to fetch: check URL/key or network. URL=' + apiUrl);
          }
          throw err;
        });
-      },
-      sendVision: function (capability, messages) {
-        var p = this.getProvider(capability || 'vision');
-        if (!p) return Promise.reject('No vision provider configured. Add one in Settings → Custom (enable Vision capability).');
-        if (!p.apiKey) return Promise.reject('No API key configured for provider: ' + p.name + '. Check Settings → BYOK.');
-        var baseUrl = (p.baseUrl || '').replace(/\/+$/, '');
-        var apiUrl = baseUrl + '/v1/chat/completions';
-        var converted = convertMessages(messages);
-        return resolveModel(p).then(function (model) {
-          return fetch(apiUrl, {
-          method: 'POST',
-          mode: 'cors',
-          redirect: 'follow',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + p.apiKey },
-          body: JSON.stringify({ model: model, messages: converted, stream: false })
-        }).then(function (r) {
-          if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 120)); });
-          return r.json();
-        });
-      }).then(function (j) {
-        var txt = j && j.choices && j.choices[0] && (j.choices[0].message && j.choices[0].message.content);
-        if (!txt) throw new Error('Empty response from provider');
-        return txt;
-      }).catch(function (err) {
-        if (err.message === 'Failed to fetch') {
-          throw new Error('Failed to fetch: check URL/key or network. URL=' + apiUrl);
-        }
-        throw err;
-      });
-    },
-    render: renderList,
-    wireDynamic: wireDynamic
-  };
+     },
+     render: renderList,
+     wireDynamic: wireDynamic
+   };
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
+   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+   else init();
 })();

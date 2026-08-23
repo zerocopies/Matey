@@ -294,13 +294,17 @@
 
   /* ---- Auto-hook into MateyBehavior if available ---- */
   if (typeof window !== 'undefined' && window.MateyBehavior && typeof MateyBehavior.record === 'function') {
-    var origRecord = MateyBehavior.record;
-    MateyBehavior.record = function (type, data) {
-      origRecord(type, data);
-      if (type === 'user_prompt' && data && data.text) {
-        recordPrompt(data.text);
-      }
-    };
+  var origRecord = MateyBehavior.record;
+  var inAutoHook = false;
+  MateyBehavior.record = function (type, data) {
+    origRecord(type, data);
+    if (inAutoHook) return;
+    if (type === 'user_prompt' && data && data.text) {
+      inAutoHook = true;
+      recordPrompt(data.text);
+      inAutoHook = false;
+    }
+  };
   }
 
   /* ---- Auto-hook into input events across the app ---- */

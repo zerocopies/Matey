@@ -443,6 +443,12 @@
             status.style.color = 'var(--accent)';
           }
         } catch (err) {
+          console.error('[MateySettings] Download failed:', {
+            modelId: modelId,
+            message: err.message || String(err),
+            error: err,
+            stack: err.stack || ''
+          });
           btn.textContent = 'Retry';
           btn.disabled = false;
           btn.style.opacity = '';

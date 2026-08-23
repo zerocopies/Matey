@@ -7,9 +7,19 @@
     { id: 'Xenova/whisper-base.en', label: 'Base (~300MB)', size: '300MB', desc: 'Higher accuracy' }
   ];
 
+  /* ---- CDN URLs for ONNX Runtime Web + Transformers.js ---- */
+  var WHISPER_ORT_CDN = [
+    'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/ort.min.js',
+    'https://unpkg.com/onnxruntime-web@1.14.0/dist/ort.min.js'
+  ];
+  var WHISPER_CDN_URLS = [
+    'https://unpkg.com/@xenova/transformers@2.2.0/dist/transformers.min.js',
+    'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.2.0/dist/transformers.min.js'
+  ];
+
   function loadFromCDN() {
     return new Promise(function (resolve, reject) {
-      if (window.pipeline) return resolve();
+      if (typeof window.pipeline === 'function') return resolve();
       if (document.querySelector('script[data-transformers-cdn]')) {
         var check = function () {
           if (typeof window.pipeline === 'function') resolve();
@@ -19,20 +29,81 @@
         check();
         return;
       }
-      var s = document.createElement('script');
-      s.type = 'module';
-      s.setAttribute('data-transformers-cdn', 'true');
-      s.textContent = "import * as t from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.2.2/dist/transformers.min.js'; window.pipeline = t.pipeline;";
-      s.onload = function () { setTimeout(function () {
-        if (typeof window.pipeline === 'function') resolve();
-        else if (window.pipelineLoadError) reject(window.pipelineLoadError);
-        else setTimeout(arguments.callee, 200);
-      }, 500); };
-      s.onerror = function (e) {
-        window.pipelineLoadError = new Error('Failed to load Transformers.js from CDN — check network');
-        reject(window.pipelineLoadError);
-      };
-      document.head.appendChild(s);
+
+      loadORTScripts();
+
+      function loadORTScripts() {
+        loadORT(WHISPER_ORT_CDN[0], function (ortErr) {
+          if (ortErr) {
+            console.warn('[MateyWhisper] ORT CDN fallback, trying:', WHISPER_ORT_CDN[1]);
+            loadORT(WHISPER_ORT_CDN[1], function (ortErr2) {
+              if (ortErr2) {
+                console.error('[MateyWhisper] All ORT CDN URLs failed:', WHISPER_ORT_CDN);
+                window.pipelineLoadError = ortErr2;
+                reject(ortErr2);
+              } else {
+                console.log('[MateyWhisper] ONNX Runtime Web loaded');
+                loadTransformers();
+              }
+            });
+          } else {
+            console.log('[MateyWhisper] ONNX Runtime Web loaded');
+            loadTransformers();
+          }
+        });
+
+        function loadTransformers() {
+          var CDN_URL = WHISPER_CDN_URLS[0];
+          console.log('[MateyWhisper] Loading Transformers.js from:', CDN_URL);
+          var s = document.createElement('script');
+          s.type = 'module';
+          s.setAttribute('data-transformers-cdn', 'true');
+          s.textContent = "import * as t from '" + CDN_URL + "'; window.pipeline = t.pipeline; window.transformersEnv = t.env;";
+          s.onerror = function (e) {
+            console.error('[MateyWhisper] Script onerror:', { url: CDN_URL, eventType: e.type, message: e.message || 'no message' });
+            var err = new Error('Failed to load Transformers.js from ' + CDN_URL + ' (onerror type: ' + e.type + '). Check network connectivity.');
+            window.pipelineLoadError = err;
+            reject(err);
+          };
+          document.head.appendChild(s);
+
+          var check = function () {
+            if (typeof window.pipeline === 'function') {
+              console.log('[MateyWhisper] Pipeline detected via polling');
+              resolve();
+            }
+            else if (window.pipelineLoadError) {
+              reject(window.pipelineLoadError);
+            }
+            else {
+              setTimeout(check, 200);
+            }
+          };
+          check();
+        }
+      }
+
+      function loadORT(url, callback) {
+        var s = document.createElement('script');
+        s.setAttribute('data-ort-cdn', 'true');
+        s.onload = function () {
+          if (typeof window.ort !== 'undefined') {
+            var wasmBase = url.replace(/\/ort\.min\.js$/, '');
+            if (window.ort.env && window.ort.env.wasm) {
+              window.ort.env.wasm.wasmUrls = [wasmBase + '/ort-wasm.wasm'];
+              window.ort.env.wasm.libs = [wasmBase + '/ort-wasm-simd.wasm'];
+              console.log('[MateyWhisper] ORT WASM paths configured:', wasmBase);
+            }
+            callback(null);
+          }
+          else callback(new Error('ORT loaded but window.ort is undefined'));
+        };
+        s.onerror = function (e) {
+          callback(new Error('Failed to load ORT from ' + url + ' (type: ' + e.type + ')'));
+        };
+        s.src = url;
+        document.head.appendChild(s);
+      }
     });
   }
 
@@ -43,6 +114,14 @@
     if (onProgress) onProgress(0);
 
     return loadFromCDN().then(function () {
+      /* Override WASM paths to use unpkg.com (cdn.jsdelivr.net may be unreachable) */
+      if (window.transformersEnv && window.transformersEnv.backends && window.transformersEnv.backends.onnx) {
+        var onnxEnv = window.transformersEnv.backends.onnx;
+        if (onnxEnv.wasm && onnxEnv.wasm.wasmPaths) {
+          onnxEnv.wasm.wasmPaths = 'https://unpkg.com/@xenova/transformers@' + window.transformersEnv.version + '/dist/';
+          console.log('[MateyWhisper] WASM paths overridden to unpkg:', onnxEnv.wasm.wasmPaths);
+        }
+      }
       return window.pipeline('automatic-speech-recognition', modelId, {
         progress_callback: function (p) {
           WHISPER_STATE.progress = p.progress || 0;

@@ -14,8 +14,9 @@
   function updateKeyboardOffset() {
     var vv = window.visualViewport;
     var offset = 0;
-    if (vv && vv.height < window.innerHeight) {
+    if (vv && vv.height < window.innerHeight - 100) {
       offset = Math.max(0, window.innerHeight - vv.height);
+      offset = Math.min(offset, window.innerHeight * 0.6);
     }
     document.documentElement.style.setProperty('--keyboard-offset', offset + 'px');
   }
@@ -50,28 +51,9 @@
     var btn = e.target.closest('#md-symbol-toolbar button[data-key]');
     if (!btn) return;
     e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
     var textarea = document.getElementById('md-compose-input') || document.getElementById('vots-textarea');
     if (!textarea) return;
     textarea.focus();
     insertAtCursor(textarea, btn.getAttribute('data-key'));
   });
-
-  document.addEventListener('touchstart', function(e) {
-    var btn = e.target.closest('#md-symbol-toolbar button[data-key]');
-    if (!btn) return;
-    e.preventDefault();
-    e.stopPropagation();
-  }, { passive: false });
-
-  var composeInput = document.getElementById('md-compose-input');
-  if (composeInput) {
-    function autoExpand() {
-      composeInput.style.height = 'auto';
-      composeInput.style.height = Math.max(44, composeInput.scrollHeight) + 'px';
-    }
-    composeInput.addEventListener('input', autoExpand);
-    composeInput.addEventListener('focus', autoExpand);
-  }
 })();

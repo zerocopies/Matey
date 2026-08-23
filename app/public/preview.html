@@ -272,13 +272,20 @@
             return;
           }
 
-          MateyByok.chat(convHistory).then(function (reply) {
-            resp.textContent = reply || 'No response from provider.';
-            convHistory.push({ role: 'assistant', content: reply || 'No response from provider.' });
-          }).catch(function (err) {
+          try {
+            MateyByok.chat(convHistory).then(function (reply) {
+              resp.textContent = reply || 'No response from provider.';
+              convHistory.push({ role: 'assistant', content: reply || 'No response from provider.' });
+            }).catch(function (err) {
+              resp.textContent = 'Error: ' + (err.message || err);
+              convHistory.push({ role: 'assistant', content: 'Error: ' + (err.message || err) });
+            });
+          } catch (err) {
             resp.textContent = 'Error: ' + (err.message || err);
             convHistory.push({ role: 'assistant', content: 'Error: ' + (err.message || err) });
-          });
+          }
+        }).catch(function (err) {
+          console.error('Send message error:', err);
         });
       }
 

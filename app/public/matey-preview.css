@@ -1404,6 +1404,27 @@ body {
 .settings-overlay.open {
   display: flex;
 }
+.settings-overlay {
+  color: var(--text);
+}
+.settings-section,
+.settings-section-title,
+.settings-section-desc,
+.settings-section-header {
+  color: var(--text);
+}
+.settings-section-body,
+.settings-body,
+.micro-model-name,
+.micro-model-desc,
+.micro-model-group-title,
+.whisper-status,
+.whisper-progress-text,
+.models-status,
+.micro-model-download-btn {
+  color: var(--text);
+}
+
 
 .settings-header {
   display: flex;
@@ -4887,7 +4908,6 @@ feed-card,
 .lifestyle-dislike,
 .lifestyle-like,
  .lifestyle-suggestion strong,
- .settings-section + .settings-section,
 .toast,
 .vots-badge-article,
 .vots-badge-instagram,
@@ -4922,11 +4942,6 @@ feed-card,
 .lifestyle-suggestion,
 .lifestyle-suggestion-list,
 .lifestyle-title,
-.settings-body,
-.settings-card,
-.settings-item,
-.settings-section,
-.settings-title,
 .usage-ring-text,
 .usage-ring-segment,
 .workspace-selector,
@@ -4934,20 +4949,6 @@ feed-card,
 .workspace-selector button:hover,
 .ws-create,
 .ws-usb,
-.ws-clear,
-.micro-model-item,
-.micro-model-info,
-.micro-model-name,
-.micro-model-desc,
-.micro-model-download-btn,
-.micro-model-download-btn:hover,
-.micro-model-group-title,
-.micro-model-size,
-.micro-models-container,
-.whisper-models-dyn,
-.whisper-model-btn,
-.whisper-status,
-.whisper-progress-text,
-.models-status {
+.ws-clear {
   color: var(--text-on-card);
 }
