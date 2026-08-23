@@ -3032,7 +3032,8 @@ body {
 }
 
 .lifestyle-input,
-.lifestyle-input select {
+.lifestyle-input select,
+.lifestyle-input textarea {
   width: 100%;
   border: 1px solid var(--border);
   background: var(--bg);
@@ -3043,6 +3044,7 @@ body {
   font-size: 14px;
   outline: none;
   resize: vertical;
+  line-height: 1.5;
 }
 
 .lifestyle-input::placeholder {
@@ -3053,14 +3055,14 @@ body {
 .lifestyle-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .lifestyle-label {
   font-size: 12px;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -3074,7 +3076,7 @@ body {
 .lifestyle-tabs {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .lifestyle-tab {
@@ -3134,7 +3136,16 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 14px;
+  padding: 16px;
+}
+
+.lifestyle-result p {
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+}
+
+.lifestyle-result p:last-child {
+  margin-bottom: 0;
 }
 
 .lifestyle-pre {
@@ -3185,26 +3196,54 @@ body {
 .lifestyle-suggestions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
 }
 
 .lifestyle-suggestion {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 14px;
+  padding: 16px;
 }
 
-.lifestyle-suggestion strong {
-  font-size: 14px;
+.lifestyle-suggestion strong:first-child {
+  font-size: 15px;
   color: var(--text);
   font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.lifestyle-suggestion > div {
+  margin-bottom: 8px;
+}
+
+.lifestyle-suggestion > div:last-child {
+  margin-bottom: 0;
+}
+
+.lifestyle-suggestion small,
+.lifestyle-suggestion div[style*="font-size"],
+.lifestyle-suggestion .lifestyle-sub {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.lifestyle-suggestion .lifestyle-body {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
 }
 
 .lifestyle-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .lifestyle-like,
@@ -3213,12 +3252,14 @@ body {
   border-radius: 10px;
   background: var(--surface-raised);
   color: var(--text);
-  padding: 8px 14px;
+  padding: 8px 16px;
   font: inherit;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
+  flex: 1;
+  text-align: center;
 }
 
 .lifestyle-like:hover,
@@ -3235,7 +3276,7 @@ body {
 .lifestyle-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .lifestyle-row {

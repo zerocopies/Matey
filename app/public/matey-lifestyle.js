@@ -417,7 +417,7 @@
         if (outfits && Array.isArray(outfits)) {
           var html = '<div class="lifestyle-suggestions">';
           outfits.forEach(function (o, i) {
-            html += '<div class="lifestyle-suggestion" data-id="outfit-' + i + '"><strong>' + esc(o.name || 'Outfit ' + (i + 1)) + '</strong><div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">' + esc(o.top) + ' + ' + esc(o.bottom) + '</div><div style="font-size:13px;margin-top:6px;">' + esc(o.why) + '</div>' + likeDislikeBtns('outfit-' + i, 'wardrobe') + '</div>';
+            html += '<div class="lifestyle-suggestion" data-id="outfit-' + i + '"><strong>' + esc(o.name || 'Outfit ' + (i + 1)) + '</strong><div class="lifestyle-sub">' + esc(o.top) + ' + ' + esc(o.bottom) + '</div><div class="lifestyle-body">' + esc(o.why) + '</div>' + likeDislikeBtns('outfit-' + i, 'wardrobe') + '</div>';
           });
           html += '</div>';
           resultEl.innerHTML = html;
@@ -433,8 +433,7 @@
 
   /* ---------- Culinary ---------- */
   function openCulinary() {
-    var body = '<div class="lifestyle-tabs"><button class="lifestyle-tab active" data-tab="culinary-recipe">Get Recipes</button></div>' +
-      '<div class="lifestyle-tab-body" id="culinary-recipe"><div class="lifestyle-form"><div class="lifestyle-field"><label class="lifestyle-label">Cuisines you like</label><input type="text" class="lifestyle-input" id="cuisine-prefs" placeholder="e.g. Lebanese, Indian, Italian" /></div><textarea class="lifestyle-input" id="recipe-ingredients" placeholder="List your ingredients, e.g. chicken, rice, tomatoes, labneh…" rows="4"></textarea><button class="lifestyle-btn" id="recipe-generate" style="margin-top:12px;width:100%">Get Recipes</button></div></div>' +
+    var body = '<div class="lifestyle-tab-body" id="culinary-recipe"><div class="lifestyle-form"><div class="lifestyle-field"><label class="lifestyle-label">Cuisines you like</label><input type="text" class="lifestyle-input" id="cuisine-prefs" placeholder="e.g. Lebanese, Indian, Italian" /></div><textarea class="lifestyle-input" id="recipe-ingredients" placeholder="List your ingredients, e.g. chicken, rice, tomatoes, labneh…" rows="4"></textarea><button class="lifestyle-btn" id="recipe-generate" style="margin-top:16px;width:100%">Get Recipes</button></div></div>' +
       '<div id="culinary-result" class="lifestyle-result-container"></div>';
     var modal = createModal('modal-culinary', 'Culinary', body);
     var resultEl = modal.querySelector('#culinary-result');
@@ -468,7 +467,7 @@
         if (recipes && Array.isArray(recipes)) {
           var html = '<div class="lifestyle-suggestions">';
           recipes.forEach(function (r, i) {
-            html += '<div class="lifestyle-suggestion" data-id="recipe-' + i + '"><strong>' + esc(r.name || 'Recipe ' + (i + 1)) + '</strong><div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">' + esc(r.description || '') + '</div><div style="font-size:12px;margin-top:6px;"><strong>Uses:</strong> ' + esc((r.ingredients_used || []).join(', ')) + '</div>' + likeDislikeBtns('recipe-' + i, 'culinary') + '</div>';
+            html += '<div class="lifestyle-suggestion" data-id="recipe-' + i + '"><strong>' + esc(r.name || 'Recipe ' + (i + 1)) + '</strong><div class="lifestyle-sub">' + esc(r.description || '') + '</div><div class="lifestyle-body"><strong>Uses:</strong> ' + esc((r.ingredients_used || []).join(', ')) + '</div>' + likeDislikeBtns('recipe-' + i, 'culinary') + '</div>';
           });
           html += '</div>';
           resultEl.innerHTML = html;
