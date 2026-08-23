@@ -38,6 +38,8 @@
     var start = inputEl.selectionStart;
     var end = inputEl.selectionEnd;
     var val = inputEl.value;
+    if (start === null || start === undefined || start < 0) start = val.length;
+    if (end === null || end === undefined || end < 0) end = val.length;
     inputEl.value = val.substring(0, start) + text + val.substring(end);
     var newPos = start + text.length;
     inputEl.selectionStart = newPos;
@@ -47,7 +49,9 @@
   document.addEventListener('click', function(e) {
     var btn = e.target.closest('#md-symbol-toolbar button[data-key]');
     if (!btn) return;
-    var textarea = document.getElementById('md-compose-input');
+    e.preventDefault();
+    e.stopPropagation();
+    var textarea = document.getElementById('md-compose-input') || document.getElementById('vots-textarea');
     if (!textarea) return;
     textarea.focus();
     insertAtCursor(textarea, btn.getAttribute('data-key'));
