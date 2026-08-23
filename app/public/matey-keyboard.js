@@ -51,11 +51,19 @@
     if (!btn) return;
     e.preventDefault();
     e.stopPropagation();
+    e.stopImmediatePropagation();
     var textarea = document.getElementById('md-compose-input') || document.getElementById('vots-textarea');
     if (!textarea) return;
     textarea.focus();
     insertAtCursor(textarea, btn.getAttribute('data-key'));
   });
+
+  document.addEventListener('touchstart', function(e) {
+    var btn = e.target.closest('#md-symbol-toolbar button[data-key]');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+  }, { passive: false });
 
   var composeInput = document.getElementById('md-compose-input');
   if (composeInput) {

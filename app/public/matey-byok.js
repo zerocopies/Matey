@@ -105,8 +105,9 @@
       var el = document.getElementById(id);
       if (el && el.checked) caps.push(el.value);
     });
-    if (!name || !baseUrl) return;
-    var providers = load();
+     if (!name || !baseUrl) return;
+     baseUrl = baseUrl.replace(/\/+$/, '');
+     var providers = load();
     var editIdx = dialog.getAttribute('data-edit-index');
     var entry = { name: name, baseUrl: baseUrl, apiKey: apiKey, model: model, capabilities: caps };
     if (editIdx !== '' && editIdx !== null) {
@@ -149,7 +150,8 @@
 
   function resolveModel(p) {
     if (p.model) return Promise.resolve(p.model);
-    return fetch(p.baseUrl + '/v1/models', { headers: p.apiKey ? { 'Authorization': 'Bearer ' + p.apiKey } : {} })
+    var url = (p.baseUrl.replace(/\/+$/, '') || '') + '/v1/models';
+    return fetch(url, { headers: p.apiKey ? { 'Authorization': 'Bearer ' + p.apiKey } : {} })
       .then(function (r) { return r.json(); })
       .then(function (j) {
         var list = (j.data || []).map(function (m) { return m.id; });
@@ -206,42 +208,62 @@
      chatVision: function (messages) {
        return this.sendVision('vision', messages);
      },
-     send: function (capability, messages) {
-       var p = this.getProvider(capability);
-       if (!p) return Promise.reject('No provider configured for: ' + capability + '. Add one in Settings → Custom.');
-       var converted = convertMessages(messages);
-       return resolveModel(p).then(function (model) {
-         return fetch(p.baseUrl + '/v1/chat/completions', {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + p.apiKey },
-           body: JSON.stringify({ model: model, messages: converted, stream: false })
-         }).then(function (r) {
-          if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + ' ' + t.slice(0, 120)); });
-          return r.json();
-        });
-      }).then(function (j) {
-        var txt = j && j.choices && j.choices[0] && (j.choices[0].message && j.choices[0].message.content);
-        if (!txt) throw new Error('Empty response from provider');
-        return txt;
-      });
-    },
-     sendVision: function (capability, messages) {
-       var p = this.getProvider(capability || 'vision');
-       if (!p) return Promise.reject('No vision provider configured. Add one in Settings → Custom (enable Vision capability).');
-      var converted = convertMessages(messages);
-      return resolveModel(p).then(function (model) {
-        return fetch(p.baseUrl + '/v1/chat/completions', {
+      send: function (capability, messages) {
+        var p = this.getProvider(capability);
+        if (!p) return Promise.reject('No provider configured for: ' + capability + '. Add one in Settings → Custom.');
+        if (!p.apiKey) return Promise.reject('No API key configured for provider: ' + p.name + '. Check Settings → BYOK.');
+        var baseUrl = (p.baseUrl || '').replace(/\/+$/, '');
+        var apiUrl = baseUrl + '/v1/chat/completions';
+        var converted = convertMessages(messages);
+        return resolveModel(p).then(function (model) {
+          return fetch(apiUrl, {
+            method: 'POST',
+            mode: 'cors',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + p.apiKey },
+            body: JSON.stringify({ model: model, messages: converted, stream: false })
+          }).then(function (r) {
+           if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 120)); });
+           return r.json();
+          });
+        }).then(function (j) {
+         var txt = j && j.choices && j.choices[0] && (j.choices[0].message && j.choices[0].message.content);
+         if (!txt) throw new Error('Empty response from provider');
+         return txt;
+       }).catch(function (err) {
+         if (err.message === 'Failed to fetch') {
+           throw new Error('Failed to fetch: check URL/key or network. URL=' + apiUrl);
+         }
+         throw err;
+       });
+      },
+      sendVision: function (capability, messages) {
+        var p = this.getProvider(capability || 'vision');
+        if (!p) return Promise.reject('No vision provider configured. Add one in Settings → Custom (enable Vision capability).');
+        if (!p.apiKey) return Promise.reject('No API key configured for provider: ' + p.name + '. Check Settings → BYOK.');
+        var baseUrl = (p.baseUrl || '').replace(/\/+$/, '');
+        var apiUrl = baseUrl + '/v1/chat/completions';
+        var converted = convertMessages(messages);
+        return resolveModel(p).then(function (model) {
+          return fetch(apiUrl, {
           method: 'POST',
+          mode: 'cors',
+          redirect: 'follow',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + p.apiKey },
           body: JSON.stringify({ model: model, messages: converted, stream: false })
         }).then(function (r) {
-          if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + ' ' + t.slice(0, 120)); });
+          if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 120)); });
           return r.json();
         });
       }).then(function (j) {
         var txt = j && j.choices && j.choices[0] && (j.choices[0].message && j.choices[0].message.content);
         if (!txt) throw new Error('Empty response from provider');
         return txt;
+      }).catch(function (err) {
+        if (err.message === 'Failed to fetch') {
+          throw new Error('Failed to fetch: check URL/key or network. URL=' + apiUrl);
+        }
+        throw err;
       });
     },
     render: renderList,

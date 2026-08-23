@@ -3443,9 +3443,11 @@ body {
     flex-wrap: nowrap;
     margin-bottom: 10px;
   }
-  .md-symbol-toolbar button {
-    width: 24px;
-    height: 24px;
+   .md-symbol-toolbar button {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
     border-radius: 6px;
     border: none;
     background: var(--surface);
@@ -3457,6 +3459,8 @@ body {
     cursor: pointer;
     touch-action: manipulation;
     flex: 1;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
   }
   .md-symbol-toolbar button:hover {
     background: var(--surface-raised);
