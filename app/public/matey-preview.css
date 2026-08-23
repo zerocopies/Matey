@@ -3422,14 +3422,14 @@ body {
 /* ===== Markdown Page Composer ===== */
 .md-composer {
   position: fixed;
-  bottom: var(--keyboard-gap, 0px);
+  bottom: var(--keyboard-offset, 0px);
   left: 0;
   right: 0;
   display: flex;
   flex-direction: column;
   width: 100%;
   z-index: 9999;
-  padding-bottom: calc(12px + 8px + env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px));
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   background: var(--bg);
   border-top: 1px solid var(--border);
 }
@@ -3522,7 +3522,7 @@ body {
     align-items: center;
     background: var(--surface);
     border-radius: 22px;
-    margin: 0 16px 12px;
+     margin: 0 16px 8px;
     padding: 8px 12px;
     overflow: hidden;
     gap: 10px;
