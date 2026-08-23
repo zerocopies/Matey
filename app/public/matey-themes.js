@@ -3,48 +3,48 @@
   'use strict';
   var themes = [
     { id: 'default', name: 'Matey Dark',
-      bg: '#000000', surface: '#0a0a0a', surfaceRaised: '#111111',
-      text: '#f0f0f0', textSecondary: '#b0b0b0', muted: '#6b6b6b',
+      bg: '#000000', surface: '#0a0a0a', surfaceRaised: '#ffffff',
+      text: '#ffffff', textSecondary: '#b0b0b0', muted: '#6b6b6b', textOnCard: '#121212',
       accent: '#f5c542', accentDim: 'rgba(245,197,66,0.12)',
       accentGreen: '#7aa2f7', accentGreenDim: 'rgba(122,162,247,0.12)', accentGreenText: '#7aa2f7',
-      border: '#1c1c1c', borderSubtle: '#141414', danger: '#f87171' },
+      border: '#e0e0e0', borderSubtle: '#f0f0f0', danger: '#f87171' },
     { id: 'metal-rose', name: 'Metal Rose',
-      bg: '#0a0806', surface: '#100e0c', surfaceRaised: '#181512',
-      text: '#e8d5c4', textSecondary: '#b09888', muted: '#6b6058',
+      bg: '#0a0806', surface: '#100e0c', surfaceRaised: '#ffffff',
+      text: '#e8d5c4', textSecondary: '#b09888', muted: '#6b6058', textOnCard: '#121212',
       accent: '#c28325', accentDim: 'rgba(194,131,37,0.12)',
       accentGreen: '#c28325', accentGreenDim: 'rgba(194,131,37,0.12)', accentGreenText: '#c28325',
-      border: '#1e1a16', borderSubtle: '#161310', danger: '#d94f5c' },
+      border: '#d4c2a8', borderSubtle: '#e0d0b8', danger: '#d94f5c' },
     { id: 'graphitexx', name: 'GraphiteXX',
-      bg: '#000000', surface: '#080808', surfaceRaised: '#0e0e0e',
-      text: '#b0b0b0', textSecondary: '#808080', muted: '#4d4d4d',
+      bg: '#000000', surface: '#080808', surfaceRaised: '#ffffff',
+      text: '#b0b0b0', textSecondary: '#808080', muted: '#4d4d4d', textOnCard: '#121212',
       accent: '#ab5555', accentDim: 'rgba(171,85,85,0.12)',
       accentGreen: '#ab5555', accentGreenDim: 'rgba(171,85,85,0.12)', accentGreenText: '#ab5555',
-      border: '#1c1c1c', borderSubtle: '#141414', danger: '#643535' },
+      border: '#e0e0e0', borderSubtle: '#f0f0f0', danger: '#643535' },
     { id: 'dark-death', name: 'Dark Death',
-      bg: '#000000', surface: '#060606', surfaceRaised: '#0c0c0c',
-      text: '#e0e0e0', textSecondary: '#a0a0a0', muted: '#555558',
+      bg: '#000000', surface: '#060606', surfaceRaised: '#ffffff',
+      text: '#e0e0e0', textSecondary: '#a0a0a0', muted: '#555558', textOnCard: '#121212',
       accent: '#0cbd79', accentDim: 'rgba(12,189,121,0.12)',
       accentGreen: '#0cbd79', accentGreenDim: 'rgba(12,189,121,0.12)', accentGreenText: '#0cbd79',
-      border: '#18181a', borderSubtle: '#101012', danger: '#ee5d43' },
+      border: '#e0e0e0', borderSubtle: '#f0f0f0', danger: '#ee5d43' },
     { id: 'nixdorf-8870', name: 'Nixdorf 8870',
-      bg: '#080400', surface: '#0c0800', surfaceRaised: '#140e00',
-      text: '#FFBF00', textSecondary: '#b8860b', muted: '#8a6a00',
+      bg: '#080400', surface: '#0c0800', surfaceRaised: '#ffffff',
+      text: '#FFBF00', textSecondary: '#b8860b', muted: '#8a6a00', textOnCard: '#8a6a00',
       accent: '#FFBF00', accentDim: 'rgba(255,191,0,0.12)',
       accentGreen: '#FFBF00', accentGreenDim: 'rgba(255,191,0,0.12)', accentGreenText: '#FFBF00',
-      border: '#1c1400', borderSubtle: '#120c00', danger: '#ff4444' },
+      border: '#d4b878', borderSubtle: '#e0c890', danger: '#ff4444' },
     { id: 'code-green', name: 'Code Green',
-      bg: '#0a0f0e', surface: '#0c1412', surfaceRaised: '#141c1a',
-      text: '#b8e6d8', textSecondary: '#7db8a7', muted: '#3d7065',
+      bg: '#0a0f0e', surface: '#0c1412', surfaceRaised: '#ffffff',
+      text: '#b8e6d8', textSecondary: '#7db8a7', muted: '#3d7065', textOnCard: '#121212',
       accent: '#2caf93', accentDim: 'rgba(44,175,147,0.12)',
       accentGreen: '#2caf93', accentGreenDim: 'rgba(44,175,147,0.12)', accentGreenText: '#2caf93',
-      border: '#162420', borderSubtle: '#101a16', danger: '#f14c4c' }
+      border: '#a0b8ab', borderSubtle: '#b0c8b7', danger: '#f14c4c' }
   ];
   function getTheme() {
     var s = localStorage.getItem('matey-theme') || 'default';
     if (!themes.some(function(t){return t.id===s;})) { localStorage.setItem('matey-theme','default'); return 'default'; }
     return s;
   }
-  var MAP = {bg:'bg',surface:'surface',surfaceRaised:'surface-raised',text:'text',textSecondary:'text-secondary',muted:'muted',accent:'accent',accentDim:'accent-dim',accentGreen:'accent-green',accentGreenDim:'accent-green-dim',accentGreenText:'accent-green-text',border:'border',borderSubtle:'border-subtle',danger:'danger'};
+  var MAP = {bg:'bg',surface:'surface',surfaceRaised:'surface-raised',text:'text',textOnCard:'text-on-card',textSecondary:'text-secondary',muted:'muted',accent:'accent',accentDim:'accent-dim',accentGreen:'accent-green',accentGreenDim:'accent-green-dim',accentGreenText:'accent-green-text',border:'border',borderSubtle:'border-subtle',danger:'danger'};
   function applyTheme(id) {
     var t = themes.find(function(x){return x.id===id;}); if(!t)return;
     var root = document.documentElement; root.setAttribute('data-theme',id);
