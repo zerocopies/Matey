@@ -109,6 +109,7 @@
 
   function loadModel(modelId, onProgress) {
     if (WHISPER_STATE.loading) return Promise.reject('Already loading');
+    if (WHISPER_STATE.ready && WHISPER_STATE.modelId === modelId) return Promise.resolve(WHISPER_STATE.transcriber);
     WHISPER_STATE.loading = true;
     WHISPER_STATE.progress = 0;
     if (onProgress) onProgress(0);
@@ -182,12 +183,29 @@
     try { localStorage.setItem('matey-whisper-model', id); } catch (e) {}
   }
 
+  function getDownloadedModels() {
+    try { return JSON.parse(localStorage.getItem('matey-whisper-downloaded') || '[]'); } catch (e) { return []; }
+  }
+  function isModelDownloaded(modelId) {
+    return getDownloadedModels().indexOf(modelId) !== -1;
+  }
+  function markModelDownloaded(modelId) {
+    var downloaded = getDownloadedModels();
+    if (downloaded.indexOf(modelId) === -1) {
+      downloaded.push(modelId);
+      try { localStorage.setItem('matey-whisper-downloaded', JSON.stringify(downloaded)); } catch (e) {}
+    }
+  }
+
   window.MateyWhisper = {
     loadModel: loadModel,
     transcribe: transcribe,
     getState: getState,
     getModelOptions: getModelOptions,
     getStoredModel: getStoredModel,
-    storeModel: storeModel
+    storeModel: storeModel,
+    getDownloadedModels: getDownloadedModels,
+    isModelDownloaded: isModelDownloaded,
+    markModelDownloaded: markModelDownloaded
   };
 })();

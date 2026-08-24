@@ -5,7 +5,10 @@
     '.content { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important; }' +
     '.settings-overlay.open .settings-body { padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px)) !important; }' +
     '.lifestyle-body { padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important; }' +
-    '.md-composer { bottom: var(--keyboard-offset, 0px); padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }';
+    '.md-composer { bottom: var(--keyboard-offset, 0px); padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }' +
+    '.journal-entries { padding-bottom: calc(16px + var(--keyboard-offset, 0px) + env(safe-area-inset-bottom, 0px)) !important; }' +
+    '.journal-entry-form { padding-bottom: calc(16px + var(--keyboard-offset, 0px) + env(safe-area-inset-bottom, 0px)) !important; }' +
+    '.md-page > .md-editor { padding-bottom: calc(16px + var(--keyboard-offset, 0px) + env(safe-area-inset-bottom, 0px)) !important; }';
 
   var styleEl = document.createElement('style');
   styleEl.textContent = KEYBOARD_CSS;
@@ -51,7 +54,16 @@
     var btn = e.target.closest('#md-symbol-toolbar button[data-key]');
     if (!btn) return;
     e.preventDefault();
-    var textarea = document.getElementById('md-compose-input') || document.getElementById('vots-textarea');
+    var textarea =
+      document.getElementById('md-compose-input') ||
+      document.getElementById('journal-content-input') ||
+      document.getElementById('journal-title-input') ||
+      document.getElementById('md-editor') ||
+      document.getElementById('vots-textarea');
+    if (!textarea) {
+      var active = document.activeElement;
+      if (active && (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT')) textarea = active;
+    }
     if (!textarea) return;
     textarea.focus();
     insertAtCursor(textarea, btn.getAttribute('data-key'));

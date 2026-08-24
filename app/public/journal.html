@@ -14,9 +14,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./matey-preview.css?v=76" />
-    <script src="./matey-boot.js?v=76"></script>
-    <script src="./matey-sentry.js?v=76"></script>
+    <link rel="stylesheet" href="./matey-preview.css?v=77" />
+    <script src="./matey-boot.js?v=77"></script>
+    <script src="./matey-sentry.js?v=77"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -187,8 +187,8 @@
         <div class="journal-calendar-option" data-filter="month">This Month</div>
       </div>
 
-      <!-- Compose Box -->
-      <div class="md-composer" id="md-composer">
+      <!-- Symbol toolbar only — no chat box; keyboard symbols insert into active text input -->
+      <div class="md-composer md-composer-symbols-only" id="md-composer">
         <div class="md-symbol-toolbar" id="md-symbol-toolbar">
           <button type="button" data-key="*">* </button>
           <button type="button" data-key="/">/</button>
@@ -203,49 +203,34 @@
           <button type="button" data-key="(">(</button>
           <button type="button" data-key=")">)</button>
         </div>
-        <div class="md-compose-box">
-          <input type="file" id="md-attach-input" accept="image/*,.pdf,.doc,.docx" style="display:none" />
-          <button class="md-attach-btn" id="md-attach" type="button" aria-label="Attach file">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          </button>
-          <button class="md-voice-btn" id="md-voice" type="button" aria-label="Voice input">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-          </button>
-          <textarea class="md-compose-input" id="md-compose-input" autocomplete="off" placeholder="Type and press send..." rows="1"></textarea>
-          <div class="md-compose-actions">
-            <button class="md-send-btn" id="md-send" type="button" aria-label="Send">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="19" y1="12" x2="12" y2="5"></line><line x1="5" y1="12" x2="12" y2="5"></line></svg>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
-    <script src="./matey-themes.js?v=76"></script>
-    <script src="./matey-swipe.js?v=76"></script>
-    <script src="./matey-profile.js?v=76"></script>
-    <script src="./matey-greet.js?v=76"></script>
-    <script src="./matey-feed.js?v=76"></script>
-    <script src="./matey-ai.js?v=76"></script>
-    <script src="./matey-md.js?v=76"></script>
-    <script src="./matey-byok.js?v=76"></script>
-    <script src="./matey-beat.js?v=76"></script>
-    <script src="./matey-lifestyle.js?v=76"></script>
-    <script src="./matey-syntax.js?v=76"></script>
-    <script src="./matey-whisper.js?v=76"></script>
-    <script src="./matey-models.js?v=76"></script>
-    <script src="./matey-journal.js?v=76"></script>
-    <script src="./matey-rss.js?v=76"></script>
-    <script src="./matey-license.js?v=76"></script>
-    <script src="./matey-settings.js?v=76"></script>
-    <script src="./matey-recall.js?v=76"></script>
-    <script src="./matey-behavior.js?v=76"></script>
-    <script src="./matey-coach.js?v=76"></script>
-    <script src="./matey-adaptive.js?v=76"></script>
-    <script src="./matey-init.js?v=76"></script>
-    <script src="./matey-tabs.js?v=76"></script>
-    <script src="./matey-keyboard.js?v=76"></script>
-    <script src="./matey-fs.js?v=76"></script>
-    <script src="./matey-hooks-manager.js?v=76"></script>
+    <script src="./matey-themes.js?v=77"></script>
+    <script src="./matey-swipe.js?v=77"></script>
+    <script src="./matey-profile.js?v=77"></script>
+    <script src="./matey-greet.js?v=77"></script>
+    <script src="./matey-feed.js?v=77"></script>
+    <script src="./matey-ai.js?v=77"></script>
+    <script src="./matey-md.js?v=77"></script>
+    <script src="./matey-byok.js?v=77"></script>
+    <script src="./matey-beat.js?v=77"></script>
+    <script src="./matey-lifestyle.js?v=77"></script>
+    <script src="./matey-syntax.js?v=77"></script>
+    <script src="./matey-whisper.js?v=77"></script>
+    <script src="./matey-models.js?v=77"></script>
+    <script src="./matey-journal.js?v=77"></script>
+    <script src="./matey-rss.js?v=77"></script>
+    <script src="./matey-license.js?v=77"></script>
+    <script src="./matey-settings.js?v=77"></script>
+    <script src="./matey-recall.js?v=77"></script>
+    <script src="./matey-behavior.js?v=77"></script>
+    <script src="./matey-coach.js?v=77"></script>
+    <script src="./matey-adaptive.js?v=77"></script>
+    <script src="./matey-init.js?v=77"></script>
+    <script src="./matey-tabs.js?v=77"></script>
+    <script src="./matey-keyboard.js?v=77"></script>
+    <script src="./matey-fs.js?v=77"></script>
+    <script src="./matey-hooks-manager.js?v=77"></script>
     <script>
       (function () {
         'use strict';
@@ -795,54 +780,6 @@
             });
           });
         }
-
-        // Compose box handlers (same as markdown page)
-        var attachBtn = document.getElementById('md-attach');
-        var composeAttachInput = document.getElementById('md-attach-input');
-        if (composeAttachInput) {
-          composeAttachInput.addEventListener('change', function () {
-            var file = this.files[0];
-            if (!file) return;
-            var hint = document.querySelector('.md-attach-hint');
-            if (!hint) {
-              var h = document.createElement('div');
-              h.className = 'md-attach-hint';
-              h.style.cssText = 'font-size:12px;color:var(--accent);margin:4px 0;';
-              attachBtn.parentNode.insertBefore(h, attachBtn.nextSibling);
-            }
-            document.querySelector('.md-attach-hint').textContent = 'Attached: ' + file.name + ' (' + Math.round(file.size/1024) + 'KB)';
-            this.value = '';
-          });
-        }
-
-        var voiceBtn = document.getElementById('md-voice');
-        var composeInput = document.getElementById('md-compose-input');
-        var recognizing = false;
-        var recognition;
-        var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SR) {
-          recognition = new SR();
-          recognition.continuous = false;
-          recognition.interimResults = true;
-          recognition.lang = 'en-US';
-          recognition.onresult = function (e) {
-            var finals = '';
-            for (var i = e.resultIndex; i < e.results.length; i++) {
-              var t = e.results[i][0].transcript;
-              if (e.results[i].isFinal) finals += t;
-              else if (composeInput) composeInput.value += t;
-            }
-            if (finals && composeInput) composeInput.value += finals;
-          };
-          recognition.onerror = function () { recognizing = false; if (voiceBtn) voiceBtn.style.opacity = ''; };
-          recognition.onend = function () { recognizing = false; if (voiceBtn) voiceBtn.style.opacity = ''; };
-        }
-        if (voiceBtn && recognition) {
-          voiceBtn.addEventListener('click', function () {
-            if (recognizing) { recognition.stop(); recognizing = false; voiceBtn.style.opacity = ''; }
-            else { if (composeInput) composeInput.focus(); recognizing = true; voiceBtn.style.opacity = '0.5'; recognition.start(); }
-          });
-        } else if (voiceBtn) { voiceBtn.style.display = 'none'; }
 
         // Initialize
         setupLockUI();

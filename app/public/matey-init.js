@@ -151,8 +151,44 @@
     if(!c||!s)return;
     var models=MateyWhisper.getModelOptions(),stored=MateyWhisper.getStoredModel(),state=MateyWhisper.getState();
     if(state.ready){var m=models.find(function(x){return x.id===stored;});s.textContent='Loaded: '+(m?m.label:stored);}
-    c.innerHTML=models.map(function(m){var l=state.ready&&stored===m.id,il=state.loading&&stored===m.id;return'<div class="micro-model-item"><div class="micro-model-info"><div class="micro-model-name">'+m.label+'</div><div class="micro-model-desc">'+m.desc+'</div></div><button class="whisper-model-btn" data-model="'+m.id+'"'+(il?' disabled':'')+'>'+(l?'✓ Loaded':il?'Loading…':'Download')+'</button></div>';}).join('');
-    c.querySelectorAll('.whisper-model-btn').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-model');MateyWhisper.storeModel(id);b.disabled=true;b.textContent='Loading…';p.style.display='flex';f.style.width='0%';t.textContent='Downloading model…';MateyWhisper.loadModel(id,function(pr){f.style.width=pr+'%';if(pr>=100)t.textContent='Initializing…';}).then(function(){p.style.display='none';s.textContent='Loaded: '+(models.find(function(x){return x.id===id;})||{}).label||id;initWhisperUI();}).catch(function(e){p.style.display='none';b.disabled=false;b.textContent='Retry';t.textContent='Error';});});});
+    c.innerHTML=models.map(function(m){
+      var downloaded=MateyWhisper.isModelDownloaded(m.id);
+      var il=state.loading&&stored===m.id;
+      return '<div class="micro-model-item"><div class="micro-model-info"><div class="micro-model-name">'+m.label+'</div><div class="micro-model-desc">'+m.desc+'</div></div><button class="whisper-model-btn'+(downloaded?' downloaded':'')+'" data-model="'+m.id+'"'+(il?' disabled':'')+'>'+(downloaded?'✓ Downloaded':'Download')+'</button></div>';
+    }).join('');
+    c.querySelectorAll('.whisper-model-btn').forEach(function(b){
+      b.addEventListener('click',function(){
+        var id=b.getAttribute('data-model');
+        var modelObj=models.find(function(x){return x.id===id;});
+        var isDownloaded=MateyWhisper.isModelDownloaded(id);
+        MateyWhisper.storeModel(id);
+        b.disabled=true;
+        if(isDownloaded){
+          b.textContent='Loading… 0%';
+          MateyWhisper.loadModel(id,function(pr){b.textContent='Loading… '+Math.round(pr)+'%';}).then(function(){
+            s.textContent='Loaded: '+(modelObj?modelObj.label:id);
+            initWhisperUI();
+          }).catch(function(e){b.disabled=false;b.textContent='Retry';});
+          return;
+        }
+        b.textContent='Downloading… 0%';
+        p.style.display='flex';
+        f.style.width='0%';
+        t.textContent='Downloading model…';
+        MateyWhisper.loadModel(id,function(pr){
+          b.textContent='Downloading… '+Math.round(pr)+'%';
+          f.style.width=pr+'%';
+          if(pr>=100)t.textContent='Initializing…';
+        }).then(function(){
+          p.style.display='none';
+          MateyWhisper.markModelDownloaded(id);
+          s.textContent='Loaded: '+(modelObj?modelObj.label:id);
+          initWhisperUI();
+        }).catch(function(e){
+          p.style.display='none';b.disabled=false;b.textContent='Retry';t.textContent='Error';
+        });
+      });
+    });
   }
   function initLicenseUI() {
     var ab=document.querySelector("#sec-about .settings-section-body");if(!ab)return;var card=ab.querySelector('.settings-about-card');if(!card||document.getElementById('license-row'))return;
