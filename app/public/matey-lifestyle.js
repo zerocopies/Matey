@@ -460,14 +460,20 @@
       var learning = buildLearningContext();
       var context = 'Ingredients: ' + ingredients;
       if (cuisines) context += '\nPreferred cuisines: ' + cuisines;
-      var messages = [{ role: 'system', content: PERSONA + '\n\n' + learning }, { role: 'user', content: [{ type: 'text', text: context + '\n\nSuggest 2-4 creative recipe ideas using these ingredients. Work with what is on hand. Return ONLY JSON array: [{ "name": string, "description": string, "ingredients_used": [string], "instructions": [string] }]' }] }];
+      var messages = [{ role: 'system', content: PERSONA + '\n\n' + learning }, { role: 'user', content: [{ type: 'text', text: context + '\n\nSuggest 2-4 creative recipe ideas using these ingredients. Work with what is on hand. For each recipe provide step-by-step cooking instructions. Return ONLY JSON array: [{ "name": string, "description": string, "ingredients_used": [string], "instructions": [string] }]' }] }];
       try {
         var text = await MateyByok.chat(messages);
         var recipes = (function () { try { return JSON.parse(text); } catch (e) { return null; } })();
         if (recipes && Array.isArray(recipes)) {
           var html = '<div class="lifestyle-suggestions">';
           recipes.forEach(function (r, i) {
-            html += '<div class="lifestyle-suggestion" data-id="recipe-' + i + '"><strong>' + esc(r.name || 'Recipe ' + (i + 1)) + '</strong><div class="lifestyle-sub">' + esc(r.description || '') + '</div><div class="lifestyle-body"><strong>Uses:</strong> ' + esc((r.ingredients_used || []).join(', ')) + '</div>' + likeDislikeBtns('recipe-' + i, 'culinary') + '</div>';
+            var stepsHtml = '';
+            if (r.instructions && r.instructions.length) {
+              stepsHtml = '<div class="lifestyle-steps"><strong>How to Make It</strong><ol>' +
+                r.instructions.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') +
+              '</ol></div>';
+            }
+            html += '<div class="lifestyle-suggestion" data-id="recipe-' + i + '"><strong>' + esc(r.name || 'Recipe ' + (i + 1)) + '</strong><div class="lifestyle-sub">' + esc(r.description || '') + '</div><div class="lifestyle-body"><strong>Uses:</strong> ' + esc((r.ingredients_used || []).join(', ')) + '</div>' + stepsHtml + likeDislikeBtns('recipe-' + i, 'culinary') + '</div>';
           });
           html += '</div>';
           resultEl.innerHTML = html;
