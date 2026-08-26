@@ -12,7 +12,7 @@ class HarnessLogger {
   }
 }
 
-// Toast helper — replaces alert(), matches app's design system (#0D0D0D bg, #2A2A2A border, #F2C94C accent)
+// Toast helper — replaces alert(), matches app's design system (#0D0D0D bg, #2A2A2A border, #B583FC accent)
 class AgentToast {
   static show(message, isError = false) {
     let el = document.getElementById('agent-toast');
@@ -37,7 +37,7 @@ class AgentProgress {
     if (!el) {
       document.body.insertAdjacentHTML('beforeend', `
         <div id="agent-progress" style="position:fixed; top:70px; left:16px; right:16px; background:#0D0D0D; border:1px solid #2A2A2A; border-radius:12px; padding:8px 14px; color:#B3B3B3; font-size:12px; z-index:9999; display:none; align-items:center; gap:8px;">
-          <span class="agent-spinner" style="width:10px; height:10px; border:2px solid #F2C94C; border-top-color:transparent; border-radius:50%; display:inline-block; animation:agent-spin 0.8s linear infinite;"></span>
+          <span class="agent-spinner" style="width:10px; height:10px; border:2px solid #B583FC; border-top-color:transparent; border-radius:50%; display:inline-block; animation:agent-spin 0.8s linear infinite;"></span>
           <span id="agent-progress-text"></span>
         </div>
         <style>@keyframes agent-spin { to { transform: rotate(360deg); } }</style>
@@ -266,7 +266,18 @@ export class AgentOrchestrator {
         }
       } catch (networkError) {
         HarnessLogger.error(stepCount, 'NETWORK_OR_TIMEOUT', networkError);
-        AgentToast.show('Connection timed out or failed. Check your network or API key.', true);
+        const errMsg = networkError?.message || networkError?.toString() || String(networkError);
+        let toastMsg = errMsg;
+        if (errMsg.indexOf('401') !== -1 || errMsg.toLowerCase().indexOf('authentication') !== -1 || errMsg.toLowerCase().indexOf('invalid api key') !== -1) {
+          toastMsg = 'Authentication failed (401): Invalid API key. Check your provider key in Settings → BYOK Models.';
+        } else if (errMsg.indexOf('timeout') !== -1) {
+          toastMsg = 'Request timed out. The model may be busy — try again, or check your provider URL.';
+        } else if (errMsg.indexOf('fetch') !== -1 || errMsg.toLowerCase().indexOf('network') !== -1 || errMsg.toLowerCase().indexOf('ECONN') !== -1) {
+          toastMsg = 'Network error: failed to reach the provider. Check your connection and API URL.';
+        }
+        AgentToast.show(toastMsg, true);
+        this.conversationHistory.push({ role: 'assistant', content: toastMsg });
+        finalReplyText = toastMsg;
         loop = false;
       }
     }

@@ -43,7 +43,7 @@ export class MateyCoach {
       <div id="coach-badge" style="position:fixed; bottom:${pos.bottom}px; right:${pos.right}px; width:26px; height:26px; background:transparent; border:none; border-radius:50%; display:none; align-items:center; justify-content:center; z-index:200; -webkit-tap-highlight-color:transparent; touch-action:none; cursor:grab; box-shadow:0 1px 3px rgba(0,0,0,0.15);">
         <span style="font-size:16px; line-height:1; display:block; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">💡</span>
         <div id="coach-tooltip" style="position:absolute; bottom:40px; right:0; transform:translateX(0); background:#0D0D0D; border:1px solid #2A2A2A; border-radius:12px; padding:14px 16px; min-width:220px; max-width:280px; color:#FFFFFF; font-family:inherit; font-size:13px; line-height:1.5; color:#B3B3B3; display:none; box-shadow:0 10px 30px rgba(0,0,0,0.5); z-index:201; text-align:left;">
-          <div style="font-size:10px; color:#F2C94C; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:6px;">Quick Tip</div>
+          <div style="font-size:10px; color:#B583FC; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:6px;">Quick Tip</div>
           <div id="coach-tip-text"></div>
         </div>
       </div>`;
