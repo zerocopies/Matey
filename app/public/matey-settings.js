@@ -43,68 +43,7 @@
             
           </div>
         </div>
-        <div class="settings-section" id="sec-models">
-          <div class="settings-section-header" data-toggle="sec-models">
-            <div class="settings-section-left">
-              <div>
-                <div class="settings-section-title">Micro Models</div>
-                <div class="settings-section-desc">Download on-device AI models</div>
-              </div>
-            </div>
-            <span class="settings-section-arrow"></span>
-          </div>
-          <div class="settings-section-body">
-            <p class="settings-placeholder" id="models-status">No micro models downloaded. These run entirely on-device for enhanced AI capabilities.</p>
-            <div class="micro-models-container">
-              <div class="micro-model-group">
-                <div class="micro-model-group-title">Grammar &amp; Punctuation Cleanup</div>
-                <div class="micro-model-item">
-                  <div class="micro-model-info">
-                    <div class="micro-model-name">t5-efficient-tiny-grammar-correction</div>
-                    <div class="micro-model-desc">Cleans up speech-to-text output, <span class="model-size">~60-100MB</span></div>
-                  </div>
-                  <button class="micro-model-download-btn" data-model="t5-grammar-correction" type="button">Download</button>
-                </div>
-              </div>
-              <div class="micro-model-group">
-                <div class="micro-model-group-title">Multilingual Translation</div>
-                <div class="micro-model-item">
-                  <div class="micro-model-info">
-                    <div class="micro-model-name">German ↔ English</div>
-                    <div class="micro-model-desc">Xenova/opus-mt-de-en + opus-mt-en-de, <span class="model-size">~40-90MB</span></div>
-                  </div>
-                  <button class="micro-model-download-btn" data-model="opus-mt-de-en" type="button">Download</button>
-                </div>
-                <div class="micro-model-item">
-                  <div class="micro-model-info">
-                    <div class="micro-model-name">Japanese ↔ English</div>
-                    <div class="micro-model-desc">Xenova/opus-mt-ja-en + opus-mt-en-ja, <span class="model-size">~40-90MB</span></div>
-                  </div>
-                  <button class="micro-model-download-btn" data-model="opus-mt-ja-en" type="button">Download</button>
-                </div>
-                <div class="micro-model-item">
-                  <div class="micro-model-info">
-                    <div class="micro-model-name">Korean ↔ English</div>
-                    <div class="micro-model-desc">Xenova/opus-mt-ko-en + opus-mt-en-ko, <span class="model-size">~40-90MB</span></div>
-                  </div>
-                  <button class="micro-model-download-btn" data-model="opus-mt-ko-en" type="button">Download</button>
-                </div>
-              </div>
-              <div class="micro-model-group">
-                <div class="micro-model-group-title">Speech-to-Text</div>
-                <p class="settings-placeholder" id="whisper-status">No speech model loaded. Select a model below to enable offline voice-to-text.</p>
-                <div id="whisper-models" class="whisper-models-dyn"></div>
-                <div class="whisper-progress" id="whisper-progress" style="display:none;">
-                  <div class="whisper-progress-bar"><div class="whisper-progress-fill" id="whisper-progress-fill"></div></div>
-                  <span class="whisper-progress-text" id="whisper-progress-text">Downloading…</span>
-                </div>
-              </div>
-            </div>
-            <p class="whisper-hint">All models run entirely on-device. No data leaves your device. Download once, use offline.</p>
-          </div>
-        </div>
-
-        <div class="settings-section" id="sec-adaptive">
+         <div class="settings-section" id="sec-adaptive">
           <div class="settings-section-header" data-toggle="sec-adaptive">
             <div class="settings-section-left">
               <div>
@@ -125,8 +64,8 @@
           <div class="settings-section-header" data-toggle="sec-byok">
             <div class="settings-section-left">
               <div>
-                <div class="settings-section-title">BYOK</div>
-                 <div class="settings-section-desc">Bring Your Own Key — add any OpenAI-compatible, OpenRouter, Gemini, or compatible API provider</div>
+                <div class="settings-section-title">Provider Configuration</div>
+                <div class="settings-section-desc">Add any OpenAI-compatible, OpenRouter, Gemini, or compatible API provider</div>
               </div>
             </div>
             <span class="settings-section-arrow"></span>
@@ -138,96 +77,182 @@
          </div>
 
          <div class="settings-section" id="sec-export">
-          <div class="settings-section-header" data-toggle="sec-export">
-            <div class="settings-section-left">
-              <div>
-                <div class="settings-section-title">Data Export</div>
-                <div class="settings-section-desc">Download your data</div>
-              </div>
-            </div>
-            <span class="settings-section-arrow"></span>
-          </div>
-          <div class="settings-section-body">
-            <button class="byok-add-btn" id="export-data" type="button">Download My Data</button>
-          </div>
-        </div>
-
-        <div class="settings-section" id="sec-fs">
-          <div class="settings-section-header" data-toggle="sec-fs">
-            <div class="settings-section-left">
-              <div>
-                <div class="settings-section-title">File System</div>
-                <div class="settings-section-desc">Workspace &amp; USB drive access</div>
-              </div>
-            </div>
-            <span class="settings-section-arrow"></span>
-          </div>
-          <div class="settings-section-body">
-            <div class="fs-status" id="fs-status">
-              <span class="fs-status-text" id="fs-status-text">No workspace connected</span>
-            </div>
-            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-              <button class="byok-add-btn" id="fs-init-workspace" type="button" style="flex:1">Matey Workspace</button>
-              <button class="byok-add-btn" id="fs-connect-usb" type="button" style="flex:1">Connect USB Drive</button>
-            </div>
-            <button class="byok-add-btn" id="fs-clear-workspace" type="button" style="margin-top:8px;width:100%">Disconnect</button>
-          </div>
-        </div>
-
-         <div class="settings-section" id="sec-applock">
-           <div class="settings-section-header" data-toggle="sec-applock">
+           <div class="settings-section-header" data-toggle="sec-export">
              <div class="settings-section-left">
                <div>
-                 <div class="settings-section-title">App Lock</div>
-                 <div class="settings-section-desc">PIN or biometric lock for the entire app</div>
+                 <div class="settings-section-title">Data Export</div>
+                 <div class="settings-section-desc">Download your data</div>
                </div>
              </div>
              <span class="settings-section-arrow"></span>
            </div>
            <div class="settings-section-body">
-             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-               <button class="byok-add-btn" id="applock-enable" type="button" style="flex:1">Enable App PIN</button>
-               <button class="byok-add-btn" id="applock-disable" type="button" style="flex:1">Disable</button>
-             </div>
-             <p class="settings-placeholder" style="margin-top:8px;font-size:12px;">
-               Your PIN is stored locally and hashed with SHA-256. Biometric support requires native Capacitive plugins.
-             </p>
+             <button class="byok-add-btn" id="export-data" type="button">Download My Data</button>
            </div>
          </div>
 
-         <div class="settings-section" id="sec-about">
-           <div class="settings-section-header" data-toggle="sec-about">
+         <div class="settings-section" id="sec-voice">
+           <div class="settings-section-header" data-toggle="sec-voice">
              <div class="settings-section-left">
                <div>
-                 <div class="settings-section-title">About</div>
-                 <div class="settings-section-desc">App info & legal</div>
+                 <div class="settings-section-title">Voice</div>
+                 <div class="settings-section-desc">Speech-to-text and text-to-speech models</div>
                </div>
              </div>
              <span class="settings-section-arrow"></span>
            </div>
            <div class="settings-section-body">
-             <div class="settings-about-card">
-               <div class="settings-about-brand">
-                 <img class="matey-logo-sm" src="./images/matey-logo.png" alt="Matey" />
+             <div class="setting-row setting-row-with-icon" id="voice-stt-row">
+               <div class="setting-row-icon">
+                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                   <path d="M12 1a3 3 0 0 0-3 3v12a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                   <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                   <line x1="12" y1="19" x2="12" y2="23"/>
+                   <line x1="9" y1="23" x2="15" y2="23"/>
+                 </svg>
                </div>
-               <div class="settings-about-version">Version 0.1.0 · Build 1</div>
-               <div class="settings-about-links">
-                  <a class="settings-about-link" href="./privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+               <div class="setting-row-body">
+                 <div class="setting-row-label">Speech Recognition</div>
+                 <div class="setting-row-value" id="voice-stt-value">None</div>
+               </div>
+               <svg class="setting-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+             </div>
+             <div class="setting-row setting-row-with-icon" id="voice-tts-row">
+               <div class="setting-row-icon">
+                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                   <path d="M12 1a3 3 0 0 0-3 3v12a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                   <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                   <line x1="12" y1="19" x2="12" y2="23"/>
+                   <line x1="9" y1="23" x2="15" y2="23"/>
+                 </svg>
+               </div>
+               <div class="setting-row-body">
+                 <div class="setting-row-label">Text-to-Speech</div>
+                 <div class="setting-row-value" id="voice-tts-value">None</div>
+               </div>
+               <svg class="setting-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+             </div>
+              <div class="setting-slider-row" id="voice-tts-speed-row">
+                <div class="setting-slider-label">
+                  <span class="setting-slider-title">TTS Speed</span>
+                  <span class="setting-slider-desc">Controls playback speed (0.5x - 2.0x)</span>
+                </div>
+                <div class="setting-slider-value" id="voice-tts-speed-value">1.00x</div>
+                <input type="range" class="setting-slider" id="voice-tts-speed" min="50" max="200" value="100" />
+              </div>
+              <div class="whisper-models-section">
+                <div class="settings-subsection-title">Speech Recognition Models</div>
+                <p class="settings-placeholder" id="whisper-status">No speech model loaded. Download one below to enable offline voice-to-text.</p>
+                <div id="whisper-models" class="whisper-models-dyn"></div>
+                <div class="whisper-progress" id="whisper-progress" style="display:none;">
+                  <div class="whisper-progress-bar"><div class="whisper-progress-fill" id="whisper-progress-fill"></div></div>
+                  <span class="whisper-progress-text" id="whisper-progress-text">Downloading…</span>
+                </div>
+                <p class="whisper-hint">All models run entirely on-device. No data leaves your device. Download once, use offline.</p>
+              </div>
+           </div>
+         </div>
+
+         <div class="settings-section" id="sec-features">
+           <div class="settings-section-header" data-toggle="sec-features">
+             <div class="settings-section-left">
+               <div>
+                 <div class="settings-section-title">Features</div>
+                 <div class="settings-section-desc">Experimental and upcoming capabilities</div>
+               </div>
+             </div>
+             <span class="settings-section-arrow"></span>
+           </div>
+           <div class="settings-section-body">
+             <div class="setting-row setting-row-with-icon">
+               <div class="setting-row-icon">🎙️</div>
+               <div class="setting-row-body">
+                 <div class="setting-row-label">Continuous Voice <span class="experimental-badge">Experimental</span></div>
+                 <div class="setting-row-desc">Keeps the microphone listening between messages for hands-free conversation.</div>
+                 <div class="setting-row-caption">Limited to short sessions. Not reliable on iOS Safari. May interrupt itself with background noise.</div>
+               </div>
+               <label class="setting-toggle">
+                 <input type="checkbox" id="feature-continuous-voice" />
+                 <span class="setting-toggle-slider"></span>
+               </label>
+             </div>
+           </div>
+         </div>
+
+          <div class="settings-section" id="sec-fs">
+            <div class="settings-section-header" data-toggle="sec-fs">
+              <div class="settings-section-left">
+                <div>
+                  <div class="settings-section-title">File System</div>
+                  <div class="settings-section-desc">Workspace &amp; USB drive access</div>
+                </div>
+              </div>
+              <span class="settings-section-arrow"></span>
+            </div>
+            <div class="settings-section-body">
+              <div class="fs-status" id="fs-status">
+                <span class="fs-status-text" id="fs-status-text">No workspace connected</span>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                <button class="byok-add-btn" id="fs-init-workspace" type="button" style="flex:1">Matey Workspace</button>
+                <button class="byok-add-btn" id="fs-connect-usb" type="button" style="flex:1">Connect USB Drive</button>
+              </div>
+              <button class="byok-add-btn" id="fs-clear-workspace" type="button" style="margin-top:8px;width:100%">Disconnect</button>
+            </div>
+          </div>
+
+          <div class="settings-section" id="sec-applock">
+            <div class="settings-section-header" data-toggle="sec-applock">
+              <div class="settings-section-left">
+                <div>
+                  <div class="settings-section-title">App Lock</div>
+                  <div class="settings-section-desc">PIN or biometric lock for the entire app</div>
+                </div>
+              </div>
+              <span class="settings-section-arrow"></span>
+            </div>
+            <div class="settings-section-body">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="byok-add-btn" id="applock-enable" type="button" style="flex:1">Enable App PIN</button>
+                <button class="byok-add-btn" id="applock-disable" type="button" style="flex:1">Disable</button>
+              </div>
+              <p class="settings-placeholder" style="margin-top:8px;font-size:12px;">
+                Your PIN is stored locally and hashed with SHA-256. Biometric support requires native Capacitive plugins.
+              </p>
+            </div>
+          </div>
+
+          <div class="settings-section" id="sec-about">
+            <div class="settings-section-header" data-toggle="sec-about">
+              <div class="settings-section-left">
+                <div>
+                  <div class="settings-section-title">About</div>
+                  <div class="settings-section-desc">App info & legal</div>
+                </div>
+              </div>
+              <span class="settings-section-arrow"></span>
+            </div>
+            <div class="settings-section-body">
+              <div class="settings-about-card">
+                <div class="settings-about-brand">
+                  <img class="matey-logo-sm" src="./images/matey-logo.png" alt="Matey" />
+                </div>
+                <div class="settings-about-version">Version 0.1.0 · Build 1</div>
+                <div class="settings-about-links">
+                   <a class="settings-about-link" href="./privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
                   <a class="settings-about-link" href="#">Terms of Service </a>
-                 <a class="settings-about-link" href="#">Open Source Licenses </a>
-                 <a class="settings-about-link" href="#">Contact Support </a>
-               </div>
-             </div>
-           </div>
-         </div>
-
-
-      </div>
-    </aside>`;
+                  <a class="settings-about-link" href="#">Open Source Licenses </a>
+                  <a class="settings-about-link" href="#">Contact Support </a>
+                </div>
+              </div>
+            </div>
+          </div>
+       </div>
+      </aside>`;
 
   var BYOK_HTML = `<div class="byok-dialog" id="byok-dialog">
   <div class="byok-dialog-panel">
-    <h3 class="byok-dialog-title">Custom Provider</h3>
+    <h3 class="byok-dialog-title">Provider Configuration</h3>
     <form id="byok-form">
       <div class="byok-field">
         <label class="byok-label" for="byok-name">Provider Name</label>
@@ -237,10 +262,10 @@
         <label class="byok-label" for="byok-url">Base URL</label>
         <input class="byok-input" id="byok-url" type="url" placeholder="https://api.example.com or http://localhost:11434" autocomplete="off" />
       </div>
-      <div class="byok-field">
+       <div class="byok-field" style="position:relative;">
         <label class="byok-label" for="byok-key">API Key</label>
         <input class="byok-input" id="byok-key" type="password" placeholder="sk-..." autocomplete="off" />
-      </div>
+       </div>
       <div class="byok-field">
         <label class="byok-label" for="byok-model">Model (optional)</label>
         <input class="byok-input" id="byok-model" type="text" placeholder="auto-detect if empty" autocomplete="off" />
@@ -259,7 +284,8 @@
         </div>
       </div>
       <div class="byok-dialog-actions">
-        <button class="byok-btn byok-btn-secondary" id="byok-test" type="button">Test</button>
+        <button class="byok-btn byok-btn-secondary" id="byok-clear-credentials" type="button">Clear Credentials</button>
+        <button class="byok-btn byok-btn-secondary" id="byok-test" type="button">Test Connection</button>
         <button class="byok-btn byok-btn-secondary" id="byok-cancel" type="button">Cancel</button>
         <button class="byok-btn byok-btn-primary" type="submit">Save</button>
       </div>
@@ -321,6 +347,8 @@
         if (window.MateyThemes) MateyThemes.build(settings);
         renderAdaptive();
         if (window.MateyByok) MateyByok.render();
+        if (typeof updateVoiceSummary === 'function') updateVoiceSummary();
+        if (window.MateyWhisper && window.MateyInit && typeof MateyInit.initWhisperUI === 'function') MateyInit.initWhisperUI();
       }
     });
     var backBtn = document.getElementById('settings-back');
@@ -375,7 +403,113 @@
          MateyAppLock.removeLock();
          alert('App lock disabled.');
        });
-     }
+      }
+
+  /* Voice settings wiring */
+  var ttsSpeedSlider = document.getElementById('voice-tts-speed');
+  var ttsSpeedValue = document.getElementById('voice-tts-speed-value');
+  var TTS_SPEED_KEY = 'matey-tts-speed';
+  var CONTINUOUS_VOICE_KEY = 'matey-continuous-voice';
+
+  function loadTtsSpeed() {
+    try { var v = parseFloat(localStorage.getItem(TTS_SPEED_KEY)); return isNaN(v) ? 1.0 : Math.max(0.5, Math.min(2.0, v)); } catch (e) { return 1.0; }
+  }
+  function storeTtsSpeed(v) {
+    try { localStorage.setItem(TTS_SPEED_KEY, String(v)); } catch (e) {}
+  }
+  function updateTtsSpeedDisplay(v) {
+    if (ttsSpeedValue) ttsSpeedValue.textContent = v.toFixed(2) + 'x';
+  }
+
+  if (ttsSpeedSlider) {
+    var speed = loadTtsSpeed();
+    ttsSpeedSlider.value = String(Math.round(speed * 100));
+    updateTtsSpeedDisplay(speed);
+    ttsSpeedSlider.addEventListener('input', function () {
+      var val = this.valueAsNumber / 100;
+      updateTtsSpeedDisplay(val);
+    });
+    ttsSpeedSlider.addEventListener('change', function () {
+      var val = this.valueAsNumber / 100;
+      storeTtsSpeed(val);
+    });
+  }
+
+  /* Expose TTS speed for playback engines */
+  window.MateyTTSSpeed = {
+    get: loadTtsSpeed,
+    set: function (v) { storeTtsSpeed(v); if (ttsSpeedSlider) ttsSpeedSlider.value = String(Math.round(v * 100)); updateTtsSpeedDisplay(v); }
+  };
+
+  /* Continuous Voice toggle wiring */
+  var cvToggle = document.getElementById('feature-continuous-voice');
+  if (cvToggle) {
+    var storedCV = false;
+    try { storedCV = localStorage.getItem(CONTINUOUS_VOICE_KEY) === 'true'; } catch (e) {}
+    cvToggle.checked = storedCV;
+    cvToggle.addEventListener('change', function () {
+      try { localStorage.setItem(CONTINUOUS_VOICE_KEY, String(this.checked)); } catch (e) {}
+    });
+  }
+
+  /* Voice model summary — update STT/TTS value rows */
+  function updateVoiceSummary() {
+    var sttVal = document.getElementById('voice-stt-value');
+    var ttsVal = document.getElementById('voice-tts-value');
+    var sttText = 'None';
+    var ttsText = 'None';
+    if (window.MateyWhisper) {
+      var stored = MateyWhisper.getStoredModel();
+      if (stored) {
+        var opts = MateyWhisper.getModelOptions();
+        var found = opts ? opts.find(function (o) { return o.id === stored; }) : null;
+        sttText = found ? found.label : stored;
+      }
+    }
+    if (sttVal) sttVal.textContent = sttText;
+    if (ttsVal) ttsVal.textContent = ttsText;
+  }
+
+  /* Navigate to Whisper tab in Micro Models when STT row is tapped */
+  var sttRow = document.getElementById('voice-stt-row');
+  if (sttRow) {
+    sttRow.addEventListener('click', function () {
+      var settings = document.getElementById('settings');
+      if (settings) {
+        settings.classList.remove('open');
+        setTimeout(function () { window.dispatchEvent(new CustomEvent('matey-open-models', { detail: { tab: 'speech' } })); }, 150);
+      }
+    });
+  }
+  var ttsRow = document.getElementById('voice-tts-row');
+  if (ttsRow) {
+    ttsRow.addEventListener('click', function () {
+      var settings = document.getElementById('settings');
+      if (settings) {
+        settings.classList.remove('open');
+        setTimeout(function () { window.dispatchEvent(new CustomEvent('matey-open-models', { detail: { tab: 'tts' } })); }, 150);
+      }
+    });
+  }
+
+  /* BYOK Clear Credentials button */
+  var clearCredBtn = document.getElementById('byok-clear-credentials');
+  if (clearCredBtn) {
+    clearCredBtn.addEventListener('click', function () {
+      if (!confirm('Clear all saved provider credentials? This cannot be undone.')) return;
+      if (window.MateyByok && typeof MateyByok.clearAll === 'function') {
+        MateyByok.clearAll();
+      } else {
+        try { localStorage.removeItem('matey-providers'); } catch (e) {}
+        try { localStorage.removeItem('matey_gemini_key'); } catch (e) {}
+        try { localStorage.removeItem('matey_openai_key'); } catch (e) {}
+      }
+      alert('All provider credentials cleared.');
+      if (window.MateyByok && typeof MateyByok.render === 'function') MateyByok.render();
+    });
+  }
+
+  /* Update voice model summary when settings panel opens */
 
   /* Remove old Gemini-specific key UI — BYOK providers section is now the single source.
      Migration of legacy matey_gemini_key is handled by migrateLegacyProviders() on init. */
@@ -409,64 +543,6 @@
     });
     var pf = document.getElementById('profile-form');
     if (pf && window.SnapProfile) pf.addEventListener('submit', SnapProfile.save);
-
-    /* Micro model download handlers — real downloads via Transformers.js */
-    var downloadBtns = document.querySelectorAll('.micro-model-download-btn');
-    downloadBtns.forEach(function (btn) {
-      var modelId = btn.dataset.model;
-      var itemEl = btn.closest('.micro-model-item');
-      var nameEl = itemEl ? itemEl.querySelector('.micro-model-name') : null;
-      var modelName = nameEl ? nameEl.textContent : modelId;
-
-      /* Check if already loaded */
-      if (window.MateyModels && MateyModels.isModelLoaded(modelId)) {
-        btn.textContent = '✓ Downloaded';
-        btn.disabled = true;
-      }
-
-      btn.addEventListener('click', async function () {
-        if (!window.MateyModels) {
-          btn.textContent = 'Error';
-          return;
-        }
-        var btnText = btn.textContent;
-        btn.textContent = 'Downloading… 0%';
-        btn.disabled = true;
-        btn.style.opacity = '0.6';
-
-        try {
-          await MateyModels.downloadModel(modelId, function (progress) {
-            btn.textContent = 'Downloading… ' + Math.round(progress) + '%';
-          });
-          btn.textContent = '✓ Downloaded';
-          btn.disabled = true;
-          btn.style.opacity = '';
-          btn.style.background = 'var(--accent-dim)';
-          btn.style.color = 'var(--accent)';
-
-          var status = document.getElementById('models-status');
-          if (status) {
-            status.textContent = 'Models ready — ' + MateyModels.getAvailableModels().filter(function (m) { return m.loaded; }).length + ' downloaded';
-            status.style.color = 'var(--accent)';
-          }
-        } catch (err) {
-          console.error('[MateySettings] Download failed:', {
-            modelId: modelId,
-            message: err.message || String(err),
-            error: err,
-            stack: err.stack || ''
-          });
-          btn.textContent = 'Retry';
-          btn.disabled = false;
-          btn.style.opacity = '';
-          var status = document.getElementById('models-status');
-          if (status) {
-            status.textContent = 'Download failed: ' + (err.message || err);
-            status.style.color = '#ff4444';
-          }
-        }
-      });
-    });
   }
 
   function inject() {

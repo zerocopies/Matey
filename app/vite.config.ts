@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { resolve } from 'path'
 
 function stripCrossorigin() {
   return {
@@ -13,6 +14,7 @@ function stripCrossorigin() {
 }
 
 export default defineConfig({
+  root: '.',
   plugins: [tailwindcss(), react(), stripCrossorigin()],
   base: './',
   server: {
@@ -22,5 +24,20 @@ export default defineConfig({
     watch: {
       ignored: ['**/.gradle-home/**']
     }
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        'agent-bundle': resolve(__dirname, 'agent-entry/agent-bundle.js')
+      },
+      output: {
+        dir: 'public',
+        entryFileNames: 'matey-agent-bundle.js',
+        chunkFileNames: 'web.[hash].js',
+        assetFileNames: '[name].[hash].[ext]'
+      }
+    },
+    emptyOutDir: false,
+    outDir: 'public'
   }
 })

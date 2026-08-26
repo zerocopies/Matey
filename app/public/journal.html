@@ -18,8 +18,8 @@
     <script>
       document.write('<link rel="stylesheet" href="./matey-preview.css?v=' + MATEY_CSS_VERSION + '">');
     </script>
-    <script src="./matey-boot.js?v=93"></script>
-    <script src="./matey-sentry.js?v=93"></script>
+    <script src="./matey-boot.js?v=100"></script>
+    <script src="./matey-sentry.js?v=100"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -114,6 +114,7 @@
 
         <!-- Three-dot menu dropdown (screen-level) -->
         <div class="journal-three-dot-menu" id="journal-three-dot-menu" style="display:none">
+          <button class="journal-menu-item" id="journal-save-as-btn" type="button">💾 Save as</button>
           <button class="journal-menu-item" id="journal-delete-entry" type="button">🗑️ Delete</button>
         </div>
       </main>
@@ -123,35 +124,35 @@
       <div class="md-composer md-composer-symbols-only journal-toolbar matey-toolbar-container" id="md-composer"></div>
      </div>
     </div>
-    <script src="./matey-themes.js?v=93"></script>
-    <script src="./matey-swipe.js?v=93"></script>
-    <script src="./matey-profile.js?v=93"></script>
-    <script src="./matey-toolbar.js?v=93"></script>
-    <script src="./matey-greet.js?v=93"></script>
-    <script src="./matey-feed.js?v=93"></script>
-    <script src="./matey-ai.js?v=93"></script>
-    <script src="./matey-md.js?v=93"></script>
-    <script src="./matey-byok.js?v=93"></script>
-    <script src="./matey-agent-harness.js?v=93"></script>
-    <script src="./matey-beat.js?v=93"></script>
-    <script src="./matey-lifestyle.js?v=93"></script>
-    <script src="./matey-syntax.js?v=93"></script>
-    <script src="./matey-whisper.js?v=93"></script>
-    <script src="./matey-models.js?v=93"></script>
-    <script src="./matey-journal.js?v=93"></script>
-    <script src="./matey-rss.js?v=93"></script>
-    <script src="./matey-license.js?v=93"></script>
-    <script src="./matey-settings.js?v=93"></script>
-    <script src="./matey-recall.js?v=93"></script>
-    <script src="./matey-behavior.js?v=93"></script>
+    <script src="./matey-themes.js?v=100"></script>
+    <script src="./matey-swipe.js?v=100"></script>
+    <script src="./matey-profile.js?v=100"></script>
+    <script src="./matey-toolbar.js?v=100"></script>
+    <script src="./matey-greet.js?v=100"></script>
+    <script src="./matey-feed.js?v=100"></script>
+    <script src="./matey-ai.js?v=100"></script>
+    <script src="./matey-md.js?v=100"></script>
+    <script src="./matey-byok.js?v=100"></script>
+    <script src="./matey-agent-harness.js?v=100"></script>
+    <script src="./matey-beat.js?v=100"></script>
+    <script src="./matey-lifestyle.js?v=100"></script>
+    <script src="./matey-syntax.js?v=100"></script>
+    <script src="./matey-whisper.js?v=100"></script>
+    <script src="./matey-models.js?v=100"></script>
+    <script src="./matey-journal.js?v=100"></script>
+    <script src="./matey-rss.js?v=100"></script>
+    <script src="./matey-license.js?v=100"></script>
+    <script src="./matey-settings.js?v=100"></script>
+    <script src="./matey-recall.js?v=100"></script>
+    <script src="./matey-behavior.js?v=100"></script>
     <script type="module">import { mateyCoach } from './matey-coach.js'; window.mateyCoach = mateyCoach;</script>
-    <script src="./matey-adaptive.js?v=93"></script>
-    <script src="./matey-init.js?v=93"></script>
-    <script src="./matey-tabs.js?v=93"></script>
-    <script src="./matey-keyboard.js?v=93"></script>
-    <script src="./matey-mic.js?v=93"></script>
-    <script src="./matey-fs.js?v=93"></script>
-    <script src="./matey-hooks-manager.js?v=93"></script>
+    <script src="./matey-adaptive.js?v=100"></script>
+    <script src="./matey-init.js?v=100"></script>
+    <script src="./matey-tabs.js?v=100"></script>
+    <script src="./matey-keyboard.js?v=100"></script>
+    <script src="./matey-mic.js?v=100"></script>
+    <script src="./matey-fs.js?v=100"></script>
+    <script src="./matey-hooks-manager.js?v=100"></script>
     <script>
       (function () {
         'use strict';
@@ -172,6 +173,7 @@
         var attachMenu = document.getElementById('journal-attach-menu');
         var headerMenuBtn = document.getElementById('journal-header-menu-btn');
         var threeDotMenu = document.getElementById('journal-three-dot-menu');
+        var saveAsBtn = document.getElementById('journal-save-as-btn');
         var deleteEntryBtn = document.getElementById('journal-delete-entry');
         var addImageBtn = document.getElementById('journal-add-image');
         var addFileBtn = document.getElementById('journal-add-file');
@@ -419,6 +421,53 @@
             threeDotMenu.style.display = threeDotMenu.style.display === 'block' ? 'none' : 'block';
             if (attachMenu) attachMenu.style.display = 'none';
             headerMenuBtn.classList.toggle('menu-active');
+          });
+        }
+
+        if (saveAsBtn) {
+          saveAsBtn.addEventListener('click', async function () {
+            if (threeDotMenu) threeDotMenu.style.display = 'none';
+            if (headerMenuBtn) headerMenuBtn.classList.remove('menu-active');
+
+            var title = titleInput.value.trim() || 'journal-entry';
+            var safeName = title.replace(/[^a-zA-Z0-9\-_ ]/g, '').trim().replace(/\s+/g, '-');
+            if (!safeName) safeName = 'journal-entry';
+            var defaultName = safeName + '.md';
+
+            var filename = prompt('Enter filename:', defaultName);
+            if (!filename) return;
+            if (!filename.toLowerCase().endsWith('.md')) filename += '.md';
+
+            var content = (titleInput.value.trim() + '\n\n' + contentInput.value).trim();
+
+            try {
+              if (window.MateyFS && MateyFS.supports()) {
+                await MateyFS.writeFile(filename, content);
+                alert('Saved as ' + filename);
+              } else if (window.MateyFSAdapter && MateyFSAdapter.saveAsFile) {
+                var result = await MateyFSAdapter.saveAsFile(content, {
+                  filename: filename,
+                  mimeType: 'text/plain'
+                });
+                if (result && result.ok) {
+                  alert('Saved as ' + filename);
+                } else {
+                  alert('Save failed: ' + (result.error || 'unknown error'));
+                }
+              } else {
+                var a = document.createElement('a');
+                a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+                a.download = filename;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function () { document.body.removeChild(a); }, 100);
+                alert('Downloaded ' + filename);
+              }
+            } catch (e) {
+              if (e && e.name === 'AbortError') return;
+              alert('Save failed: ' + (e.message || String(e)));
+            }
           });
         }
 

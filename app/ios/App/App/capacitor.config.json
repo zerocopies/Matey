@@ -1,0 +1,9 @@
+{
+	"appId": "com.matey.app",
+	"appName": "Matey",
+	"webDir": "public",
+	"packageClassList": [
+		"FilesystemPlugin",
+		"PreferencesPlugin"
+	]
+}

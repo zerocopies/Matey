@@ -339,34 +339,26 @@
       currentLinkType = detectLinkType(url);
       try { localStorage.removeItem(LINK_DRAFT_KEY); } catch (e) {}
 
-      /* Show/hide Source card based on link type */
-      var sourceCard = document.getElementById('vots-source-card');
-      var sourceLabel = document.getElementById('vots-source-label');
-      var sourceBadge = document.getElementById('vots-source-badge');
-      var editorSection = document.getElementById('vots-editor-section');
+      /* Store the link quietly — no visible source card */
+      var linkRefInput = document.getElementById('vots-link-ref-input');
+      if (linkRefInput) linkRefInput.value = currentLink;
 
-      if (sourceCard && sourceLabel && sourceBadge) {
-        sourceLabel.textContent = getDomain(currentLink);
-        sourceLabel.href = currentLink;
-        sourceBadge.textContent = currentLinkType.icon + ' ' + currentLinkType.label;
-        sourceBadge.className = 'vots-source-badge vots-badge-' + currentLinkType.type;
-        sourceCard.style.display = isSocialPost(currentLinkType.type) ? 'flex' : 'none';
-      }
+      /* Show the entry form */
+      var entryForm = document.getElementById('vots-entry-form');
+      if (entryForm) entryForm.style.display = 'block';
 
-      /* Toggle "Your Version" header for social posts */
-      var yourVersionHeader = document.getElementById('vots-your-version-header');
-      if (yourVersionHeader) {
-        yourVersionHeader.style.display = isSocialPost(currentLinkType.type) ? 'flex' : 'none';
-      }
-
-      /* Toggle link reference line for articles */
-      var linkRef = document.getElementById('vots-link-ref');
-      if (linkRef) {
-        linkRef.style.display = isSocialPost(currentLinkType.type) ? 'none' : 'flex';
-        if (linkRef) linkRef.textContent = 'Reference: ' + currentLink;
-      }
-
+      /* Hide the link gate, show the editor section */
       if (editorSection) editorSection.style.display = 'block';
+
+      /* Update the datetime */
+      var dt = document.getElementById('vots-datetime');
+      if (dt) dt.textContent = formatTimestamp(Date.now());
+
+      /* Focus the title input */
+      var titleInput = document.getElementById('vots-title-input');
+      if (titleInput) {
+        setTimeout(function() { titleInput.focus(); }, 100);
+      }
     };
 
     btn.addEventListener('click', submitHandler);
@@ -375,87 +367,215 @@
     });
   }
 
-  function initBackLink() {
-    var backBtn = document.getElementById('vots-back-link');
+  /* ---- Back to landing ---- */
+  function initBackToLanding() {
     var gate = document.getElementById('vots-link-gate');
     var editorSection = document.getElementById('vots-editor-section');
-    if (!backBtn || !gate || !editorSection) return;
+    var entryForm = document.getElementById('vots-entry-form');
+    if (!gate || !editorSection || !entryForm) return;
 
-    backBtn.addEventListener('click', function (e) {
-      e.preventDefault();
-      showConfirm(
-        'Discard entry?',
-        'Your current entry will be discarded. You haven\'t saved yet.',
-         function () {
-          currentLink = null;
-          currentLinkType = null;
-          currentAttachments = [];
-          gate.style.display = 'block';
-          editorSection.style.display = 'none';
-        }
-      );
+    function goToLanding() {
+      currentLink = null;
+      currentLinkType = null;
+      currentAttachments = [];
+      var linkRefInput = document.getElementById('vots-link-ref-input');
+      if (linkRefInput) linkRefInput.value = '';
+      gate.style.display = 'block';
+      editorSection.style.display = 'none';
+      entryForm.style.display = 'none';
+      var titleInput = document.getElementById('vots-title-input');
+      var contentInput = document.getElementById('vots-content-input');
+      if (titleInput) titleInput.value = '';
+      if (contentInput) contentInput.value = '';
+    }
+
+    /* Cancel button — discard and go back */
+    var cancelBtn = document.getElementById('vots-cancel-btn');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', function () {
+        showConfirm(
+          'Discard entry?',
+          'Your current entry will be discarded. You haven\'t saved yet.',
+          goToLanding
+        );
+      });
+    }
+
+    /* Entry menu (⋮) — save as + delete */
+    var entryMenuBtn = document.getElementById('vots-entry-menu-btn');
+    var entryMenu = document.getElementById('vots-entry-three-dot-menu');
+    if (entryMenuBtn && entryMenu) {
+      entryMenuBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        entryMenu.style.display = entryMenu.style.display === 'block' ? 'none' : 'block';
+      });
+
+      var saveAsBtn = document.getElementById('vots-save-as-btn');
+      if (saveAsBtn) {
+        saveAsBtn.addEventListener('click', async function () {
+          entryMenu.style.display = 'none';
+          var titleInput = document.getElementById('vots-title-input');
+          var contentInput = document.getElementById('vots-content-input');
+          if (!titleInput || !contentInput) return;
+
+          var title = titleInput.value.trim() || 'vots-entry';
+          var safeName = title.replace(/[^a-zA-Z0-9\-_ ]/g, '').trim().replace(/\s+/g, '-');
+          if (!safeName) safeName = 'vots-entry';
+          var defaultName = safeName + '.md';
+
+          if (typeof prompt !== 'function') return;
+          var filename = prompt('Enter filename:', defaultName);
+          if (!filename) return;
+          if (!filename.toLowerCase().endsWith('.md')) filename += '.md';
+
+          var content = (titleInput.value.trim() + '\n\n' + contentInput.value).trim();
+
+          try {
+            if (window.MateyFS && MateyFS.supports()) {
+              await MateyFS.writeFile(filename, content);
+              showMessage('Saved as ' + filename);
+            } else if (window.MateyFSAdapter && MateyFSAdapter.saveAsFile) {
+              var result = await MateyFSAdapter.saveAsFile(content, {
+                filename: filename,
+                mimeType: 'text/plain'
+              });
+              if (result && result.ok) {
+                showMessage('Saved as ' + filename);
+              } else {
+                showMessage('Save failed: ' + (result.error || 'unknown error'));
+              }
+            } else {
+              var a = document.createElement('a');
+              a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+              a.download = filename;
+              a.style.display = 'none';
+              document.body.appendChild(a);
+              a.click();
+              setTimeout(function () { document.body.removeChild(a); }, 100);
+              showMessage('Downloaded ' + filename);
+            }
+          } catch (e) {
+            if (e && e.name === 'AbortError') return;
+            showMessage('Save failed: ' + (e.message || String(e)));
+          }
+        });
+      }
+
+      var deleteEntryBtn = document.getElementById('vots-delete-entry-btn');
+      if (deleteEntryBtn) {
+        deleteEntryBtn.addEventListener('click', function () {
+          entryMenu.style.display = 'none';
+          showConfirm(
+            'Discard entry?',
+            'Your current entry will be discarded. You haven\'t saved yet.',
+            goToLanding
+          );
+        });
+      }
+    }
+
+    /* Landing menu (⋮) — settings */
+    var headerMenuBtn = document.getElementById('vots-header-menu-btn');
+    var threeDotMenu = document.getElementById('vots-three-dot-menu');
+    if (headerMenuBtn && threeDotMenu) {
+      headerMenuBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        threeDotMenu.style.display = threeDotMenu.style.display === 'block' ? 'none' : 'block';
+      });
+      var settingsItem = document.createElement('button');
+      settingsItem.className = 'journal-menu-item';
+      settingsItem.type = 'button';
+      settingsItem.textContent = '⚙️ Settings';
+      settingsItem.addEventListener('click', function () {
+        threeDotMenu.style.display = 'none';
+        var overlay = document.getElementById('vots-settings-overlay');
+        if (overlay) overlay.style.display = 'flex';
+      });
+      threeDotMenu.appendChild(settingsItem);
+    }
+
+    /* Close menus on outside click */
+    document.addEventListener('click', function () {
+      if (entryMenu) entryMenu.style.display = 'none';
+      if (threeDotMenu) threeDotMenu.style.display = 'none';
     });
   }
 
   function initAttachments() {
-    var btn = document.getElementById('vots-attach-btn');
-    var list = document.getElementById('vots-attachment-list');
-    if (!btn || !list) return;
+    var menuBtn = document.getElementById('vots-add-image');
+    var fileBtn = document.getElementById('vots-add-file');
+    var attachInput = document.getElementById('vots-attach-input');
+    var attachMenu = document.getElementById('vots-attach-menu');
+    if (!attachInput) return;
 
-    btn.addEventListener('click', function () {
-      var input = document.createElement('input');
-      input.type = 'file';
-      input.multiple = true;
-      input.accept = '*/*';
-      input.onchange = function (e) {
-        var files = Array.from(e.target.files || []);
-        if (!files.length) return;
-        files.forEach(function (file) {
-          var item = {
-            name: file.name,
-            size: file.size,
-            type: file.type || 'application/octet-stream',
-            id: Date.now().toString() + '_' + Math.random().toString(36).slice(2)
+    var handleFiles = function (files) {
+      files.forEach(function (file) {
+        var item = {
+          name: file.name,
+          size: file.size,
+          type: file.type || 'application/octet-stream',
+          id: Date.now().toString() + '_' + Math.random().toString(36).slice(2)
+        };
+        currentAttachments.push(item);
+        try {
+          var reader = new FileReader();
+          reader.onload = function () {
+            item.preview = reader.result;
+            renderAttachment(item);
           };
-          currentAttachments.push(item);
-          try {
-            var reader = new FileReader();
-            reader.onload = function () {
-              item.preview = reader.result;
-              renderAttachment(item);
-            };
-            if (file.type.startsWith('image/')) {
-              reader.readAsDataURL(file);
-            } else {
-              item.preview = null;
-              renderAttachment(item);
-            }
-          } catch (e2) { renderAttachment(item); }
-        });
-      };
-      input.click();
+          if (file.type.startsWith('image/')) {
+            reader.readAsDataURL(file);
+          } else {
+            item.preview = null;
+            renderAttachment(item);
+          }
+        } catch (e2) { renderAttachment(item); }
+      });
+    };
+
+    if (menuBtn) {
+      menuBtn.addEventListener('click', function () {
+        attachInput.accept = 'image/*';
+        attachInput.click();
+        if (attachMenu) attachMenu.style.display = 'none';
+      });
+    }
+
+    if (fileBtn) {
+      fileBtn.addEventListener('click', function () {
+        attachInput.accept = '*/*';
+        attachInput.click();
+        if (attachMenu) attachMenu.style.display = 'none';
+      });
+    }
+
+    attachInput.addEventListener('change', function (e) {
+      var files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      handleFiles(files);
+      attachInput.value = '';
     });
   }
 
   function renderAttachment(item) {
-    var list = document.getElementById('vots-attachment-list');
+    var list = document.getElementById('vots-attachments');
     if (!list) return;
     var div = document.createElement('div');
-    div.className = 'vots-attachment';
+    div.className = 'journal-attachment';
     div.setAttribute('data-id', item.id);
     if (item.preview) {
-      div.innerHTML = '<img src="' + item.preview + '" class="vots-attachment-thumb" alt="' + escapeHtml(item.name) + '">';
+      div.innerHTML = '<img src="' + item.preview + '" class="journal-attachment-thumb" alt="' + escapeHtml(item.name) + '">';
     } else {
       var icon = getFileTypeIcon(item.type);
-      div.innerHTML = '<div class="vots-attachment-icon">' + icon + '</div>';
+      div.innerHTML = '<div class="journal-attachment-icon">' + icon + '</div>';
     }
     var info = document.createElement('div');
-    info.className = 'vots-attachment-info';
-    info.innerHTML = '<div class="vots-attachment-name">' + escapeHtml(item.name) + '</div>' +
-      '<div class="vots-attachment-size">' + formatFileSize(item.size) + '</div>';
+    info.className = 'journal-attachment-info';
+    info.innerHTML = '<div class="journal-attachment-name">' + escapeHtml(item.name) + '</div>' +
+      '<div class="journal-attachment-size">' + formatFileSize(item.size) + '</div>';
     div.appendChild(info);
     var removeBtn = document.createElement('button');
-    removeBtn.className = 'vots-attachment-remove';
+    removeBtn.className = 'journal-attachment-remove';
     removeBtn.type = 'button';
     removeBtn.innerHTML = '&times;';
     removeBtn.title = 'Remove';
@@ -478,46 +598,38 @@
 
   /* ---- Save Entry ---- */
   async function initSaveEntry() {
-    var btn = document.getElementById('vots-save-btn');
-    var cancelBtn = document.getElementById('vots-cancel-btn');
+    var btn = document.getElementById('vots-save-entry-btn');
     if (!btn) return;
-
-    var tagsInput = document.getElementById('vots-tags-input');
-    if (tagsInput) {
-      tagsInput.addEventListener('input', function () {
-        var raw = tagsInput.value.trim();
-        currentTags = raw ? raw.split(',').map(function (t) { return t.trim(); }).filter(function (t) { return t; }) : [];
-      });
-    }
 
     btn.addEventListener('click', async function () {
       var titleInput = document.getElementById('vots-title-input');
-      var textArea = document.getElementById('vots-textarea');
-      if (!titleInput || !textArea) return;
+      var contentInput = document.getElementById('vots-content-input');
+      if (!titleInput || !contentInput) return;
 
       var title = titleInput.value.trim();
       if (!title) { showMessage('Title is required'); titleInput.focus(); return; }
       if (!currentLink) { showMessage('A source link is required'); return; }
 
-      var editor = document.getElementById('vots-editor');
-      var content = textArea.value || (editor ? editor.value : '');
+      var content = contentInput.value;
 
-       var entry = {
-         id: Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
+      if (window.mateyCoach && (title || content)) mateyCoach.evaluate(content || title); // app-wide prompt coaching
+
+      var entry = {
+        id: Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
         link: currentLink,
         domain: getDomain(currentLink),
         linkType: currentLinkType ? currentLinkType.type : 'article',
         title: title,
-         content: content,
-         tags: currentTags,
-         attachments: currentAttachments.map(function (a) {
-           return { name: a.name, size: a.size, type: a.type, id: a.id };
-         }),
-         timestamp: Date.now(),
-         updatedAt: Date.now()
-       };
+        content: content,
+        tags: currentTags,
+        attachments: currentAttachments.map(function (a) {
+          return { name: a.name, size: a.size, type: a.type, id: a.id };
+        }),
+        timestamp: Date.now(),
+        updatedAt: Date.now()
+      };
 
-       var data = await getData();
+      var data = await getData();
       data.entries.unshift(entry);
       if (!data.tags) data.tags = {};
       currentTags.forEach(function (t) { data.tags[t] = true; });
@@ -526,43 +638,24 @@
       try { localStorage.removeItem(TITLE_DRAFT_KEY); } catch (e) {}
       try { localStorage.removeItem(TEXT_DRAFT_KEY); } catch (e) {}
       currentLink = null;
+      currentLinkType = null;
       currentAttachments = [];
       currentTags = [];
 
-      gate = document.getElementById('vots-link-gate');
-      editorSection = document.getElementById('vots-editor-section');
+      var gate = document.getElementById('vots-link-gate');
+      var editorSection = document.getElementById('vots-editor-section');
+      var entryForm = document.getElementById('vots-entry-form');
       if (gate) gate.style.display = 'block';
       if (editorSection) editorSection.style.display = 'none';
+      if (entryForm) entryForm.style.display = 'none';
       if (titleInput) titleInput.value = '';
-      if (textArea) textArea.value = '';
-      if (editor) editor.value = '';
-      var list = document.getElementById('vots-attachment-list');
+      if (contentInput) contentInput.value = '';
+      var list = document.getElementById('vots-attachments');
       if (list) list.innerHTML = '';
-      var tagsInput = document.getElementById('vots-tags-input');
-      if (tagsInput) tagsInput.value = '';
 
       await renderEntryHistory();
       showMessage('Entry saved');
-     });
-
-    if (cancelBtn) {
-      cancelBtn.addEventListener('click', function () {
-        showConfirm(
-          'Discard entry?',
-          'Your current entry will be discarded. You haven\'t saved yet.',
-          function () {
-          currentLink = null;
-          currentLinkType = null;
-          currentAttachments = [];
-          currentTags = [];
-          var g = document.getElementById('vots-link-gate');
-            var es = document.getElementById('vots-editor-section');
-            if (g) g.style.display = 'block';
-            if (es) es.style.display = 'none';
-          }
-        );
-      });
-    }
+    });
   }
 
   /* ---- Entry History ---- */
@@ -701,27 +794,20 @@
   async function init() {
     activateIncognito();
 
-    /* Load view preference */
-    try {
-      currentView = JSON.parse(localStorage.getItem(VIEWS_KEY) || '"list"');
-    } catch (e) {}
-
-     /* PIN lock check */
-     if (isLockEnabled()) {
-       await showLockScreen();
-       if (isLocked()) {
-         await renderEntryHistory();
-         return;
-       }
-     }
+    /* PIN lock check */
+    if (isLockEnabled()) {
+      await showLockScreen();
+      if (isLocked()) {
+        await renderEntryHistory();
+        return;
+      }
+    }
 
     await initPinLockConfig();
     initLinkGate();
-    initBackLink();
+    initBackToLanding();
     initAttachments();
     await initSaveEntry();
-    initSearch();
-    initViewToggle();
     initSettingsModal();
 
     var backupAllBtn = document.getElementById('vots-backup-all');
@@ -737,35 +823,24 @@
       currentLinkType = detectLinkType(draft);
       var gate = document.getElementById('vots-link-gate');
       var editorSection = document.getElementById('vots-editor-section');
-      if (gate && editorSection) {
+      var entryForm = document.getElementById('vots-entry-form');
+      if (gate && editorSection && entryForm) {
         gate.style.display = 'none';
         editorSection.style.display = 'block';
+        entryForm.style.display = 'block';
       }
-      /* Update source card state */
-      var sourceCard = document.getElementById('vots-source-card');
-      var sourceBadge = document.getElementById('vots-source-badge');
-      var yourVersionHeader = document.getElementById('vots-your-version-header');
-      var linkRef = document.getElementById('vots-link-ref');
-      if (sourceCard && sourceBadge) {
-        sourceBadge.textContent = currentLinkType.icon + ' ' + currentLinkType.label;
-        sourceBadge.className = 'vots-source-badge vots-badge-' + currentLinkType.type;
-        sourceCard.style.display = isSocialPost(currentLinkType.type) ? 'flex' : 'none';
-      }
-      if (yourVersionHeader) {
-        yourVersionHeader.style.display = isSocialPost(currentLinkType.type) ? 'flex' : 'none';
-      }
-      if (linkRef) {
-        linkRef.style.display = isSocialPost(currentLinkType.type) ? 'none' : 'flex';
-        linkRef.textContent = 'Reference: ' + currentLink;
-      }
+      var linkRefInput = document.getElementById('vots-link-ref-input');
+      if (linkRefInput) linkRefInput.value = currentLink;
+      var dt = document.getElementById('vots-datetime');
+      if (dt) dt.textContent = formatTimestamp(Date.now());
       try { localStorage.removeItem(LINK_DRAFT_KEY); } catch (e) {}
       var titleInput = document.getElementById('vots-title-input');
       if (titleInput) {
         try { titleInput.value = localStorage.getItem(TITLE_DRAFT_KEY) || ''; } catch (e) {}
       }
-      var textArea = document.getElementById('vots-textarea');
-      if (textArea) {
-        try { textArea.value = localStorage.getItem(TEXT_DRAFT_KEY) || ''; } catch (e) {}
+      var contentInput = document.getElementById('vots-content-input');
+      if (contentInput) {
+        try { contentInput.value = localStorage.getItem(TEXT_DRAFT_KEY) || ''; } catch (e) {}
       }
     }
 
@@ -776,18 +851,18 @@
         try { localStorage.setItem(TITLE_DRAFT_KEY, titleInput.value); } catch (e) {}
       });
     }
-    var textArea = document.getElementById('vots-textarea');
-    if (textArea) {
-      textArea.addEventListener('input', function () {
-        try { localStorage.setItem(TEXT_DRAFT_KEY, textArea.value); } catch (e) {}
+    var contentInput = document.getElementById('vots-content-input');
+    if (contentInput) {
+      contentInput.addEventListener('input', function () {
+        try { localStorage.setItem(TEXT_DRAFT_KEY, contentInput.value); } catch (e) {}
       });
     }
 
     await renderEntryHistory();
 
-    if (textArea) {
+    if (contentInput) {
       window.addEventListener('beforeunload', function () {
-        try { localStorage.setItem('matey-vots-temp', textArea.value); } catch (e) {}
+        try { localStorage.setItem('matey-vots-temp', contentInput.value); } catch (e) {}
       });
     }
   }

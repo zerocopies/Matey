@@ -438,6 +438,12 @@
     var modal = createModal('modal-culinary', 'Culinary', body);
     var resultEl = modal.querySelector('#culinary-result');
     var prefs = store.culinaryPrefs();
+
+    /* Inject inline mic button for recipe-ingredients textarea */
+    var ingredientsInput = modal.querySelector('#recipe-ingredients');
+    if (ingredientsInput && window.MateyMic && typeof MateyMic.injectMicButton === 'function') {
+      MateyMic.injectMicButton(ingredientsInput);
+    }
     modal.querySelector('#cuisine-prefs').value = prefs.cuisines || '';
 
     modal.querySelectorAll('.lifestyle-tab').forEach(function (tab) {
@@ -454,13 +460,14 @@
     modal.querySelector('#recipe-generate').addEventListener('click', async function () {
       var ingredients = modal.querySelector('#recipe-ingredients').value.trim();
       var cuisines = modal.querySelector('#cuisine-prefs').value.trim();
+      if (window.mateyCoach) mateyCoach.evaluate(ingredients); // app-wide prompt coaching
       if (!ingredients) { showError(resultEl, 'Please enter some ingredients'); return; }
       store.saveCulinaryPrefs({ cuisines: cuisines });
       showLoading(resultEl);
       var learning = buildLearningContext();
       var context = 'Ingredients: ' + ingredients;
       if (cuisines) context += '\nPreferred cuisines: ' + cuisines;
-      var messages = [{ role: 'system', content: PERSONA + '\n\n' + learning }, { role: 'user', content: [{ type: 'text', text: context + '\n\nSuggest 2-4 creative recipe ideas using these ingredients. Work with what is on hand. For each recipe provide step-by-step cooking instructions. Return ONLY JSON array: [{ "name": string, "description": string, "ingredients_used": [string], "instructions": [string] }]' }] }];
+      var messages = [{ role: 'system', content: PERSONA + '\n\n' + learning }, { role: 'user', content: [{ type: 'text', text: context + '\n\nSuggest 2-4 creative recipe ideas using these ingredients. Work with what is on hand. For each recipe provide step-by-step cooking instructions. Return ONLY JSON array: [{ "name": string, "description": string, "ingredients_used": [string], "steps": [string] }]' }] }];
       try {
         var text = await MateyByok.chat(messages);
         var recipes = (function () { try { return JSON.parse(text); } catch (e) { return null; } })();
@@ -468,9 +475,9 @@
           var html = '<div class="lifestyle-suggestions">';
           recipes.forEach(function (r, i) {
             var stepsHtml = '';
-            if (r.instructions && r.instructions.length) {
-              stepsHtml = '<div class="lifestyle-steps"><strong>How to Make It</strong><ol>' +
-                r.instructions.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') +
+            if (r.steps && r.steps.length) {
+              stepsHtml = '<div class="lifestyle-steps"><strong>Steps</strong><ol>' +
+                r.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') +
               '</ol></div>';
             }
             html += '<div class="lifestyle-suggestion" data-id="recipe-' + i + '"><strong>' + esc(r.name || 'Recipe ' + (i + 1)) + '</strong><div class="lifestyle-sub">' + esc(r.description || '') + '</div><div class="lifestyle-body"><strong>Uses:</strong> ' + esc((r.ingredients_used || []).join(', ')) + '</div>' + stepsHtml + likeDislikeBtns('recipe-' + i, 'culinary') + '</div>';

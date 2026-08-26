@@ -116,35 +116,80 @@
   function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
   function save(list) { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {} }
 
-   function renderList() {
-    var el = document.getElementById('byok-list');
-    if (!el) return;
+  /* Migrate legacy single-provider keys into the generic BYOK list */
+  function migrateLegacyProviders() {
     var providers = load();
-    if (!providers.length) { el.innerHTML = '<p class="byok-empty">No custom providers configured.</p>'; return; }
-    el.innerHTML = providers.map(function (p, i) {
-      var caps = (p.capabilities || []).map(function (c) {
-        var label = { text: 'Text', vision: 'Vision', stt: 'Speach', imagegen: 'Image Gen' }[c] || c;
-        return '<span class="byok-cap-tag">' + label + '</span>';
-      }).join('');
-      return '<div class="byok-provider-item" data-index="' + i + '">' +
-        '<div class="byok-provider-info"><span class="byok-provider-name">' + esc(p.name) + '</span>' +
-        '<span class="byok-provider-url">' + esc(p.baseUrl) + '</span>' +
-        (caps ? '<div class="byok-provider-caps">' + caps + '</div>' : '') +
-        '</div>' +
-        '<div class="byok-provider-actions">' +
-        '<button class="byok-edit" data-action="edit" data-index="' + i + '" aria-label="Edit">✎</button>' +
-        '<button class="byok-delete" data-action="delete" data-index="' + i + '" aria-label="Delete">✕</button>' +
-        '</div></div>';
-    }).join('');
-    el.querySelectorAll('[data-action]').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var idx = parseInt(this.getAttribute('data-index'));
-        if (this.getAttribute('data-action') === 'delete') deleteProvider(idx);
-        else editProvider(idx);
+    var migrated = false;
+
+    /* Migrate matey_gemini_key → Gemini provider entry */
+    var geminiKey = localStorage.getItem('matey_gemini_key');
+    if (geminiKey && !providers.some(function (p) { return p.name === 'Gemini' && p.baseUrl.indexOf('generativelanguage') !== -1; })) {
+      providers.unshift({
+        name: 'Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+        apiKey: geminiKey,
+        model: '',
+        capabilities: ['text', 'text-gen', 'vision']
       });
-    });
+      migrated = true;
+      localStorage.removeItem('matey_gemini_key');
+    }
+
+    /* Migrate matey_openai_key → OpenAI provider entry */
+    var openaiKey = localStorage.getItem('matey_openai_key');
+    if (openaiKey && !providers.some(function (p) { return p.name.toLowerCase().indexOf('openai') !== -1; })) {
+      providers.unshift({
+        name: 'OpenAI',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: openaiKey,
+        model: '',
+        capabilities: ['text', 'text-gen', 'vision', 'imagegen']
+      });
+      migrated = true;
+      localStorage.removeItem('matey_openai_key');
+    }
+
+    if (migrated) save(providers);
+    return providers;
   }
+
+  function renderList() {
+     var el = document.getElementById('byok-list');
+     if (!el) return;
+     var providers = load();
+     if (!providers.length) { el.innerHTML = '<p class="byok-empty">No custom providers configured.</p>'; return; }
+     el.innerHTML = providers.map(function (p, i) {
+       var caps = (p.capabilities || []).map(function (c) {
+         var label = { text: 'Text', vision: 'Vision', stt: 'Voice', imagegen: 'Image Gen' }[c] || c;
+         return '<span class="byok-cap-tag">' + label + '</span>';
+       }).join('');
+       var maskedKey = maskKey(p.apiKey);
+       return '<div class="byok-provider-item" data-index="' + i + '">' +
+         '<div class="byok-provider-info"><span class="byok-provider-name">' + esc(p.name) + '</span>' +
+         '<span class="byok-provider-url">' + esc(p.baseUrl) + '</span>' +
+         '<span class="byok-provider-key">' + maskedKey + '</span>' +
+         (caps ? '<div class="byok-provider-caps">' + caps + '</div>' : '') +
+         '</div>' +
+         '<div class="byok-provider-actions">' +
+         '<button class="byok-edit" data-action="edit" data-index="' + i + '" aria-label="Edit">✎</button>' +
+         '<button class="byok-delete" data-action="delete" data-index="' + i + '" aria-label="Delete">✕</button>' +
+         '</div></div>';
+     }).join('');
+     el.querySelectorAll('[data-action]').forEach(function (btn) {
+       btn.addEventListener('click', function (e) {
+         e.stopPropagation();
+         var idx = parseInt(this.getAttribute('data-index'));
+         if (this.getAttribute('data-action') === 'delete') deleteProvider(idx);
+         else editProvider(idx);
+       });
+     });
+   }
+
+   function maskKey(key) {
+     if (!key) return 'No key';
+     if (key.length <= 8) return '••••••••';
+     return key.slice(0, 4) + '••••' + key.slice(-4);
+   }
 
   function testConnection() {
     var name = document.getElementById('byok-name').value.trim();
@@ -241,6 +286,7 @@
   function editProvider(idx) { showDialog(idx); }
 
   function init() {
+    migrateLegacyProviders();
     renderList();
     wireDynamic();
   }
@@ -254,6 +300,15 @@
     if (form) form.addEventListener('submit', saveProvider);
     var testBtn = document.getElementById('byok-test');
     if (testBtn) testBtn.addEventListener('click', testConnection);
+    var clearBtn = document.getElementById('byok-clear-credentials');
+    if (clearBtn) clearBtn.addEventListener('click', function () {
+      if (!confirm('Clear all saved provider credentials? This cannot be undone.')) return;
+      try { localStorage.removeItem('matey-providers'); } catch (e) {}
+      try { localStorage.removeItem('matey_gemini_key'); } catch (e) {}
+      try { localStorage.removeItem('matey_openai_key'); } catch (e) {}
+      alert('All provider credentials cleared.');
+      renderList();
+    });
     var backdrop = document.getElementById('byok-dialog');
     if (backdrop) backdrop.addEventListener('click', function (e) { if (e.target === backdrop) hideDialog(); });
   }
@@ -296,25 +351,211 @@
     });
   }
 
+   /* Gemini API — clean vanilla JS REST fetch implementation.
+      Endpoint: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}
+      Body schema: {"contents":[{"parts":[{"text":userPrompt}]}]} */
+  function sendToGemini(apiKey, userPrompt) {
+    var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + encodeURIComponent(apiKey);
+    var body = JSON.stringify({
+      contents: [{
+        parts: [{ text: userPrompt }]
+      }]
+    });
+    return fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body
+    }).then(function (r) {
+      if (!r.ok) {
+        return r.text().then(function (t) {
+          var msg = 'HTTP ' + r.status + ': ' + t.slice(0, 120);
+          if (r.status === 401 || r.status === 403) {
+            throw new Error('Invalid API Key: ' + msg);
+          }
+          throw new Error(msg);
+        });
+      }
+      return r.json();
+    }).then(function (j) {
+      var txt = j && j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0] && j.candidates[0].content.parts[0].text;
+      if (!txt) throw new Error('Empty response from Gemini API');
+      return txt;
+    }).catch(function (err) {
+      if (err.message && err.message.indexOf('Failed to fetch') !== -1) {
+        throw new Error('Network Error: Failed to fetch — check API key or network connectivity');
+      }
+      throw err;
+    });
+  }
+
+  /* Route a request through the appropriate provider API.
+     Detects Gemini (generativelanguage) providers and uses Gemini format,
+     otherwise uses OpenAI-compatible /v1/chat/completions with tool calling.
+     Returns a message object with { role, content, tool_calls } */
+  function routeRequest(opts) {
+    var capability = opts.capability;
+    var messages = opts.messages;
+    var tools = opts.tools;
+    var toolChoice = opts.toolChoice;
+    var timeoutMs = opts.timeoutMs || 30000;
+
+    var p = MateyByok_instance.getProvider(capability);
+    if (!p) {
+      return MateyByok_instance.resolveProvider(capability).then(function (resolved) {
+        return doRouteRequest(resolved, capability, messages, tools, toolChoice, timeoutMs);
+      });
+    }
+    return doRouteRequest(p, capability, messages, tools, toolChoice, timeoutMs);
+  }
+
+  var MateyByok_instance = null;
+  function doRouteRequest(p, capability, messages, tools, toolChoice, timeoutMs) {
+    var baseLower = (p.baseUrl || '').toLowerCase();
+    var isGemini = baseLower.indexOf('generativelanguage') !== -1 || baseLower.indexOf('gemini') !== -1;
+
+    if (isGemini) {
+      return doGeminiRequest(p, messages, timeoutMs);
+    }
+
+    /* OpenAI-compatible request with tool calling */
+    var apiUrl = buildApiUrl(p.baseUrl, '/v1/chat/completions');
+    var converted = convertMessages(messages);
+    return resolveModel(p).then(function (model) {
+      var body = { model: model, messages: converted, stream: false };
+      if (tools && tools.length) {
+        body.tools = tools;
+        if (toolChoice) body.tool_choice = toolChoice;
+      }
+      return nativeFetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + p.apiKey },
+        body: JSON.stringify(body)
+      });
+    }).then(function (r) {
+      if (!r.ok) return r.text().then(function (t) {
+        if (r.status === 401) throw new Error('Authentication failed (401): Invalid API key');
+        throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 300));
+      });
+      return r.json();
+    }).then(function (j) {
+      if (!j.choices || !j.choices.length) throw new Error('Empty response from provider');
+      return j.choices[0].message;
+    });
+  }
+
+  /* Gemini request — converts OpenAI-format messages to Gemini format */
+  function doGeminiRequest(p, messages, timeoutMs) {
+    var model = p.model || 'gemini-1.5-flash';
+    var apiKey = p.apiKey;
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(apiKey);
+
+    /* Convert messages to Gemini contents format */
+    var systemParts = [];
+    var contents = [];
+    messages.forEach(function (msg) {
+      if (msg.role === 'system') {
+        systemParts.push({ text: msg.content });
+      } else if (msg.role === 'user') {
+        contents.push({ role: 'user', parts: [{ text: msg.content }] });
+      } else if (msg.role === 'assistant') {
+        contents.push({ role: 'model', parts: [{ text: msg.content || '(analyzing...)' }] });
+      } else if (msg.role === 'tool') {
+        systemParts.push({ text: 'Tool result: ' + JSON.stringify(msg.content || msg.content) });
+      }
+    });
+
+    /* Merge system prompt into first user message */
+    if (systemParts.length > 0 && contents.length > 0) {
+      var firstUser = contents[0];
+      if (firstUser.role === 'user') {
+        firstUser.parts = [{ text: systemParts.map(function (s) { return s.text; }).join('\n\n') + '\n\n' + (firstUser.parts[0].text || '') }];
+      } else {
+        contents.unshift({ role: 'user', parts: systemParts });
+      }
+    }
+
+    var body = {
+      contents: contents,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 4096
+      }
+    };
+
+    return nativeFetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      if (!r.ok) return r.text().then(function (t) {
+        if (r.status === 401) throw new Error('Authentication failed (401): Invalid API key');
+        throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 300));
+      });
+      return r.json();
+    }).then(function (j) {
+      if (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0]) {
+        var text = j.candidates[0].content.parts[0].text;
+        /* Return in OpenAI message format for consistency */
+        return { role: 'assistant', content: text, tool_calls: null };
+      }
+      throw new Error('Empty response from Gemini API');
+    });
+  }
+
+  /* Create a persistent instance reference for internal use before window.MateyByok is set */
+  var MateyByok_instance = { getProvider: null, resolveProvider: null };
+  function initInstanceRef() {
+    MateyByok_instance.getProvider = function(cap) {
+      var providers = load();
+      if (providers.length > 0) {
+        if (!cap) return providers[0];
+        var normCap = cap.replace ? cap.replace(/-gen$/, '') : cap;
+        for (var i = 0; i < providers.length; i++) {
+          var caps = providers[i].capabilities || [];
+          if (caps.indexOf(cap) !== -1 || (normCap && caps.indexOf(normCap) !== -1)) return providers[i];
+        }
+        for (var j = 0; j < providers.length; j++) {
+          var caps2 = providers[j].capabilities || [];
+          if (!caps2.length) return providers[j];
+        }
+        return providers[0];
+      }
+      return null;
+    };
+    MateyByok_instance.resolveProvider = function(cap) {
+      var p = MateyByok_instance.getProvider(cap);
+      if (p) return Promise.resolve(p);
+      return ensureProvider().then(function (result) {
+        if (result) return result;
+        return Promise.reject('No provider configured for capability: ' + cap);
+      });
+    };
+   }
+   if (typeof window !== 'undefined') {
+     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initInstanceRef);
+     else initInstanceRef();
+   }
+
     window.MateyByok = {
-    load: load,
+      load: load,
     hasProviders: function () { return load().length > 0; },
-     getProvider: function (capability) {
-       var providers = load();
-       if (providers.length > 0) {
-         if (!capability) return providers[0];
-         for (var i = 0; i < providers.length; i++) {
-           var caps = providers[i].capabilities || [];
-           if (caps.indexOf(capability) !== -1) return providers[i];
-         }
-         for (var j = 0; j < providers.length; j++) {
-           var caps2 = providers[j].capabilities || [];
-           if (!caps2.length) return providers[j];
-         }
-         return providers[0];
-       }
-       return null;
-     },
+      getProvider: function (capability) {
+        var providers = load();
+        if (providers.length > 0) {
+          if (!capability) return providers[0];
+          var normCap = capability.replace ? capability.replace(/-gen$/, '') : capability;
+          for (var i = 0; i < providers.length; i++) {
+            var caps = providers[i].capabilities || [];
+            if (caps.indexOf(capability) !== -1 || (normCap && caps.indexOf(normCap) !== -1)) return providers[i];
+          }
+          for (var j = 0; j < providers.length; j++) {
+            var caps2 = providers[j].capabilities || [];
+            if (!caps2.length) return providers[j];
+          }
+          return providers[0];
+        }
+        return null;
+      },
     resolveProvider: function (capability) {
       var p = this.getProvider(capability);
       if (p) return Promise.resolve(p);
@@ -396,10 +637,22 @@
          throw err;
        });
      },
-     render: renderList,
-     wireDynamic: wireDynamic
-   };
+      render: renderList,
+      wireDynamic: wireDynamic,
+      sendToGemini: sendToGemini,
+      routeRequest: routeRequest,
+      buildApiUrl: buildApiUrl,
+      nativeFetch: nativeFetch,
+      migrateLegacyProviders: migrateLegacyProviders,
+      maskKey: maskKey,
+      clearAll: function () {
+        try { localStorage.removeItem('matey-providers'); } catch (e) {}
+        try { localStorage.removeItem('matey_gemini_key'); } catch (e) {}
+        try { localStorage.removeItem('matey_openai_key'); } catch (e) {}
+        if (typeof renderList === 'function') renderList();
+      }
+    };
 
-   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-   else init();
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
 })();

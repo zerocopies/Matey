@@ -3,8 +3,10 @@
   'use strict';
   var WHISPER_STATE = { ready: false, model: null, transcriber: null, loading: false, modelId: null, progress: 0 };
   var MODEL_OPTIONS = [
-    { id: 'Xenova/whisper-tiny.en', label: 'Tiny (~99MB)', size: '99MB', desc: 'Fast dictation' },
-    { id: 'Xenova/whisper-base.en', label: 'Base (~300MB)', size: '300MB', desc: 'Higher accuracy' }
+    { id: 'Xenova/whisper-tiny', label: 'Tiny (multilingual, 99MB)', size: '99MB', desc: 'Fast — supports English, Chinese, French, German, Spanish, Arabic, Japanese, Korean, Russian, Portuguese, Italian, Dutch, Czech, Danish, Swedish, Polish, Hindi, Thai, Vietnamese, Turkish, and more', langs: 'multilingual' },
+    { id: 'Xenova/whisper-base', label: 'Base (multilingual, 300MB)', size: '300MB', desc: 'Higher accuracy — all languages supported by Tiny plus Finnish, Hungarian, Romanian, Norwegian, Croatian, Serbian, Bulgarian, Greek, Hebrew, Urdu, Bengali, Tamil, Telugu, Marathi, Indonesian, Malay, Welsh, Afrikaans, Swahili, Zulu, and others', langs: 'multilingual' },
+    { id: 'Xenova/whisper-tiny.en', label: 'Tiny (~99MB)', size: '99MB', desc: 'Fast dictation — English only' },
+    { id: 'Xenova/whisper-base.en', label: 'Base (~300MB)', size: '300MB', desc: 'Higher accuracy — English only' }
   ];
 
   /* ---- CDN URLs for ONNX Runtime Web + Transformers.js ---- */
@@ -30,41 +32,27 @@
         return;
       }
 
-      loadORTScripts();
+      /* @xenova/transformers@2.2.0 bundles its own ONNX Runtime Web,
+         so we skip the separate ort_min.js load and go straight to Transformers */
+      loadTransformers();
 
-      function loadORTScripts() {
-        loadORT(WHISPER_ORT_CDN[0], function (ortErr) {
-          if (ortErr) {
-            console.warn('[MateyWhisper] ORT CDN fallback, trying:', WHISPER_ORT_CDN[1]);
-            loadORT(WHISPER_ORT_CDN[1], function (ortErr2) {
-              if (ortErr2) {
-                console.error('[MateyWhisper] All ORT CDN URLs failed:', WHISPER_ORT_CDN);
-                window.pipelineLoadError = ortErr2;
-                reject(ortErr2);
-              } else {
-                console.log('[MateyWhisper] ONNX Runtime Web loaded');
-                loadTransformers();
-              }
-            });
-          } else {
-            console.log('[MateyWhisper] ONNX Runtime Web loaded');
-            loadTransformers();
-          }
-        });
+      function loadTransformers() {
+          var MODULE_URL = './transformers.min.js';
+          var WRAPPER_URL = './transformers-wrapper.js';
+          console.log('[MateyWhisper] Loading Transformers.js locally:', WRAPPER_URL);
 
-        function loadTransformers() {
-          var CDN_URL = WHISPER_CDN_URLS[0];
-          console.log('[MateyWhisper] Loading Transformers.js from:', CDN_URL);
+          /* Load a local wrapper module that imports the bundled library
+             and assigns exports to window */
           var s = document.createElement('script');
           s.type = 'module';
           s.setAttribute('data-transformers-cdn', 'true');
-          s.textContent = "import * as t from '" + CDN_URL + "'; window.pipeline = t.pipeline; window.transformersEnv = t.env;";
           s.onerror = function (e) {
-            console.error('[MateyWhisper] Script onerror:', { url: CDN_URL, eventType: e.type, message: e.message || 'no message' });
-            var err = new Error('Failed to load Transformers.js from ' + CDN_URL + ' (onerror type: ' + e.type + '). Check network connectivity.');
+            console.error('[MateyWhisper] Script onerror:', JSON.stringify({ url: WRAPPER_URL, eventType: e.type, message: e.message || 'no message' }));
+            var err = new Error('Failed to load Transformers.js from ' + WRAPPER_URL);
             window.pipelineLoadError = err;
             reject(err);
           };
+          s.src = WRAPPER_URL;
           document.head.appendChild(s);
 
           var check = function () {
@@ -80,29 +68,6 @@
             }
           };
           check();
-        }
-      }
-
-      function loadORT(url, callback) {
-        var s = document.createElement('script');
-        s.setAttribute('data-ort-cdn', 'true');
-        s.onload = function () {
-          if (typeof window.ort !== 'undefined') {
-            var wasmBase = url.replace(/\/ort\.min\.js$/, '');
-            if (window.ort.env && window.ort.env.wasm) {
-              window.ort.env.wasm.wasmUrls = [wasmBase + '/ort-wasm.wasm'];
-              window.ort.env.wasm.libs = [wasmBase + '/ort-wasm-simd.wasm'];
-              console.log('[MateyWhisper] ORT WASM paths configured:', wasmBase);
-            }
-            callback(null);
-          }
-          else callback(new Error('ORT loaded but window.ort is undefined'));
-        };
-        s.onerror = function (e) {
-          callback(new Error('Failed to load ORT from ' + url + ' (type: ' + e.type + ')'));
-        };
-        s.src = url;
-        document.head.appendChild(s);
       }
     });
   }
@@ -114,21 +79,37 @@
     WHISPER_STATE.progress = 0;
     if (onProgress) onProgress(0);
 
-    return loadFromCDN().then(function () {
-      /* Override WASM paths to use unpkg.com (cdn.jsdelivr.net may be unreachable) */
-      if (window.transformersEnv && window.transformersEnv.backends && window.transformersEnv.backends.onnx) {
-        var onnxEnv = window.transformersEnv.backends.onnx;
-        if (onnxEnv.wasm && onnxEnv.wasm.wasmPaths) {
-          onnxEnv.wasm.wasmPaths = 'https://unpkg.com/@xenova/transformers@' + window.transformersEnv.version + '/dist/';
-          console.log('[MateyWhisper] WASM paths overridden to unpkg:', onnxEnv.wasm.wasmPaths);
+return loadFromCDN().then(function () {
+        /* Configure ONNX Runtime WASM backend to use local WASM files */
+        if (window.transformersEnv && window.transformersEnv.backends && window.transformersEnv.backends.onnx) {
+          var onnxEnv = window.transformersEnv.backends.onnx;
+          onnxEnv.wasm.wasmPaths = './';
+          console.log('[MateyWhisper] WASM paths set to local:', './');
         }
-      }
-      return window.pipeline('automatic-speech-recognition', modelId, {
-        progress_callback: function (p) {
-          WHISPER_STATE.progress = p.progress || 0;
-          if (onProgress) onProgress(WHISPER_STATE.progress);
+
+        /* Configure Transformers.js to load models from local filesystem */
+        if (window.transformersEnv) {
+          window.transformersEnv.localModelPath = './models/';
+          window.transformersEnv.allowRemoteModels = false;
+          window.transformersEnv.useBrowserCache = false;
+          window.transformersEnv.useFSCache = false;
+          console.log('[MateyWhisper] Local model path:', './models/');
         }
-      });
+
+        return window.pipeline('automatic-speech-recognition', modelId, {
+          quantized: true,
+         progress_callback: function (p) {
+           WHISPER_STATE.progress = p.progress || 0;
+           console.log('[MateyWhisper] Pipeline progress:', WHISPER_STATE.progress.toFixed(1) + '%', p.status || 'status:', JSON.stringify(p).substring(0, 200));
+           if (onProgress) onProgress(WHISPER_STATE.progress);
+         },
+         logger: function (log) {
+           console.log('[MateyWhisper] Logger:', JSON.stringify(log).substring(0, 300));
+         }
+       }).catch(function (err) {
+         console.error('[MateyWhisper] Pipeline creation failed:', err.name || err.message || err, err.stack || '');
+         throw err;
+       });
     }).then(function (transcriber) {
       WHISPER_STATE.transcriber = transcriber;
       WHISPER_STATE.modelId = modelId;
@@ -142,29 +123,46 @@
     });
   }
 
+  function resampleToMono16kHz(buffer, sampleRate) {
+    if (sampleRate === 16000) return buffer;
+    var ratio = sampleRate / 16000;
+    var newLength = Math.round(buffer.length / ratio);
+    var result = new Float32Array(newLength);
+    var offset = 0;
+    for (var i = 0; i < newLength; i++) {
+      var srcIdx = i * ratio;
+      var idx = Math.floor(srcIdx);
+      var frac = srcIdx - idx;
+      if (idx + 1 < buffer.length) {
+        result[i] = buffer[idx] * (1 - frac) + buffer[idx + 1] * frac;
+      } else {
+        result[i] = buffer[idx] || 0;
+      }
+    }
+    return result;
+  }
+
   function transcribe(audioBlob, onResult) {
     if (!WHISPER_STATE.ready || !WHISPER_STATE.transcriber) {
       return Promise.reject('Model not loaded. Please download a model in Settings first.');
     }
-    // Convert blob to audio element, get AudioBuffer-like data
+    console.log('[MateyWhisper] transcribe() called with blob:', audioBlob.size, 'bytes');
     return new Promise(function (resolve, reject) {
       var reader = new FileReader();
       reader.onload = function () {
         var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         audioCtx.decodeAudioData(reader.result, function (buffer) {
-          var raw = buffer.getChannelData(0);
-          // Whisper expects 16kHz mono
-          var sampleRate = 16000;
-          var resampled = raw; // simplified — in production would resample
+          var channelData = buffer.getChannelData(0);
+          console.log('[MateyWhisper] Decoded audio: sampleRate=' + buffer.sampleRate +
+                      ', channels=' + buffer.numberOfChannels + ', length=' + channelData.length);
+          var resampled = resampleToMono16kHz(channelData, buffer.sampleRate);
+          console.log('[MateyWhisper] Resampled to 16kHz: length=' + resampled.length);
           WHISPER_STATE.transcriber(resampled, {
-            sampling_rate: sampleRate,
-            chunk_length_s: 30,
-            stride_length_s: 5,
-            return_timestamps: false,
-            callback_function: function (chunk) {
-              if (onResult) onResult(chunk);
-            }
-          }).then(resolve).catch(reject);
+            sampling_rate: 16000
+          }).then(function (result) {
+            console.log('[MateyWhisper] Transcription result:', result);
+            resolve(result);
+          }).catch(reject);
         }, reject);
       };
       reader.onerror = reject;

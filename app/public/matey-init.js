@@ -43,7 +43,7 @@
 
     var btn = document.createElement('button');
     btn.textContent = 'Unlock';
-    btn.style.cssText = 'margin-top:12px;padding:10px 24px;background:#f5c542;color:#000;border:none;border-radius:10px;font-weight:600;cursor:pointer;';
+    btn.style.cssText = 'margin-top:12px;padding:10px 24px;background:var(--accent);color:var(--bg);border:none;border-radius:10px;font-weight:600;cursor:pointer;';
 
     var col = document.createElement('div');
     col.style.cssText = 'display:flex;flex-direction:column;align-items:center;';
@@ -207,6 +207,7 @@
     }
     // Gate the app with PIN/biometric lock if enabled
     appLockScreen();
-  }
+   }
+  window.MateyInit = { initWhisperUI: initWhisperUI, initLicenseUI: initLicenseUI };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
