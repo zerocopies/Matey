@@ -2704,9 +2704,11 @@ body {
 .byok-capabilities-label { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; display: block; }
 .byok-capabilities { display: flex; flex-direction: column; gap: 6px; }
 .byok-capabilities-row { display: flex; gap: 12px; }
-.byok-cap { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; flex: 1; }
+.byok-capabilities-row:first-child { margin-left: 4px; }
+.byok-capabilities-row:last-child .byok-cap:last-child { margin-left: 8px; }
+.byok-cap { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; flex: 1; min-width: 0; }
 .byok-cap input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); margin: 0; flex-shrink: 0; }
-.byok-capabilities-section { margin-top: 24px; }
+.byok-capabilities-section { margin-top: 32px; }
 .byok-dialog-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
 .byok-btn {
   border: none; padding: 10px 22px; border-radius: 12px; font: inherit; font-size: 15px; font-weight: 400; cursor: pointer;
@@ -2733,9 +2735,6 @@ body {
 }
 .byok-delete { color: #f87171; }
 
-.byok-capabilities { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
-.byok-cap { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; }
-.byok-cap input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
 
 .byok-add-btn {
   display: block; width: 100%; border: 2px dashed var(--border); background: transparent;
