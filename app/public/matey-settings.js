@@ -91,86 +91,76 @@
            </div>
          </div>
 
-         <div class="settings-section" id="sec-voice">
-           <div class="settings-section-header" data-toggle="sec-voice">
-             <div class="settings-section-left">
-               <div>
-                 <div class="settings-section-title">Voice</div>
-                 <div class="settings-section-desc">Speech-to-text and text-to-speech models</div>
-               </div>
-             </div>
-             <span class="settings-section-arrow"></span>
-           </div>
-           <div class="settings-section-body">
-             <div class="setting-row setting-row-with-icon" id="voice-stt-row">
-               <div class="setting-row-icon">
-                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                   <path d="M12 1a3 3 0 0 0-3 3v12a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                   <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                   <line x1="12" y1="19" x2="12" y2="23"/>
-                   <line x1="9" y1="23" x2="15" y2="23"/>
-                 </svg>
-               </div>
-               <div class="setting-row-body">
-                 <div class="setting-row-label">Speech Recognition</div>
-                 <div class="setting-row-value" id="voice-stt-value">None</div>
-               </div>
-               <svg class="setting-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-             </div>
-             <div class="setting-row setting-row-with-icon" id="voice-tts-row">
-               <div class="setting-row-icon">
-                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                   <path d="M12 1a3 3 0 0 0-3 3v12a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                   <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                   <line x1="12" y1="19" x2="12" y2="23"/>
-                   <line x1="9" y1="23" x2="15" y2="23"/>
-                 </svg>
-               </div>
-               <div class="setting-row-body">
-                 <div class="setting-row-label">Text-to-Speech</div>
-                 <div class="setting-row-value" id="voice-tts-value">None</div>
-               </div>
-               <svg class="setting-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-             </div>
-              <div class="setting-slider-row" id="voice-tts-speed-row">
-                <div class="setting-slider-label">
-                  <span class="setting-slider-title">TTS Speed</span>
-                  <span class="setting-slider-desc">Controls playback speed (0.5x - 2.0x)</span>
+          <div class="settings-section" id="sec-voice">
+            <div class="settings-section-header" data-toggle="sec-voice">
+              <div class="settings-section-left">
+                <div>
+                  <div class="settings-section-title">Voice</div>
+                  <div class="settings-section-desc">Speech-to-text and text-to-speech models</div>
                 </div>
-                <div class="setting-slider-value" id="voice-tts-speed-value">1.00x</div>
-                <input type="range" class="setting-slider" id="voice-tts-speed" min="50" max="200" value="100" />
               </div>
-              <div class="whisper-models-section">
-                <div class="settings-subsection-title">Speech Recognition Models</div>
-                <p class="settings-placeholder" id="whisper-status">No speech model loaded. Download one below to enable offline voice-to-text.</p>
-                <div id="whisper-models" class="whisper-models-dyn"></div>
-                <div class="whisper-progress" id="whisper-progress" style="display:none;">
-                  <div class="whisper-progress-bar"><div class="whisper-progress-fill" id="whisper-progress-fill"></div></div>
-                  <span class="whisper-progress-text" id="whisper-progress-text">Downloading…</span>
+              <span class="settings-section-arrow"></span>
+            </div>
+            <div class="settings-section-body">
+              <div class="setting-row setting-row-with-icon setting-row-navigable" id="voice-stt-row">
+                <div class="setting-row-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v12a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="9" y1="23" x2="15" y2="23"/>
+                  </svg>
                 </div>
-                <p class="whisper-hint">All models run entirely on-device. No data leaves your device. Download once, use offline.</p>
+                <div class="setting-row-body">
+                  <div class="setting-row-label">Speech Recognition</div>
+                  <div class="setting-row-value" id="voice-stt-value">None</div>
+                </div>
+                <svg class="setting-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </div>
-           </div>
-         </div>
+              <div class="setting-row setting-row-with-icon setting-row-navigable" id="voice-tts-row">
+                <div class="setting-row-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v12a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="9" y1="23" x2="15" y2="23"/>
+                  </svg>
+                </div>
+                <div class="setting-row-body">
+                  <div class="setting-row-label">Text-to-Speech</div>
+                  <div class="setting-row-value" id="voice-tts-value">None</div>
+                </div>
+                <svg class="setting-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+               <div class="setting-slider-row" id="voice-tts-speed-row">
+                 <div class="setting-slider-label">
+                   <span class="setting-slider-title">TTS Speed</span>
+                   <span class="setting-slider-desc">Controls playback speed (0.5x – 2.0x)</span>
+                 </div>
+                 <div class="setting-slider-value" id="voice-tts-speed-value">1.00x</div>
+                 <input type="range" class="setting-slider" id="voice-tts-speed" min="50" max="200" value="100" />
+               </div>
+            </div>
+          </div>
 
-         <div class="settings-section" id="sec-features">
-           <div class="settings-section-header" data-toggle="sec-features">
-             <div class="settings-section-left">
-               <div>
-                 <div class="settings-section-title">Features</div>
-                 <div class="settings-section-desc">Experimental and upcoming capabilities</div>
-               </div>
-             </div>
-             <span class="settings-section-arrow"></span>
-           </div>
-           <div class="settings-section-body">
-             <div class="setting-row setting-row-with-icon">
-               <div class="setting-row-icon">🎙️</div>
-               <div class="setting-row-body">
-                 <div class="setting-row-label">Continuous Voice <span class="experimental-badge">Experimental</span></div>
-                 <div class="setting-row-desc">Keeps the microphone listening between messages for hands-free conversation.</div>
-                 <div class="setting-row-caption">Limited to short sessions. Not reliable on iOS Safari. May interrupt itself with background noise.</div>
-               </div>
+          <div class="settings-section" id="sec-features">
+            <div class="settings-section-header" data-toggle="sec-features">
+              <div class="settings-section-left">
+                <div>
+                  <div class="settings-section-title">Features</div>
+                  <div class="settings-section-desc">Experimental and upcoming capabilities</div>
+                </div>
+              </div>
+              <span class="settings-section-arrow"></span>
+            </div>
+            <div class="settings-section-body">
+              <div class="setting-row setting-row-with-icon">
+                <div class="setting-row-icon">🎙️</div>
+                <div class="setting-row-body">
+                  <div class="setting-row-label">Continuous Voice <span class="experimental-badge">Experimental</span></div>
+                  <div class="setting-row-desc">Keeps the microphone listening between messages for hands-free conversation.</div>
+                  <div class="setting-row-caption">Limited to short sessions. Not reliable on iOS Safari. May interrupt itself with background noise.</div>
+                </div>
                <label class="setting-toggle">
                  <input type="checkbox" id="feature-continuous-voice" />
                  <span class="setting-toggle-slider"></span>
@@ -342,13 +332,12 @@
     var trigger = document.querySelector('[aria-label="Settings"]');
     if (trigger) trigger.addEventListener('click', function () {
       var willOpen = !settings.classList.contains('open');
-      settings.classList[willOpen ? 'add' : 'remove']('open');
+       settings.classList[willOpen ? 'add' : 'remove']('open');
       if (willOpen) {
         if (window.MateyThemes) MateyThemes.build(settings);
         renderAdaptive();
         if (window.MateyByok) MateyByok.render();
         if (typeof updateVoiceSummary === 'function') updateVoiceSummary();
-        if (window.MateyWhisper && window.MateyInit && typeof MateyInit.initWhisperUI === 'function') MateyInit.initWhisperUI();
       }
     });
     var backBtn = document.getElementById('settings-back');
@@ -466,31 +455,38 @@
         sttText = found ? found.label : stored;
       }
     }
+    try {
+      var ttsStored = localStorage.getItem('matey-tts-model') || '';
+      if (ttsStored) {
+        var ttsOpts = window.MateyVoiceModels ? MateyVoiceModels.getTTSLabel(ttsStored) : ttsStored;
+        ttsText = ttsOpts || ttsStored;
+      }
+    } catch (e) {}
     if (sttVal) sttVal.textContent = sttText;
     if (ttsVal) ttsVal.textContent = ttsText;
   }
 
-  /* Navigate to Whisper tab in Micro Models when STT row is tapped */
-  var sttRow = document.getElementById('voice-stt-row');
-  if (sttRow) {
-    sttRow.addEventListener('click', function () {
-      var settings = document.getElementById('settings');
-      if (settings) {
-        settings.classList.remove('open');
-        setTimeout(function () { window.dispatchEvent(new CustomEvent('matey-open-models', { detail: { tab: 'speech' } })); }, 150);
-      }
-    });
-  }
-  var ttsRow = document.getElementById('voice-tts-row');
-  if (ttsRow) {
-    ttsRow.addEventListener('click', function () {
-      var settings = document.getElementById('settings');
-      if (settings) {
-        settings.classList.remove('open');
-        setTimeout(function () { window.dispatchEvent(new CustomEvent('matey-open-models', { detail: { tab: 'tts' } })); }, 150);
-      }
-    });
-  }
+   /* Navigate to Voice Models screen when STT row is tapped */
+   var sttRow = document.getElementById('voice-stt-row');
+   if (sttRow) {
+     sttRow.addEventListener('click', function () {
+       var settings = document.getElementById('settings');
+       if (settings) settings.classList.remove('open');
+       setTimeout(function () {
+         window.location.href = 'voice-models.html?tab=speech';
+       }, 150);
+     });
+   }
+   var ttsRow = document.getElementById('voice-tts-row');
+   if (ttsRow) {
+     ttsRow.addEventListener('click', function () {
+       var settings = document.getElementById('settings');
+       if (settings) settings.classList.remove('open');
+       setTimeout(function () {
+         window.location.href = 'voice-models.html?tab=tts';
+       }, 150);
+     });
+   }
 
   /* BYOK Clear Credentials button */
   var clearCredBtn = document.getElementById('byok-clear-credentials');

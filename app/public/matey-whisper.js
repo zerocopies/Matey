@@ -3,10 +3,12 @@
   'use strict';
   var WHISPER_STATE = { ready: false, model: null, transcriber: null, loading: false, modelId: null, progress: 0 };
   var MODEL_OPTIONS = [
-    { id: 'Xenova/whisper-tiny', label: 'Tiny (multilingual, 99MB)', size: '99MB', desc: 'Fast — supports English, Chinese, French, German, Spanish, Arabic, Japanese, Korean, Russian, Portuguese, Italian, Dutch, Czech, Danish, Swedish, Polish, Hindi, Thai, Vietnamese, Turkish, and more', langs: 'multilingual' },
-    { id: 'Xenova/whisper-base', label: 'Base (multilingual, 300MB)', size: '300MB', desc: 'Higher accuracy — all languages supported by Tiny plus Finnish, Hungarian, Romanian, Norwegian, Croatian, Serbian, Bulgarian, Greek, Hebrew, Urdu, Bengali, Tamil, Telugu, Marathi, Indonesian, Malay, Welsh, Afrikaans, Swahili, Zulu, and others', langs: 'multilingual' },
-    { id: 'Xenova/whisper-tiny.en', label: 'Tiny (~99MB)', size: '99MB', desc: 'Fast dictation — English only' },
-    { id: 'Xenova/whisper-base.en', label: 'Base (~300MB)', size: '300MB', desc: 'Higher accuracy — English only' }
+    { id: 'Xenova/whisper-tiny', label: 'Whisper Tiny (multilingual)', size: '99MB', desc: 'Fast — supports English, Chinese, French, German, Spanish, Arabic, Japanese, Korean, Russian, Portuguese, Italian, Dutch, Czech, Danish, Swedish, Polish, Hindi, Thai, Vietnamese, Turkish, and more', langs: 'multilingual' },
+    { id: 'Xenova/whisper-base', label: 'Whisper Base (multilingual)', size: '300MB', desc: 'Higher accuracy — all languages supported by Tiny plus Finnish, Hungarian, Romanian, Norwegian, Croatian, Serbian, Bulgarian, Greek, Hebrew, Urdu, Bengali, Tamil, Telugu, Marathi, Indonesian, Malay, Welsh, Afrikaans, Swahili, Zulu, and others', langs: 'multilingual' },
+    { id: 'Xenova/whisper-tiny.en', label: 'Whisper Tiny (English)', size: '99MB', desc: 'Fast English-only dictation', langs: 'english' },
+    { id: 'Xenova/whisper-base.en', label: 'Whisper Base (English)', size: '300MB', desc: 'Higher accuracy English-only dictation', langs: 'english' },
+    { id: 'Xenova/whisper-small', label: 'Whisper Small (multilingual)', size: '760MB', desc: 'Balanced speed and accuracy — all languages supported, higher fidelity transcription', langs: 'multilingual' },
+    { id: 'Xenova/whisper-medium', label: 'Whisper Medium (multilingual)', size: '1.5GB', desc: 'Highest quality offline STT — larger download, best accuracy across 99+ languages', langs: 'multilingual' }
   ];
 
   /* ---- CDN URLs for ONNX Runtime Web + Transformers.js ---- */

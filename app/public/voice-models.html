@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit= cover" />
+    <style>
+      html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
+      .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; display: flex; flex-direction: column; }
+    </style>
+    <meta name="description" content="Matey — Voice Models for Speech-to-Text and Text-to-Speech" />
+    <link rel="icon" href="./images/matey-logo.png" type="image/png" />
+    <meta name="theme-color" content="#000000" />
+    <title>Matey - Voice Models</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <script src="./version.js"></script>
+    <link rel="stylesheet" href="./matey-preview.css?v=100">
+    <script src="./matey-boot.js?q=94"></script>
+    <script src="./matey-sentry.js?v=100"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="header">
+        <div class="header-top">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <button class="icon-btn settings-back" id="voice-models-back" type="button" aria-label="Back" style="font-size:28px;font-weight:300;line-height:1;color:var(--text);">
+              &#8249;
+            </button>
+            <span style="font-size:18px;font-weight:500;color:var(--text);">Voice Models</span>
+          </div>
+          <div class="header-actions">
+            <button class="incognito-trigger" type="button" aria-label="Incognito" title="Incognito">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3.5 0-6 2.5-6 6v9.5c0 .3.3.6.7.4l1.3-1 1.3 1c.4.3 1 .3 1.4 0l1.3-1 1.3 1c.4.3 1 .3 1.4 0l1.3-1 1.3 1c.4.2.7-.1.7-.4V9c0-3.5-2.5-6-6-6z"/><circle cx="9.5" cy="10" r="1.5"/><circle cx="14.5" cy="10" r="1.5"/></svg>
+            </button>
+            <button class="icon-btn settings-trigger" type="button" aria-label="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+              </svg></button>
+          </div>
+        </div>
+      </header>
+
+      <nav class="tabs-wrap" id="tabs-wrap">
+        <div class="tabs">
+          <a class="tab active" href="./lifestyle.html">Lifestyle</a>
+          <a class="tab" href="./vots.html">My-VOTS</a>
+          <a class="tab" href="./markdown.html">.EDITOR</a>
+          <a class="tab" href="./journal.html">Journal</a>
+          <a class="tab" href="./preview.html#agent">Agent</a>
+        </div>
+      </nav>
+
+      <div class="tab-border" style="height:1px;background:#1a1a1a;width:100%"></div>
+
+      <main class="content">
+        <div class="voice-models-page">
+          <div class="voice-models-header">
+            <div class="voice-models-title" id="voice-models-tab-label">Speech Recognition</div>
+            <div class="voice-models-tabs">
+              <div class="voice-tabs-track">
+                <div class="voice-tab active" data-tab="speech">Speech Recognition</div>
+                <div class="voice-tab" data-tab="tts">Text-to-Speech</div>
+                <div class="voice-tabs-indicator"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="voice-models-filters">
+            <div class="voice-search-wrapper">
+              <input type="text" id="voice-models-search" class="voice-search-input" placeholder="Filter by name, language…" />
+            </div>
+            <button class="voice-downloaded-toggle" id="voice-downloaded-toggle" type="button">Downloaded</button>
+          </div>
+
+          <div class="voice-download-progress" style="display:none;">
+            <div class="progress-bar"><div class="progress-fill"></div></div>
+            <span class="progress-text">Downloading…</span>
+          </div>
+
+          <div class="voice-models-grid" id="voice-models-grid">
+            <div class="voice-model-empty">Loading models…</div>
+          </div>
+        </div>
+      </main>
+
+      <div class="voice-models-footer">
+        <button class="voice-models-apply" id="voice-models-apply" type="button">Apply</button>
+      </div>
+    </div>
+
+    <script src="./matey-themes.js?v=100"></script>
+    <script src="./matey-swipe.js?v=100"></script>
+    <script src="./matey-byok.js?v=100"></script>
+    <script src="./matey-saf.js?v=100"></script>
+    <script type="module" src="./matey-agent-bundle.js?v=100"></script>
+    <script src="./matey-agent-init.js?v=100"></script>
+    <script src="./matey-agent-harness.js?v=100"></script>
+    <script src="./matey-lifestyle.js?v=100"></script>
+    <script src="./matey-whisper.js?v=100"></script>
+    <script src="./matey-voice-models.js?v=100"></script>
+    <script src="./matey-license.js?v=100"></script>
+    <script src="./matey-settings.js?v=100"></script>
+    <script src="./matey-adaptive.js?v=100"></script>
+    <script src="./matey-init.js?v=100"></script>
+    <script src="./matey-keyboard.js?v=100"></script>
+    <script src="./matey-mic.js?v=100"></script>
+    <script src="./matey-fs.js?v=100"></script>
+  </body>
+</html>

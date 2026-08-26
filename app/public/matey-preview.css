@@ -2482,6 +2482,22 @@ body {
   flex-shrink: 0;
 }
 
+.setting-row-navigable {
+  cursor: pointer;
+}
+
+.setting-row-navigable:hover {
+  background: rgba(181, 131, 252, 0.05);
+  border-radius: 8px;
+  margin: 0 -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.setting-row-navigable:active {
+  background: rgba(181, 131, 252, 0.1);
+}
+
 .setting-slider-row {
   padding: 14px 0;
   border-bottom: 0.5px solid var(--border);
@@ -5739,4 +5755,287 @@ feed-card,
 .ws-usb,
 .ws-clear {
   color: var(--text-on-card);
+}
+
+/* ==================== Voice Models Screen ==================== */
+
+.voice-models-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 56px);
+  overflow: hidden;
+}
+
+.voice-models-header {
+  padding: 16px var(--page-gutter) 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.voice-models-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.voice-tabs-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--surface-raised);
+  border-radius: 12px;
+  padding: 2px;
+  height: 36px;
+}
+
+.voice-tab {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  border-radius: 10px;
+  height: 32px;
+  line-height: 32px;
+  cursor: pointer;
+  transition: color 0.2s;
+  position: relative;
+  z-index: 2;
+}
+
+.voice-tab.active {
+  color: var(--text);
+}
+
+.voice-tabs-indicator {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 160px;
+  background: var(--accent);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.voice-models-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px var(--page-gutter);
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.voice-search-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.voice-search-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.voice-search-input::placeholder {
+  color: var(--text-dim);
+}
+
+.voice-downloaded-toggle {
+  padding: 6px 12px;
+  background: var(--surface);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.voice-downloaded-toggle.active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.voice-download-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px var(--page-gutter);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.voice-download-progress .progress-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.voice-download-progress .progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.2s;
+}
+
+.voice-models-grid {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px var(--page-gutter);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.voice-model-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.model-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.model-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.model-card-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.model-card-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.model-lang {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: var(--border);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.model-size {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.model-card-type {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-dim);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.model-card-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.model-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.model-btn-downloaded {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.model-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.model-btn-use {
+  padding: 4px 10px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.voice-model-empty {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.voice-models-footer {
+  padding: 12px var(--page-gutter) calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  flex-shrink: 0;
+}
+
+.voice-models-apply {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.voice-models-apply.applied {
+  background: var(--accent-green);
+  color: var(--bg);
+}
+
+.voice-models-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
