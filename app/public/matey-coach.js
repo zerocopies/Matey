@@ -22,17 +22,25 @@ export class MateyCoach {
   initUI() {
     if (document.getElementById('coach-toast')) return;
     const html = `
-      <div id="coach-toast" style="position:fixed; bottom:90px; right:16px; left:16px; max-width:340px; margin-left:auto; background:#0D0D0D; border:1px solid #2A2A2A; border-radius:16px; padding:16px; color:#FFFFFF; font-family:inherit; transform:translateY(150%); transition:transform 0.45s cubic-bezier(0.175,0.885,0.32,1.275); z-index:10000; box-shadow:0 10px 30px rgba(0,0,0,0.5); display:flex; gap:12px; align-items:start;">
+      <div id="coach-toast" style="position:fixed; top:140px; left:16px; right:16px; max-width:340px; background:#0D0D0D; border:1px solid #2A2A2A; border-radius:16px; padding:16px; color:#FFFFFF; font-family:inherit; transform:translateY(-150%); transition:transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275); z-index:10001; box-shadow:0 10px 30px rgba(0,0,0,0.5); display:flex; gap:12px; align-items:start;">
         <div style="font-size:20px;">💡</div>
         <div style="flex:1;">
           <div style="font-size:11px; color:#F2C94C; font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.6px;">Quick Tip</div>
           <div id="coach-message" style="font-size:14px; line-height:1.4; color:#B3B3B3;"></div>
         </div>
-        <button id="coach-close" style="background:none; border:none; color:#6B6B6B; font-size:18px; cursor:pointer; padding:0; line-height:1;">&times;</button>
+        <button id="coach-close" style="background:none; border:none; color:#6B6B6B; font-size:20px; cursor:pointer; padding:0; line-height:1; -webkit-tap-highlight-color:transparent; touch-action:manipulation;">✕</button>
       </div>`;
     document.body.insertAdjacentHTML('beforeend', html);
     const closeBtn = document.getElementById('coach-close');
-    if (closeBtn) closeBtn.addEventListener('click', () => this.hide());
+    if (closeBtn) {
+      closeBtn.removeEventListener('click', this._closeHandler);
+      this._closeHandler = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        this.hide();
+      };
+      closeBtn.addEventListener('click', this._closeHandler);
+    }
   }
 
   show(tipId, message) {
@@ -43,13 +51,17 @@ export class MateyCoach {
     const toast = document.getElementById('coach-toast');
     const msg = document.getElementById('coach-message');
     if (msg) msg.innerText = message;
-    if (toast) toast.style.transform = 'translateY(0)';
-    setTimeout(() => this.hide(), 9000);
+    if (toast) {
+      toast.style.transform = 'translateY(0)';
+      clearTimeout(this._hideTimer);
+      this._hideTimer = setTimeout(() => this.hide(), 9000);
+    }
   }
 
   hide() {
+    clearTimeout(this._hideTimer);
     const el = document.getElementById('coach-toast');
-    if (el) el.style.transform = 'translateY(150%)';
+    if (el) el.style.transform = 'translateY(-150%)';
   }
 
   // ---- STAGE DEFINITIONS ----
