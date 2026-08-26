@@ -126,7 +126,7 @@
             <div class="settings-section-left">
               <div>
                 <div class="settings-section-title">BYOK</div>
-                <div class="settings-section-desc">Bring Your Own Key — OpenAI, Claude, Gemini & more</div>
+                 <div class="settings-section-desc">Bring Your Own Key — add any OpenAI-compatible, OpenRouter, Gemini, or compatible API provider</div>
               </div>
             </div>
             <span class="settings-section-arrow"></span>
@@ -135,9 +135,9 @@
             <button class="byok-add-btn" id="byok-add" type="button">+ Add Provider</button>
             <div id="byok-list"></div>
           </div>
-        </div>
+         </div>
 
-        <div class="settings-section" id="sec-export">
+         <div class="settings-section" id="sec-export">
           <div class="settings-section-header" data-toggle="sec-export">
             <div class="settings-section-left">
               <div>
@@ -241,19 +241,23 @@
         <label class="byok-label" for="byok-key">API Key</label>
         <input class="byok-input" id="byok-key" type="password" placeholder="sk-..." autocomplete="off" />
       </div>
-       <div class="byok-field">
-         <label class="byok-label" for="byok-model">Model (optional)</label>
-         <input class="byok-input" id="byok-model" type="text" placeholder="auto-detect if empty" autocomplete="off" />
-       </div>
-       <div class="byok-field">
-         <label class="byok-label">Capabilities</label>
-         <div class="byok-capabilities">
-           <label class="byok-cap"><input type="checkbox" name="cap_text" value="text" /> Text generation</label>
-           <label class="byok-cap"><input type="checkbox" name="cap_vision" value="vision" /> Vision / image understanding</label>
-           <label class="byok-cap"><input type="checkbox" name="cap_stt" value="stt" /> Speech-to-text</label>
-           <label class="byok-cap"><input type="checkbox" name="cap_imagegen" value="imagegen" /> Image generation</label>
-         </div>
-       </div>
+      <div class="byok-field">
+        <label class="byok-label" for="byok-model">Model (optional)</label>
+        <input class="byok-input" id="byok-model" type="text" placeholder="auto-detect if empty" autocomplete="off" />
+      </div>
+      <div class="byok-field byok-capabilities-section">
+        <label class="byok-capabilities-label">Capabilities</label>
+        <div class="byok-capabilities">
+          <div class="byok-capabilities-row">
+            <label class="byok-cap"><input type="checkbox" name="cap_text" value="text" /> Text generation</label>
+            <label class="byok-cap"><input type="checkbox" name="cap_vision" value="vision" /> Vision / image understanding</label>
+          </div>
+          <div class="byok-capabilities-row">
+            <label class="byok-cap"><input type="checkbox" name="cap_stt" value="stt" /> Speech-to-text</label>
+            <label class="byok-cap"><input type="checkbox" name="cap_imagegen" value="imagegen" /> Image generation</label>
+          </div>
+        </div>
+      </div>
       <div class="byok-dialog-actions">
         <button class="byok-btn byok-btn-secondary" id="byok-test" type="button">Test</button>
         <button class="byok-btn byok-btn-secondary" id="byok-cancel" type="button">Cancel</button>
@@ -365,13 +369,16 @@
       });
     }
 
-    var appLockDisable = document.getElementById('applock-disable');
-    if (appLockDisable && window.MateyAppLock) {
-      appLockDisable.addEventListener('click', function () {
-        MateyAppLock.removeLock();
-        alert('App lock disabled.');
-      });
-    }
+     var appLockDisable = document.getElementById('applock-disable');
+     if (appLockDisable && window.MateyAppLock) {
+       appLockDisable.addEventListener('click', function () {
+         MateyAppLock.removeLock();
+         alert('App lock disabled.');
+       });
+     }
+
+  /* Remove old Gemini-specific key UI — BYOK providers section is now the single source.
+     Migration of legacy matey_gemini_key is handled by migrateLegacyProviders() on init. */
 
     updateFSSetup(null);
 

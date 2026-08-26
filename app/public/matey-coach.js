@@ -2,6 +2,7 @@ export class MateyCoach {
   constructor() {
     this.state = this.loadState();
     this.shownTipIds = new Set(this.state.shownTipIds || []);
+    this.pendingTip = null;
     this.initUI();
   }
 
@@ -20,48 +21,78 @@ export class MateyCoach {
   }
 
   initUI() {
-    if (document.getElementById('coach-toast')) return;
+    if (document.getElementById('coach-badge')) return;
+
     const html = `
-      <div id="coach-toast" style="position:fixed; top:140px; left:16px; right:16px; max-width:340px; background:#0D0D0D; border:1px solid #2A2A2A; border-radius:16px; padding:16px; color:#FFFFFF; font-family:inherit; transform:translateY(-150%); transition:transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275); z-index:10001; box-shadow:0 10px 30px rgba(0,0,0,0.5); display:flex; gap:12px; align-items:start;">
-        <div style="font-size:20px;">💡</div>
-        <div style="flex:1;">
-          <div style="font-size:11px; color:#F2C94C; font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.6px;">Quick Tip</div>
-          <div id="coach-message" style="font-size:14px; line-height:1.4; color:#B3B3B3;"></div>
+      <div id="coach-badge" style="position:fixed; bottom:200px; right:20px; width:32px; height:32px; background:#F2C94C; border:2px solid #0D0D0D; border-radius:50%; box-shadow:0 2px 8px rgba(0,0,0,0.3); cursor:pointer; display:none; align-items:center; justify-content:center; z-index:200; -webkit-tap-highlight-color:transparent; touch-action:manipulation;">
+        <span style="font-size:18px; line-height:1;">💡</span>
+        <div id="coach-tooltip" style="position:absolute; bottom:48px; right:0; background:#0D0D0D; border:1px solid #2A2A2A; border-radius:12px; padding:14px 16px; min-width:240px; max-width:300px; color:#FFFFFF; font-family:inherit; font-size:13px; line-height:1.5; color:#B3B3B3; display:none; box-shadow:0 10px 30px rgba(0,0,0,0.5); z-index:201; text-align:right;">
+          <div style="font-size:10px; color:#F2C94C; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:6px;">Quick Tip</div>
+          <div id="coach-tip-text"></div>
+          <div style="position:absolute; top:100%; right:12px; width:0; height:0; border-left:6px transparent; border-right:6px transparent; border-top:6px solid #2A2A2A;"></div>
         </div>
-        <button id="coach-close" style="background:none; border:none; color:#6B6B6B; font-size:20px; cursor:pointer; padding:0; line-height:1; -webkit-tap-highlight-color:transparent; touch-action:manipulation;">✕</button>
       </div>`;
     document.body.insertAdjacentHTML('beforeend', html);
-    const closeBtn = document.getElementById('coach-close');
-    if (closeBtn) {
-      closeBtn.removeEventListener('click', this._closeHandler);
-      this._closeHandler = (e) => {
+
+    const badge = document.getElementById('coach-badge');
+    const tooltip = document.getElementById('coach-tooltip');
+    if (badge && tooltip) {
+      badge.removeEventListener('click', this._badgeClick);
+      this._badgeClick = (e) => {
         e.stopPropagation();
         e.preventDefault();
-        this.hide();
+        const tip = this.pendingTip;
+        if (tip) {
+          const tipText = document.getElementById('coach-tip-text');
+          if (tipText) tipText.innerText = tip.message;
+          tooltip.style.display = tooltip.style.display === 'block' ? 'none' : 'block';
+          if (tooltip.style.display === 'block') {
+            this.shownTipIds.add(tip.tipId);
+            this.saveState();
+            clearTimeout(this._badgeTimer);
+            this._badgeTimer = setTimeout(() => {
+              tooltip.style.display = 'none';
+              badge.style.display = 'none';
+              this.pendingTip = null;
+            }, 20000);
+          }
+        }
       };
-      closeBtn.addEventListener('click', this._closeHandler);
+      badge.addEventListener('click', this._badgeClick);
+
+      document.addEventListener('click', this._outsideClick);
+      this._outsideClick = () => {
+        if (tooltip) tooltip.style.display = 'none';
+      };
     }
   }
 
   show(tipId, message) {
     if (this.shownTipIds.has(tipId)) return;
-    this.shownTipIds.add(tipId);
-    this.saveState();
-    if (!document.getElementById('coach-message')) this.initUI();
-    const toast = document.getElementById('coach-toast');
-    const msg = document.getElementById('coach-message');
-    if (msg) msg.innerText = message;
-    if (toast) {
-      toast.style.transform = 'translateY(0)';
-      clearTimeout(this._hideTimer);
-      this._hideTimer = setTimeout(() => this.hide(), 9000);
+    this.pendingTip = { tipId, message };
+    if (!document.getElementById('coach-badge')) this.initUI();
+
+    const badge = document.getElementById('coach-badge');
+    if (badge) {
+      badge.style.display = 'flex';
+      clearTimeout(this._autoHideTimer);
+      this._autoHideTimer = setTimeout(() => {
+        if (this.pendingTip && this.pendingTip.tipId === tipId) {
+          badge.style.display = 'none';
+          this.pendingTip = null;
+        }
+      }, 5000);
     }
   }
 
   hide() {
-    clearTimeout(this._hideTimer);
-    const el = document.getElementById('coach-toast');
-    if (el) el.style.transform = 'translateY(-150%)';
+    clearTimeout(this._autoHideTimer);
+    clearTimeout(this._badgeTimer);
+    const badge = document.getElementById('coach-badge');
+    const tooltip = document.getElementById('coach-tooltip');
+    if (badge) badge.style.display = 'none';
+    if (tooltip) tooltip.style.display = 'none';
+    this.pendingTip = null;
   }
 
   // ---- STAGE DEFINITIONS ----
@@ -98,7 +129,7 @@ export class MateyCoach {
   analyzeStage4_DesiredOutcome(text) {
     const hasOutcome = /(so that|so it|the goal is|result should|end up with|i want it to)/i.test(text);
     if (!hasOutcome && text.split(/\s+/).length > 8) {
-      return { pass: false, tipId: 'stage4-outcome', tip: "Try describing what you want the end result to look or feel like, not just the steps — it gives a much clearer target to aim for." };
+      return { pass: false, tipId: 'stage4-outcome', tip: "Try describing what you want the end result to look or feel like, not just the steps — it gives you a much clearer target to aim for." };
     }
     return { pass: true };
   }
