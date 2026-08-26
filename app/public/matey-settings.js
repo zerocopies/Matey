@@ -250,7 +250,7 @@
         <div class="byok-capabilities">
           <div class="byok-capabilities-row">
             <label class="byok-cap"><input type="checkbox" name="cap_text" value="text" /> Text generation</label>
-            <label class="byok-cap"><input type="checkbox" name="cap_vision" value="vision" /> Vision / image understanding</label>
+            <label class="byok-cap"><input type="checkbox" name="cap_vision" value="vision" /> Vision / image</label>
           </div>
           <div class="byok-capabilities-row">
             <label class="byok-cap"><input type="checkbox" name="cap_stt" value="stt" /> Speech-to-text</label>
