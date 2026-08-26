@@ -261,7 +261,7 @@
       <div class="byok-dialog-actions">
         <button class="byok-btn byok-btn-secondary" id="byok-test" type="button">Test</button>
         <button class="byok-btn byok-btn-secondary" id="byok-cancel" type="button">Cancel</button>
-        <button class="byok-btn byok-btn-primary" type="submit">Save Provider</button>
+        <button class="byok-btn byok-btn-primary" type="submit">Save</button>
       </div>
     </form>
   </div>

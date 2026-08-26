@@ -3,6 +3,8 @@ export class MateyCoach {
     this.state = this.loadState();
     this.shownTipIds = new Set(this.state.shownTipIds || []);
     this.pendingTip = null;
+    this.dragState = { dragging: false, offsetX: 0, offsetY: 0 };
+    this.posKey = 'matey_coach_badge_pos';
     this.initUI();
   }
 
@@ -20,27 +22,51 @@ export class MateyCoach {
     localStorage.setItem('matey_coach_state', JSON.stringify(this.state));
   }
 
+  loadPosition() {
+    try {
+      const raw = localStorage.getItem(this.posKey);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return { bottom: 160, right: 20 };
+  }
+
+  savePosition(pos) {
+    localStorage.setItem(this.posKey, JSON.stringify(pos));
+  }
+
   initUI() {
     if (document.getElementById('coach-badge')) return;
 
+    const pos = this.loadPosition();
+
     const html = `
-      <div id="coach-badge" style="position:fixed; bottom:200px; right:20px; width:32px; height:32px; background:#F2C94C; border:2px solid #0D0D0D; border-radius:50%; box-shadow:0 2px 8px rgba(0,0,0,0.3); cursor:pointer; display:none; align-items:center; justify-content:center; z-index:200; -webkit-tap-highlight-color:transparent; touch-action:manipulation;">
-        <span style="font-size:18px; line-height:1;">💡</span>
-        <div id="coach-tooltip" style="position:absolute; bottom:48px; right:0; background:#0D0D0D; border:1px solid #2A2A2A; border-radius:12px; padding:14px 16px; min-width:240px; max-width:300px; color:#FFFFFF; font-family:inherit; font-size:13px; line-height:1.5; color:#B3B3B3; display:none; box-shadow:0 10px 30px rgba(0,0,0,0.5); z-index:201; text-align:right;">
+      <div id="coach-badge" style="position:fixed; bottom:${pos.bottom}px; right:${pos.right}px; width:26px; height:26px; background:transparent; border:none; border-radius:50%; display:none; align-items:center; justify-content:center; z-index:200; -webkit-tap-highlight-color:transparent; touch-action:none; cursor:grab; box-shadow:0 1px 3px rgba(0,0,0,0.15);">
+        <span style="font-size:16px; line-height:1; display:block; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">💡</span>
+        <div id="coach-tooltip" style="position:absolute; bottom:40px; right:0; transform:translateX(0); background:#0D0D0D; border:1px solid #2A2A2A; border-radius:12px; padding:14px 16px; min-width:220px; max-width:280px; color:#FFFFFF; font-family:inherit; font-size:13px; line-height:1.5; color:#B3B3B3; display:none; box-shadow:0 10px 30px rgba(0,0,0,0.5); z-index:201; text-align:left;">
           <div style="font-size:10px; color:#F2C94C; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:6px;">Quick Tip</div>
           <div id="coach-tip-text"></div>
-          <div style="position:absolute; top:100%; right:12px; width:0; height:0; border-left:6px transparent; border-right:6px transparent; border-top:6px solid #2A2A2A;"></div>
         </div>
       </div>`;
     document.body.insertAdjacentHTML('beforeend', html);
 
     const badge = document.getElementById('coach-badge');
     const tooltip = document.getElementById('coach-tooltip');
+
     if (badge && tooltip) {
+      badge.style.cursor = 'grab';
+      badge.style.userSelect = 'none';
+
+      badge.addEventListener('touchstart', this._onDragStart.bind(this), { passive: false });
+      badge.addEventListener('mousedown', this._onDragStart.bind(this), { passive: false });
+
       badge.removeEventListener('click', this._badgeClick);
       this._badgeClick = (e) => {
         e.stopPropagation();
         e.preventDefault();
+        if (this.dragState.dragging) {
+          this.dragState.dragging = false;
+          return;
+        }
         const tip = this.pendingTip;
         if (tip) {
           const tipText = document.getElementById('coach-tip-text');
@@ -49,12 +75,10 @@ export class MateyCoach {
           if (tooltip.style.display === 'block') {
             this.shownTipIds.add(tip.tipId);
             this.saveState();
-            clearTimeout(this._badgeTimer);
-            this._badgeTimer = setTimeout(() => {
+            clearTimeout(this._tooltipTimer);
+            this._tooltipTimer = setTimeout(() => {
               tooltip.style.display = 'none';
-              badge.style.display = 'none';
-              this.pendingTip = null;
-            }, 20000);
+            }, 30000);
           }
         }
       };
@@ -67,6 +91,104 @@ export class MateyCoach {
     }
   }
 
+  _onDragStart(e) {
+    if (e.type === 'touchstart') {
+      e.preventDefault();
+      this._handleDrag(e.touches[0], 'touch');
+    } else {
+      e.preventDefault();
+      this._handleDrag(e, 'mouse');
+    }
+  }
+
+  _handleDrag(startPoint, mode) {
+    const badge = document.getElementById('coach-badge');
+    if (!badge) return;
+
+    this.dragState.dragging = false;
+    let startX, startY;
+
+    if (mode === 'touch') {
+      startX = startPoint.clientX;
+      startY = startPoint.clientY;
+    } else {
+      startX = startPoint.clientX;
+      startY = startPoint.clientY;
+    }
+
+    const startX_pct = startX;
+    const startY_pct = startY;
+    const badgeRect = badge.getBoundingClientRect();
+    const offsetX = startX_pct - badgeRect.left;
+    const offsetY = startY_pct - badgeRect.top;
+
+    const moveHandler = (moveEvent) => {
+      moveEvent.preventDefault();
+      let clientX, clientY;
+      if (mode === 'touch') {
+        clientX = moveEvent.touches[0].clientX;
+        clientY = moveEvent.touches[0].clientY;
+      } else {
+        clientX = moveEvent.clientX;
+        clientY = moveEvent.clientY;
+      }
+
+      const newX = clientX - offsetX;
+      const newY = clientY - offsetY;
+      const badgeWidth = 26;
+      const badgeHeight = 26;
+
+      let left = newX;
+      let top = newY;
+
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+      if (left < 8) left = 8;
+      if (left > viewportWidth - badgeWidth - 8) left = viewportWidth - badgeWidth - 8;
+      if (top < 8) top = 8;
+      if (top > viewportHeight - badgeHeight - 8) top = viewportHeight - badgeHeight - 8;
+
+      badge.style.left = left + 'px';
+      badge.style.right = 'auto';
+      badge.style.bottom = 'auto';
+      badge.style.top = top + 'px';
+      badge.style.transform = 'none';
+
+      this.dragState.dragging = true;
+    };
+
+    const endHandler = (endEvent) => {
+      const badge = document.getElementById('coach-badge');
+      if (!badge) return;
+
+      const rect = badge.getBoundingClientRect();
+      const pos = {
+        bottom: Math.round(window.innerHeight - rect.bottom),
+        right: Math.round(window.innerWidth - rect.right)
+      };
+      if (pos.bottom < 8) pos.bottom = 20;
+      if (pos.right < 8) pos.right = 20;
+      this.savePosition(pos);
+
+      badge.style.bottom = pos.bottom + 'px';
+      badge.style.right = pos.right + 'px';
+      badge.style.left = 'auto';
+      badge.style.top = 'auto';
+      badge.style.transform = 'none';
+
+      document.removeEventListener('mousemove', moveHandler);
+      document.removeEventListener('mouseup', endHandler);
+      document.removeEventListener('touchmove', moveHandler);
+      document.removeEventListener('touchend', endHandler);
+    };
+
+    document.addEventListener('mousemove', moveHandler, { passive: false });
+    document.addEventListener('mouseup', endHandler);
+    document.addEventListener('touchmove', moveHandler, { passive: false });
+    document.addEventListener('touchend', endHandler);
+  }
+
   show(tipId, message) {
     if (this.shownTipIds.has(tipId)) return;
     this.pendingTip = { tipId, message };
@@ -74,6 +196,9 @@ export class MateyCoach {
 
     const badge = document.getElementById('coach-badge');
     if (badge) {
+      const pos = this.loadPosition();
+      badge.style.bottom = pos.bottom + 'px';
+      badge.style.right = pos.right + 'px';
       badge.style.display = 'flex';
       clearTimeout(this._autoHideTimer);
       this._autoHideTimer = setTimeout(() => {
@@ -81,13 +206,13 @@ export class MateyCoach {
           badge.style.display = 'none';
           this.pendingTip = null;
         }
-      }, 5000);
+      }, 60000);
     }
   }
 
   hide() {
     clearTimeout(this._autoHideTimer);
-    clearTimeout(this._badgeTimer);
+    clearTimeout(this._tooltipTimer);
     const badge = document.getElementById('coach-badge');
     const tooltip = document.getElementById('coach-tooltip');
     if (badge) badge.style.display = 'none';

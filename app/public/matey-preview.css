@@ -2709,7 +2709,7 @@ body {
 .byok-cap { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; flex: 1; min-width: 0; }
 .byok-cap input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); margin: 0; flex-shrink: 0; }
 .byok-capabilities-section { margin-top: 32px; }
-.byok-dialog-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+.byok-dialog-actions { display: flex; gap: 12px; justify-content: space-between; margin-top: 24px; }
 .byok-btn {
   border: none; padding: 10px 22px; border-radius: 12px; font: inherit; font-size: 15px; font-weight: 400; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
