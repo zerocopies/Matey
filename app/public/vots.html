@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
     <style>
@@ -14,10 +14,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./matey-preview.css?v=80" />
-
-    <script src="./matey-boot.js?v=80"></script>
-    <script src="./matey-sentry.js?v=80"></script>
+    <script src="./version.js"></script>
+    <script>
+      document.write('<link rel="stylesheet" href="./matey-preview.css?v=' + MATEY_CSS_VERSION + '">');
+    </script>
+    <script src="./matey-boot.js?v=93"></script>
+    <script src="./matey-sentry.js?v=93"></script>
   </head>
   <body>
 
@@ -50,115 +52,83 @@
         <div class="tabs">
           <a class="tab" href="./lifestyle.html">Lifestyle</a>
           <a class="tab active" href="./vots.html">My-VOTS</a>
-          <a class="tab" href="./markdown.html">Markdown</a>
+          <a class="tab" href="./markdown.html">.EDITOR</a>
           <a class="tab" href="./journal.html">Journal</a>
           <a class="tab" href="./preview.html#agent">Agent</a>
         </div>
       </nav>
-       <div class="tab-border" style="height:1px;background:#1a1a1a;width:100%"></div>
+      <div class="tab-border" style="height:1px;background:#1a1a1a;width:100%"></div>
 
-       <div class="content-section" style="flex:1;overflow-y:auto">
-         <main class="vots-page">
+      <!-- Landing screen: simple, no card/box, plain background -->
+      <main class="vots-page" id="vots-page">
+        <!-- Link gate (landing screen) -->
+        <div class="vots-link-gate" id="vots-link-gate">
+          <!-- ⋮ three-dot menu button (top-right, same style as Journal) -->
+          <button class="journal-btn journal-btn-sm journal-header-menu-btn" id="vots-header-menu-btn" type="button" title="More">⋮</button>
 
-           <div class="vots-link-gate" id="vots-link-gate">
-            <div class="vots-link-prompt">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.74l1-1a5 5 0 0 0-7.54-.74l-1 1z"/><path d="M14 11a5 5 0 0 0-7.54-.74l-1 1a5 5 0 0 0 7.54.74l1-1z"/><line x1="15" y1="9" x2="15" y2="9"/><line x1="9" y1="15" x2="9" y2="15"/></svg>
-              <div>
-                <div class="vots-link-gate-title">Paste a link to get started</div>
-                <div class="vots-link-gate-desc">My-VOTS is for responding to something public — paste a URL to an external post, video, article, or social content.</div>
-              </div>
-            </div>
-            <div class="vots-link-field">
-              <input type="url" id="vots-link-input" class="vots-link-input" placeholder="https://twitter.com/user/status/12345 or https://youtube.com/watch?v=..." autocomplete="off" />
-              <button class="vots-link-submit" id="vots-link-submit" type="button">Start Entry</button>
-            </div>
-            <div class="vots-link-gate-note">For general free writing, use your <a href="./markdown.html" class="vots-link-journal">Journal</a> instead.</div>
+          <!-- Link input + Start Entry button directly on background (no card) -->
+          <div class="vots-link-field">
+            <input type="url" id="vots-link-input" class="vots-link-input" placeholder="https://twitter.com/user/status/12345 or https://youtube.com/watch?v=..." autocomplete="off" />
+            <button class="vots-link-submit" id="vots-link-submit" type="button">Start Entry</button>
           </div>
 
-          <div class="vots-editor-section" id="vots-editor-section" style="display:none;">
-            <div class="vots-entry-header">
-              <a href="#" class="vots-back-link" id="vots-back-link">← New entry</a>
-              <span class="vots-entry-source" id="vots-entry-source"></span>
+          <!-- Light gray instructional helper text -->
+          <div class="vots-link-gate-desc" id="vots-link-helper">
+            My-VOTS is for responding to something public — paste a link and write your own take on it.
+          </div>
+        </div>
+
+        <!-- Three-dot menu dropdown (screen-level, same as Journal) -->
+        <div class="journal-three-dot-menu" id="vots-three-dot-menu" style="display:none">
+          <button class="journal-menu-item" id="vots-delete-entry" type="button">🗑️ Delete</button>
+        </div>
+
+        <!-- Entry screen (mirrors Journal entry form structure) -->
+        <div class="vots-editor-section" id="vots-editor-section" style="display:none">
+          <div class="journal-entry-form" id="vots-entry-form" style="display:none">
+            <!-- Title row: title input (flex-grow) + Save button + ⋮ menu -->
+            <div class="journal-title-row" id="vots-title-row">
+              <input type="text" class="journal-title-input" id="vots-title-input" placeholder="What's this about?" />
+              <button class="journal-btn journal-btn-sm journal-save-btn" id="vots-save-entry-btn" type="button" title="Save entry">Save</button>
+              <button class="journal-btn journal-btn-sm journal-header-menu-btn" id="vots-entry-menu-btn" type="button" title="More">⋮</button>
             </div>
 
-            <!-- Source Card (shown for social posts only) -->
-            <div class="vots-source-card" id="vots-source-card" style="display:none">
-              <div class="vots-source-badge" id="vots-source-badge"></div>
-              <a href="#" id="vots-source-label" class="vots-source-label"></a>
+            <!-- Auto-generated date/time (not editable) -->
+            <div class="journal-datetime" id="vots-datetime"></div>
+
+            <!-- Quiet link attachment (hidden, stored in background) -->
+            <input type="hidden" id="vots-link-ref-input" />
+
+            <!-- Main content textarea (mirrors journal-content-input) -->
+            <div class="journal-content-wrapper" id="vots-content-wrapper">
+              <textarea class="journal-content-input" id="vots-content-input" placeholder="What's your response?" rows="8"></textarea>
+              <input type="file" id="vots-attach-input" accept="image/*" style="display:none" />
+              <div class="journal-attachments" id="vots-attachments"></div>
             </div>
 
-            <!-- Your Version header (shown for social posts only) -->
-            <div class="vots-your-version-header" id="vots-your-version-header" style="display:none">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.5"/><circle cx="14" cy="14" r="3"/><path d="M21 7.5 14 14l-3-3"/></svg>
-              <span>Your Version</span>
-            </div>
-
-            <!-- Quiet link reference (shown for articles only) -->
-            <div class="vots-link-ref" id="vots-link-ref" style="display:none"></div>
-
-            <div class="vots-input-group">
-              <label class="vots-input-label">Title *</label>
-              <input type="text" id="vots-title-input" class="vots-title-input" placeholder="What's this story about?" autocomplete="off" />
-            </div>
-            <div class="md-symbol-toolbar" id="md-symbol-toolbar" style="padding:6px 12px 0">
-              <button type="button" data-key="*">* </button>
-              <button type="button" data-key="/">/</button>
-              <button type="button" data-key="#"># </button>
-              <button type="button" data-key="$">$</button>
-              <button type="button" data-key="?">?</button>
-              <button type="button" data-key="!">!</button>
-              <button type="button" data-key="=">=</button>
-              <button type="button" data-key="+">+</button>
-              <button type="button" data-key="-">-</button>
-              <button type="button" data-key="÷">÷</button>
-              <button type="button" data-key="(">(</button>
-              <button type="button" data-key=")">)</button>
-            </div>
-            <div class="vots-input-group">
-              <label class="vots-input-label">Written account</label>
-              <textarea class="vots-textarea" id="vots-textarea" placeholder="Tell your version of the story... (Markdown supported)" rows="8"></textarea>
-            </div>
-            <div class="vots-input-group">
-              <label class="vots-input-label">Attachments (optional)</label>
-              <button class="vots-attach-btn" id="vots-attach-btn" type="button">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.5"/><circle cx="14" cy="14" r="3"/><path d="M21 7.5 14 14l-3-3"/></svg>
-                Attach files
-              </button>
-              <div class="vots-attachment-list" id="vots-attachment-list"></div>
-            </div>
-            <div class="vots-input-group">
-               <label class="vots-input-label">Tags (optional)</label>
-               <input type="text" id="vots-tags-input" class="vots-link-input" placeholder="tag1, tag2, tag3..." autocomplete="off" />
-             </div>
-            <div class="vots-actions">
-              <button class="vots-cancel-btn" id="vots-cancel-btn" type="button">Cancel</button>
-              <button class="vots-save-btn" id="vots-save-btn" type="button">Save Entry</button>
+            <!-- Attachment dropdown menu (reuses Journal classes) -->
+            <div class="journal-attach-menu" id="vots-attach-menu" style="display:none">
+              <button class="journal-menu-item" id="vots-add-image" type="button">📷 Photo</button>
+              <button class="journal-menu-item" id="vots-add-file" type="button">📄 File</button>
+              <button class="journal-menu-item" id="vots-add-location" type="button">📍 Location</button>
             </div>
           </div>
 
+          <!-- Three-dot menu dropdown (entry-level, same as Journal) -->
+          <div class="journal-three-dot-menu" id="vots-entry-three-dot-menu" style="display:none">
+            <button class="journal-menu-item" id="vots-delete-entry-btn" type="button">🗑️ Delete</button>
+          </div>
+        </div>
+
+        <!-- History section -->
         <div class="vots-history-section" id="vots-history-section">
-         <div class="journal-toolbar" id="vots-toolbar">
-           <div class="journal-search-box" style="margin-bottom:8px">
-             <input type="text" id="vots-search-input" placeholder="Search My-VOTS entries..." />
-             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
-           </div>
-           <div class="journal-toolbar-actions">
-             <button class="journal-toolbar-btn" id="vots-view-toggle" type="button" aria-label="Toggle view" title="Toggle list/grid view">
-               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-             </button>
-             <button class="journal-toolbar-btn" id="vots-settings-btn" type="button" aria-label="My-VOTS settings" title="My-VOTS settings">
-               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9" fill="none" transform="rotate(45 12 12)"/></svg>
-             </button>
-           </div>
-         </div>
-         <div class="vots-history" id="vots-history">
-           <div class="vots-history-title">My Entries</div>
-           <div class="vots-backup-all" id="vots-backup-all" type="button">Back up all entries</div>
-           <div class="vots-history-empty" id="vots-history-empty">No entries yet. Create one above.</div>
-         </div>
-       </div>
-        </main>
-      </div>
+          <div class="vots-history" id="vots-history"></div>
+          <div class="vots-history-empty-centered" id="vots-history-empty">No entries yet. Create one above.</div>
+        </div>
+      </main>
+
+      <!-- Shared edit/symbol/mic toolbar (injected by matey-toolbar.js) -->
+      <div class="md-composer md-composer-symbols-only vots-toolbar matey-toolbar-container" id="vots-composer"></div>
     </div>
 
     <!-- PIN Lock Screen -->
@@ -169,6 +139,7 @@
         <div class="journal-lock-desc">Enter your PIN to unlock your entries.</div>
         <input type="password" id="vots-pin-input" autocomplete="off" inputmode="numeric" pattern="[0-9]*" />
         <button class="journal-btn journal-btn-primary" id="vots-pin-submit" type="button">Unlock</button>
+        <button class="journal-btn journal-btn-secondary" id="vots-setup-lock-btn" type="button" style="display:none">Set Up My-VOTS PIN</button>
       </div>
     </div>
 
@@ -205,6 +176,7 @@
       </div>
     </div>
 
+    <!-- Confirm dialog -->
     <div class="vots-confirm-overlay" id="vots-confirm-overlay">
       <div class="vots-confirm-dialog">
         <div class="vots-confirm-icon">⚠️</div>
@@ -217,32 +189,36 @@
       </div>
     </div>
 
-    <script src="./matey-themes.js?v=80"></script>
-    <script src="./matey-swipe.js?v=80"></script>
-    <script src="./matey-profile.js?v=80"></script>
-    <script src="./matey-greet.js?v=80"></script>
-    <script src="./matey-feed.js?v=80"></script>
-    <script src="./matey-settings.js?v=80"></script>
-    <script src="./matey-fs.js?v=80"></script>
-    <script src="./matey-keyboard.js?v=80"></script>
-    <script src="./matey-init.js?v=80"></script>
-    <script src="./matey-recall.js?v=80"></script>
-    <script src="./matey-rss.js?v=80"></script>
-    <script src="./matey-license.js?v=80"></script>
-    <script src="./matey-adaptive.js?v=80"></script>
-    <script src="./matey-behavior.js?v=80"></script>
-    <script src="./matey-coach.js?v=80"></script>
-    <script src="./matey-ai.js?v=80"></script>
-    <script src="./matey-hooks-manager.js?v=80"></script>
-    <script src="./matey-vots.js?v=80"></script>
-    <script src="./matey-tabs.js?v=80"></script>
-    <script src="./matey-byok.js?v=80"></script>
-    <script src="./matey-beat.js?v=80"></script>
-    <script src="./matey-lifestyle.js?v=80"></script>
-    <script src="./matey-md.js?v=80"></script>
-    <script src="./matey-syntax.js?v=80"></script>
-    <script src="./matey-whisper.js?v=80"></script>
-    <script src="./matey-models.js?v=80"></script>
+    <script src="./matey-themes.js?v=93"></script>
+    <script src="./matey-toolbar.js?v=93"></script>
+    <script src="./matey-swipe.js?v=93"></script>
+    <script src="./matey-profile.js?v=93"></script>
+    <script src="./matey-greet.js?v=93"></script>
+    <script src="./matey-feed.js?v=93"></script>
+    <script src="./matey-settings.js?v=93"></script>
+    <script src="./matey-fs.js?v=93"></script>
+    <script src="./matey-keyboard.js?v=93"></script>
+    <script src="./matey-mic.js?v=93"></script>
+    <script src="./matey-init.js?v=93"></script>
+    <script src="./matey-recall.js?v=93"></script>
+    <script src="./matey-rss.js?v=93"></script>
+    <script src="./matey-license.js?v=93"></script>
+    <script src="./matey-adaptive.js?v=93"></script>
+    <script src="./matey-behavior.js?v=93"></script>
+    <script type="module">import { mateyCoach } from './matey-coach.js'; window.mateyCoach = mateyCoach;</script>
+    <script src="./matey-ai.js?v=93"></script>
+    <script src="./matey-hooks-manager.js?v=93"></script>
+    <script src="./matey-vots.js?v=93"></script>
+    <script src="./matey-tabs.js?v=93"></script>
+    <script src="./matey-byok.js?v=93"></script>
+    <script src="./matey-beat.js?v=93"></script>
+    <script src="./matey-lifestyle.js?v=93"></script>
+    <script src="./matey-md.js?v=93"></script>
+    <script src="./matey-syntax.js?v=93"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.2/mammoth.min.js"></script>
+    <script src="./matey-whisper.js?v=93"></script>
+    <script src="./matey-models.js?v=93"></script>
     <script>
     /* Usage ring */
     (function () {

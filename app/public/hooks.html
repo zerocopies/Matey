@@ -14,9 +14,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./matey-preview.css?v=80" />
-    <script src="./matey-boot.js?v=80"></script>
-    <script src="./matey-sentry.js?v=80"></script>
+    <script src="./version.js"></script>
+    <script>
+      document.write('<link rel="stylesheet" href="./matey-preview.css?v=' + MATEY_CSS_VERSION + '">');
+    </script>
+    <script src="./matey-boot.js?v=93"></script>
+    <script src="./matey-sentry.js?v=93"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -48,7 +51,7 @@
         <div class="tabs">
           <a class="tab" href="./lifestyle.html">Lifestyle</a>
           <a class="tab" href="./vots.html">My-VOTS</a>
-          <a class="tab" href="./markdown.html">Markdown</a>
+          <a class="tab" href="./markdown.html">.EDITOR</a>
           <a class="tab" href="./journal.html">Journal</a>
           <a class="tab" href="./preview.html#agent">Agent</a>
         </div>
@@ -59,31 +62,32 @@
        </main>
     </main>
     </div>
-    <script src="./matey-themes.js?v=80"></script>
-    <script src="./matey-swipe.js?v=80"></script>
-    <script src="./matey-profile.js?v=80"></script>
-    <script src="./matey-greet.js?v=80"></script>
-    <script src="./matey-feed.js?v=80"></script>
-    <script src="./matey-ai.js?v=80"></script>
-    <script src="./matey-tabs.js?v=80"></script>
-    <script src="./matey-byok.js?v=80"></script>
-    <script src="./matey-beat.js?v=80"></script>
-    <script src="./matey-lifestyle.js?v=80"></script>
-    <script src="./matey-syntax.js?v=80"></script>
-    <script src="./matey-whisper.js?v=80"></script>
-    <script src="./matey-models.js?v=80"></script>
-<script src="./matey-rss.js?v=80"></script>
-    <script src="./matey-license.js?v=80"></script>
-    <script src="./matey-hooks.js?v=80"></script>
-    <script src="./matey-recall.js?v=80"></script>
-    <script src="./matey-settings.js?v=80"></script>
-    <script src="./matey-behavior.js?v=80"></script>
-    <script src="./matey-coach.js?v=80"></script>
-    <script src="./matey-adaptive.js?v=80"></script>
-    <script src="./matey-init.js?v=80"></script>
-    <script src="./matey-keyboard.js?v=80"></script>
-    <script src="./matey-fs.js?v=80"></script>
-    <script src="./matey-hooks-manager.js?v=80"></script>
+    <script src="./matey-themes.js?v=93"></script>
+    <script src="./matey-swipe.js?v=93"></script>
+    <script src="./matey-profile.js?v=93"></script>
+    <script src="./matey-greet.js?v=93"></script>
+    <script src="./matey-feed.js?v=93"></script>
+    <script src="./matey-ai.js?v=93"></script>
+    <script src="./matey-tabs.js?v=93"></script>
+    <script src="./matey-byok.js?v=93"></script>
+    <script src="./matey-beat.js?v=93"></script>
+    <script src="./matey-lifestyle.js?v=93"></script>
+    <script src="./matey-syntax.js?v=93"></script>
+    <script src="./matey-whisper.js?v=93"></script>
+    <script src="./matey-models.js?v=93"></script>
+<script src="./matey-rss.js?v=93"></script>
+    <script src="./matey-license.js?v=93"></script>
+    <script src="./matey-hooks.js?v=93"></script>
+    <script src="./matey-recall.js?v=93"></script>
+    <script src="./matey-settings.js?v=93"></script>
+    <script src="./matey-behavior.js?v=93"></script>
+    <script type="module">import { mateyCoach } from './matey-coach.js'; window.mateyCoach = mateyCoach;</script>
+    <script src="./matey-adaptive.js?v=93"></script>
+    <script src="./matey-init.js?v=93"></script>
+    <script src="./matey-keyboard.js?v=93"></script>
+    <script src="./matey-mic.js?v=93"></script>
+    <script src="./matey-fs.js?v=93"></script>
+    <script src="./matey-hooks-manager.js?v=93"></script>
     <script>
       // Hooks page behavior is owned by matey-hooks.js (keyword -> news -> AI briefs)
     </script>

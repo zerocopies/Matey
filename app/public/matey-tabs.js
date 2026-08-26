@@ -1,10 +1,13 @@
 /* Matey Tabs — Draggable reorder with long-press + swipe navigation, localStorage persistence */
 (function () {
-  var TAB_ORDER = ['lifestyle', 'vots', 'markdown', 'journal', 'agent'];
+  'use strict';
+
+  var TAB_ORDER = ['lifestyle', 'vots', 'editor', 'journal', 'agent'];
   var LONG_PRESS_MS = 800;
   var isDragging = false, dragTab = null, dragStartX = 0, dragStartY = 0;
   var longPressTimer = null, touchMoved = false, placeholder = null, tabsContainer = null;
   var mouseDownTab = null;
+  var navOverlay = null;
 
   function loadOrder() {
     try {
@@ -18,7 +21,31 @@
   function saveOrder(o) { try { localStorage.setItem('matey-tab-order', JSON.stringify(o)); } catch (e) {} }
 
   function tabUrl(id) {
-       return ({ 'lifestyle': './lifestyle.html', 'vots': './vots.html', 'markdown': './markdown.html', 'journal': './journal.html', 'agent': './preview.html#agent' })[id] || '#';
+    return ({ 'lifestyle': './lifestyle.html', 'vots': './vots.html', 'editor': './markdown.html', 'journal': './journal.html', 'agent': './preview.html#agent' })[id] || '#';
+  }
+
+  function ensureNavOverlay() {
+    if (!navOverlay) {
+      navOverlay = document.createElement('div');
+      navOverlay.className = 'matey-nav-overlay';
+      navOverlay.innerHTML = '<div class="matey-nav-spinner"></div>';
+      document.body.appendChild(navOverlay);
+      navOverlay.offsetHeight;
+    }
+    return navOverlay;
+  }
+
+  function showNavOverlay() {
+    var overlay = ensureNavOverlay();
+    overlay.classList.add('visible');
+  }
+
+  function hideNavOverlay() {
+    if (navOverlay) navOverlay.classList.remove('visible');
+  }
+
+  function tabUrl(id) {
+    return ({ 'lifestyle': './lifestyle.html', 'vots': './vots.html', 'editor': './markdown.html', 'journal': './journal.html', 'agent': './preview.html#agent' })[id] || '#';
   }
 
   function renderTabs() {
@@ -28,12 +55,13 @@
     var path = window.location.pathname.replace(/\/$/, ''), hash = window.location.hash || '', active = '';
     if (path.indexOf('lifestyle') !== -1) active = 'lifestyle';
      else if (path.indexOf('vots') !== -1) active = 'vots';
-    else if (path.indexOf('markdown') !== -1) active = 'markdown';
+    else if (path.indexOf('markdown') !== -1) active = 'editor';
     else if (path.indexOf('journal') !== -1) active = 'journal';
     else if (hash === '#agent') active = 'agent';
     else if (path.indexOf('preview') !== -1) active = 'agent';
+    else if (path.indexOf('editor') !== -1) active = 'editor';
     else active = 'lifestyle';
-      var labels = { 'lifestyle': 'Lifestyle', 'vots': 'My-VOTS', 'markdown': 'Markdown', 'journal': 'Journal', 'agent': 'Agent' };
+      var labels = { 'lifestyle': 'Lifestyle', 'vots': 'My-VOTS', 'editor': '.EDITOR', 'journal': 'Journal', 'agent': 'Agent' };
     order.forEach(function (id) {
       var a = document.createElement('a');
       a.className = 'tab' + (id === active ? ' active' : '');
@@ -41,7 +69,19 @@
       a.textContent = labels[id] || id;
       c.appendChild(a);
     });
-  }
+
+    /* Intercept tab clicks to show navigation overlay */
+    c.querySelectorAll('.tab').forEach(function (tab) {
+      tab.addEventListener('click', function (e) {
+        var href = tab.getAttribute('href');
+        if (href && href !== '#' && !href.startsWith('#')) {
+          e.preventDefault();
+          showNavOverlay();
+          setTimeout(function () { window.location.href = href; }, 120);
+        }
+      });
+     });
+   }
 
   function mkPlaceholder() { var d = document.createElement('div'); d.className = 'tab drag-placeholder'; return d; }
 
