@@ -426,11 +426,15 @@
         body.tools = tools;
         if (toolChoice) body.tool_choice = toolChoice;
       }
+      /* Stage 5: AbortController-based timeout */
+      var controller = new AbortController();
+      var timer = setTimeout(function () { controller.abort(new Error('Request timed out after ' + timeoutMs + 'ms')); }, timeoutMs);
       return nativeFetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + p.apiKey },
-        body: JSON.stringify(body)
-      });
+        body: JSON.stringify(body),
+        signal: controller.signal
+      }).finally(function () { clearTimeout(timer); });
     }).then(function (r) {
       if (!r.ok) return r.text().then(function (t) {
         if (r.status === 401) throw new Error('Authentication failed (401): Invalid API key');
@@ -482,11 +486,15 @@
       }
     };
 
+    /* Stage 5: AbortController-based timeout */
+    var controller = new AbortController();
+    var timer = setTimeout(function () { controller.abort(new Error('Request timed out after ' + timeoutMs + 'ms')); }, timeoutMs);
     return nativeFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    }).then(function (r) {
+      body: JSON.stringify(body),
+      signal: controller.signal
+    }).finally(function () { clearTimeout(timer); }).then(function (r) {
       if (!r.ok) return r.text().then(function (t) {
         if (r.status === 401) throw new Error('Authentication failed (401): Invalid API key');
         throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 300));
