@@ -14,15 +14,30 @@
 (function () {
   'use strict';
 
-  var micState = {
-    active: false,
-    stream: null,
-    mediaRecorder: null,
-    audioChunks: [],
-    micBtn: null,
-    statusText: null,
-    targetInput: null
-  };
+   var micState = {
+     active: false,
+     isRecording: false,
+     isProcessing: false,
+     stream: null,
+     mediaRecorder: null,
+     audioChunks: [],
+     micBtn: null,
+     statusText: null,
+     targetInput: null,
+     autoStopTimer: null,
+     currentDomain: 'journal',
+     currentContextPayload: {},
+     _error: null
+   };
+
+  /* ---- Domain detection ---- */
+  function detectDomain(inputEl) {
+    var id = (inputEl && inputEl.id) || '';
+    if (id.indexOf('journal') !== -1) return 'journal';
+    if (id.indexOf('vots') !== -1 || id.indexOf('compose') !== -1) return 'agent';
+    if (id.indexOf('md') !== -1 || id.indexOf('editor') !== -1 || id.indexOf('recipe') !== -1) return 'editor';
+    return 'journal';
+  }
 
   /* ---- Permission ---- */
   function requestMicPermission() {
@@ -61,39 +76,61 @@
       document.getElementById('journal-title-input') ||
       document.getElementById('md-editor') ||
        document.getElementById('vots-content-input') ||
-      document.getElementById('recipe-ingredients') ||
-      null
+       null
     );
   }
 
-  /* ---- Recording lifecycle ---- */
-  function startRecording() {
-    console.log('[MateyMic] startRecording() called');
+   var STT_DOMAINS_DEFAULT = 'journal';
 
-    var micBtn = micState.micBtn;
-    if (!micBtn) return;
+   function insertTextAtCursor(inputEl, text) {
+    if (!inputEl || !text) return;
+    var current = inputEl.value || '';
+    var start = inputEl.selectionStart || current.length;
+    var end = inputEl.selectionEnd || current.length;
+    inputEl.value = current.substring(0, start) + text + current.substring(end);
+    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+    var newPos = start + text.length;
+    inputEl.setSelectionRange(newPos, newPos);
+    inputEl.focus();
+  }
 
-    micState.targetInput = micState.targetInput || getActiveInput();
-    console.log('[MateyMic] Target input:', micState.targetInput ? (micState.targetInput.tagName + '#' + (micState.targetInput.id || 'unnamed')) : 'none');
-
-    micBtn.classList.add('mic-active');
-    micState.active = true;
-    micBtn.style.opacity = '0.5';
-    if (micState.statusText) micState.statusText.textContent = 'Listening…';
-    notifyStateChange();
-
-    requestMicPermission().then(function (granted) {
-      if (!granted) {
-        console.error('[MateyMic] Microphone permission denied');
-         micBtn.classList.remove('mic-active');
-         micBtn.style.opacity = '';
-         micState.active = false;
-         notifyStateChange();
-         if (micState.statusText) micState.statusText.textContent = 'Permission denied';
-        return;
+    /* ---- Recording lifecycle ---- */
+    function pickMicMimeType() {
+      if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return '';
+      var candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/ogg;codecs=opus'];
+      for (var i = 0; i < candidates.length; i++) {
+        try {
+          if (MediaRecorder.isTypeSupported(candidates[i])) {
+            console.log('[MateyMic] Supported MIME:', candidates[i]);
+            return candidates[i];
+          }
+        } catch (e) { /* ignore */ }
       }
-      console.log('[MateyMic] Permission granted, requesting audio stream');
+      console.log('[MateyMic] No supported MIME found, using default MediaRecorder()');
+      return '';
+    }
 
+   function startRecording() {
+     console.log('[MateyMic] startRecording() called');
+
+     var micBtn = micState.micBtn;
+     if (!micBtn) {
+       console.error('[MateyMic] No mic button set');
+       return;
+     }
+
+     micState.targetInput = micState.targetInput || getActiveInput();
+     console.log('[MateyMic] Target input:', micState.targetInput ? (micState.targetInput.tagName + '#' + (micState.targetInput.id || 'unnamed')) : 'none');
+
+     // Set recording state immediately for instant UI feedback
+     micState.isRecording = true;
+     micState.active = true;
+     micState._error = null;
+     updateMicButtonVisual(micBtn, true);
+     if (micState.statusText) micState.statusText.textContent = 'Listening…';
+     notifyStateChange();
+
+        // Explicit permission request for Android WebView
       navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
@@ -104,166 +141,290 @@
         }
       }).then(function (stream) {
         console.log('[MateyMic] getUserMedia success, streamTracks:', stream.getAudioTracks().length);
+        if (micState.statusText) micState.statusText.textContent = 'Listening… (speak now)';
         var track = stream.getAudioTracks()[0];
         var settings = track.getSettings();
         console.log('[MateyMic] Audio track settings:', JSON.stringify({ sampleRate: settings.sampleRate, channelCount: settings.channelCount, label: track.label }));
         micState.stream = stream;
         micState.audioChunks = [];
+        micState._totalBytes = 0;
 
-        var mime = 'audio/webm;codecs=opus';
-        if (!MediaRecorder.isTypeSupported(mime)) {
-          mime = 'audio/wav';
-          console.log('[MateyMic] WebM Opus not supported, falling back to:', mime);
+        var mime = pickMicMimeType();
+        console.log('[MateyMic] Using MIME type:', JSON.stringify(mime));
+
+        var mediaRecorder = null;
+        try {
+          mediaRecorder = mime
+            ? new MediaRecorder(stream, { mimeType: mime })
+            : new MediaRecorder(stream);
+        } catch (mrErr) {
+          console.error('[MateyMic] MediaRecorder construction failed for mime', JSON.stringify(mime), '- retrying with default', mrErr);
+          try {
+            mediaRecorder = new MediaRecorder(stream);
+            mime = mediaRecorder.mimeType || '';
+          } catch (mrErr2) {
+            console.error('[MateyMic] MediaRecorder construction failed entirely:', mrErr2);
+            micState.isRecording = false;
+            micState.active = false;
+            updateMicButtonVisual(micBtn, false);
+            notifyStateChange();
+            if (micState.statusText) micState.statusText.textContent = 'Recorder unsupported on this device';
+            if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
+            return;
+          }
         }
-        console.log('[MateyMic] Using MIME type:', mime);
-
-        var mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
         micState.mediaRecorder = mediaRecorder;
 
         mediaRecorder.ondataavailable = function (e) {
           if (e.data && e.data.size > 0) {
             micState.audioChunks.push(e.data);
+            micState._totalBytes = (micState._totalBytes || 0) + e.data.size;
             console.log('[MateyMic] Audio chunk:', e.data.size, 'bytes, type:', e.data.type);
+            if (micState.statusText) micState.statusText.textContent = 'Recording… ' + micState.audioChunks.length + ' chunks / ' + micState._totalBytes + ' bytes';
           }
         };
 
-        mediaRecorder.onstop = function () {
-          console.log('[MateyMic] Recording stopped, chunks:', micState.audioChunks.length);
-          var blob = new Blob(micState.audioChunks, { type: mime });
-          console.log('[MateyMic] Combined blob:', blob.size, 'bytes, type:', blob.type);
-          micState.active = false;
-          notifyStateChange();
-          processAudioBlob(blob);
+         mediaRecorder.onstop = function () {
+           console.log('[MateyMic] Recording stopped, chunks:', micState.audioChunks.length);
+           var blob = new Blob(micState.audioChunks, { type: mime });
+           console.log('[MateyMic] Combined blob:', blob.size, 'bytes, type:', blob.type);
+           micState.isRecording = false;
+           micState.active = false;
+           updateMicButtonVisual(micBtn, false);
+           notifyStateChange();
+           if (micState.statusText) micState.statusText.textContent = 'Recorded ' + blob.size + ' bytes — transcribing…';
+           var domain = micState.currentDomain || STT_DOMAINS_DEFAULT;
+           var contextPayload = micState.currentContextPayload || {};
+           processAudioBlob(blob, domain, contextPayload);
         };
 
         mediaRecorder.start(250);
         console.log('[MateyMic] MediaRecorder started');
 
-        /* Auto-stop after 10 seconds to prevent runaway recording */
+        /* Auto-stop after 60 seconds to prevent runaway recording */
         micState.autoStopTimer = setTimeout(function () {
-          console.log('[MateyMic] Auto-stopping after 10s');
+          console.log('[MateyMic] Auto-stopping after 60s');
           if (micState.mediaRecorder && micState.mediaRecorder.state === 'recording') {
             micState.mediaRecorder.stop();
           }
-        }, 10000);
-      }).catch(function (err) {
-        console.error('[MateyMic] getUserMedia error:', err.name || err.message || err, JSON.stringify({
-          name: err.name,
-          message: err.message,
-          code: err.code,
-          constraint: err.constraint,
-          stack: err.stack
-        }));
-         micBtn.classList.remove('mic-active');
-         micBtn.style.opacity = '';
-         micState.active = false;
-         notifyStateChange();
-         if (micState.statusText) micState.statusText.textContent = 'Mic error: ' + (err.message || err);
-      });
-    });
-  }
+        }, 60000);
+     }).catch(function (err) {
+       console.error('[MateyMic] getUserMedia error:', err.name || err.message || err, JSON.stringify({
+         name: err.name,
+         message: err.message,
+         code: err.code,
+         constraint: err.constraint,
+         stack: err.stack
+       }));
+       micState.isRecording = false;
+       micState.active = false;
+       micState._error = err.message || err.name || 'Unknown error';
+       updateMicButtonVisual(micBtn, false);
+       notifyStateChange();
+       if (micState.statusText) micState.statusText.textContent = 'Mic error: ' + (err.message || err);
+     });
+   }
 
-  function stopRecording() {
+    function updateMicButtonVisual(btn, isRecording) {
+      if (!btn) return;
+      if (isRecording) {
+        btn.classList.add('mic-active');
+        btn.style.background = '#ffffff';
+        btn.style.color = '#000000';
+        btn.style.borderRadius = '50%';
+        // Also update SVG fill
+        var svg = btn.querySelector('svg');
+        if (svg) {
+          svg.setAttribute('fill', '#000000');
+          svg.style.fill = '#000000';
+        }
+      } else {
+        btn.classList.remove('mic-active');
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.borderRadius = '';
+        var svg = btn.querySelector('svg');
+        if (svg) {
+          svg.setAttribute('fill', 'none');
+          svg.style.fill = '';
+        }
+      }
+    }
+
+   function stopRecording() {
     console.log('[MateyMic] stopRecording() called');
     if (micState.autoStopTimer) {
       clearTimeout(micState.autoStopTimer);
       micState.autoStopTimer = null;
     }
-    if (micState.mediaRecorder && micState.mediaRecorder.state === 'recording') {
-      micState.mediaRecorder.stop();
-    }
-    if (micState.stream) {
-      micState.stream.getTracks().forEach(function (t) { t.stop(); });
-      micState.stream = null;
-    }
-    if (micState.micBtn) {
-      micState.micBtn.classList.remove('mic-active');
-      micState.micBtn.style.opacity = '';
-    }
-    micState.active = false;
-    if (micState.statusText) micState.statusText.textContent = 'Transcribing…';
-    notifyStateChange();
-  }
+     if (micState.mediaRecorder && micState.mediaRecorder.state === 'recording') {
+       micState.mediaRecorder.stop();
+     }
+     if (micState.stream) {
+       micState.stream.getTracks().forEach(function (t) { t.stop(); });
+       micState.stream = null;
+     }
+     if (micState.micBtn) {
+       updateMicButtonVisual(micState.micBtn, false);
+     }
+     micState.isRecording = false;
+     micState.active = false;
+     if (micState.statusText) micState.statusText.textContent = 'Transcribing…';
+     notifyStateChange();
+   }
 
   /* ---- Transcribe via Whisper ---- */
-  function processAudioBlob(blob) {
-    var input = micState.targetInput || getActiveInput();
-    if (!input) {
-      console.warn('[MateyMic] No input element found — transcription will proceed but text won\'t be inserted');
-    }
+    function processAudioBlob(blob, domain, contextPayload) {
+     domain = domain || STT_DOMAINS_DEFAULT;
+     contextPayload = contextPayload || {};
 
-    console.log('[MateyMic] Calling MateyWhisper.transcribe() with blob:', blob.size, 'bytes');
+     var input = micState.targetInput || getActiveInput();
+     if (!input) {
+       console.warn('[MateyMic] No input element found — transcription will proceed but text won\'t be inserted');
+     }
 
-    if (window.MateyWhisper) {
-      var state = MateyWhisper.getState();
-      if (!state.ready) {
-        console.log('[MateyMic] Whisper not loaded yet, loading whisper-tiny.en...');
-        MateyWhisper.loadModel('Xenova/whisper-tiny.en', function (progress) {
-          console.log('[MateyMic] Model loading progress:', Math.round(progress) + '%');
-          if (micState.statusText) micState.statusText.textContent = 'Loading model… ' + Math.round(progress) + '%';
-        }).then(function () {
-          doTranscribe(blob, input);
+     console.log('[MateyMic] Calling STT with domain:', domain, 'contextPayload:', JSON.stringify(contextPayload));
+
+     /* If runLocalSTT is waiting, resolve with text directly */
+     var sttResolve = micState._sttResolve;
+     var sttReject = micState._sttReject;
+
+      /* If MateySpeech is available, use its domain-aware transcription of THIS blob.
+         NOTE: stopListening() is for when MateySpeech owns the recording lifecycle;
+         here matey-mic.js captured the audio, so we hand the blob to processAudioBlob().
+         We must first ensure a VALID Whisper model is actually loaded (MateySpeech's
+         default activeModelId 'distil-whisper-small' is not a valid MateyWhisper id,
+         and if Whisper isn't ready MateySpeech silently falls back to fake canned text). */
+      if (window.MateySpeech && typeof MateySpeech.processAudioBlob === 'function' && !micState._usingMateySpeech) {
+        micState._usingMateySpeech = true;
+        if (micState.statusText) micState.statusText.textContent = 'Transcribing…';
+
+        var whisperReady = window.MateyWhisper && window.MateyWhisper.getState && window.MateyWhisper.getState().ready;
+        var loadPromise = whisperReady
+          ? Promise.resolve()
+          : window.MateyWhisper.loadModel('Xenova/whisper-tiny.en', function (p) {
+              if (micState.statusText) micState.statusText.textContent = 'Loading model… ' + Math.round(p) + '%';
+            });
+
+        loadPromise.then(function () {
+          return MateySpeech.processAudioBlob(blob, domain, contextPayload);
+        }).then(function (text) {
+          micState._usingMateySpeech = false;
+          if (text && String(text).trim()) {
+            insertTextAtCursor(input, String(text).trim());
+            if (micState.statusText) micState.statusText.textContent = 'Done';
+            setTimeout(function () { if (micState.statusText) micState.statusText.textContent = ''; }, 1000);
+            if (sttResolve) sttResolve(String(text).trim());
+          } else {
+            if (micState.statusText) micState.statusText.textContent = 'No speech detected';
+            setTimeout(function () { if (micState.statusText) micState.statusText.textContent = ''; }, 1500);
+            if (sttResolve) sttResolve('');
+          }
         }).catch(function (e) {
-          console.error('[MateyMic] Model load failed:', e);
-          if (micState.statusText) micState.statusText.textContent = 'Model error: ' + (e.message || e);
+          micState._usingMateySpeech = false;
+          console.error('[MateyMic] MateySpeech error:', e);
+          if (micState.statusText) micState.statusText.textContent = 'Transcribe error: ' + (e && e.message ? e.message : e);
+          setTimeout(function () { if (micState.statusText) micState.statusText.textContent = ''; }, 2500);
+          if (sttReject) sttReject(e);
         });
-      } else {
-        console.log('[MateyMic] Whisper model already loaded:', state.modelId);
-        doTranscribe(blob, input);
+        return;
       }
-    } else {
-      console.error('[MateyMic] MateyWhisper not available');
-      if (micState.statusText) micState.statusText.textContent = 'STT not available';
-    }
-  }
+
+     /* Fallback to MateyWhisper */
+     if (window.MateyWhisper) {
+       var state = MateyWhisper.getState();
+       if (!state.ready) {
+         console.log('[MateyMic] Whisper not loaded yet, loading whisper-tiny.en...');
+         MateyWhisper.loadModel('Xenova/whisper-tiny.en', function (progress) {
+           console.log('[MateyMic] Model loading progress:', Math.round(progress) + '%');
+           if (micState.statusText) micState.statusText.textContent = 'Loading model… ' + Math.round(progress) + '%';
+         }).then(function () {
+           doTranscribe(blob, input);
+         }).catch(function (e) {
+           console.error('[MateyMic] Model load failed:', e);
+           if (micState.statusText) micState.statusText.textContent = 'Model error: ' + (e.message || e);
+           if (sttReject) sttReject(e);
+         });
+       } else {
+         console.log('[MateyMic] Whisper model already loaded:', state.modelId);
+         doTranscribe(blob, input);
+       }
+     } else {
+       console.error('[MateyMic] MateyWhisper not available');
+       if (micState.statusText) micState.statusText.textContent = 'STT not available';
+       if (sttReject) sttReject(new Error('MateyWhisper not available'));
+     }
+   }
 
   function doTranscribe(blob, input) {
-    console.log('[MateyMic] doTranscribe() — sending blob to Whisper pipeline');
-    var startTime = Date.now();
+     console.log('[MateyMic] doTranscribe() — sending blob to Whisper pipeline');
+     var startTime = Date.now();
 
-    MateyWhisper.transcribe(blob, function (chunk) {
-      console.log('[MateyMic] Transcription chunk received:', JSON.stringify(chunk));
-    }).then(function (result) {
-      var elapsed = Date.now() - startTime;
-      console.log('[MateyMic] Transcription complete (' + elapsed + 'ms):', JSON.stringify(result).substring(0, 500));
-      var text = '';
-      if (typeof result === 'string') {
-        text = result;
-      } else if (Array.isArray(result)) {
-        text = result.map(function(r) { return (r && r.text) ? r.text : ''; }).join(' ').trim();
-      } else if (result && (result.text || result.transcription)) {
-        text = result.text || result.transcription;
-      }
-      if (text && input) {
-        var trimmed = text.trim();
-        if (trimmed) {
-          var current = input.value || '';
-          var start = input.selectionStart || current.length;
-          var end = input.selectionEnd || current.length;
-          input.value = current.substring(0, start) + trimmed + current.substring(end);
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-          var newPos = start + trimmed.length;
-          input.setSelectionRange(newPos, newPos);
-          input.focus();
-          if (micState.statusText) micState.statusText.textContent = 'Done';
-          setTimeout(function () {
-            if (micState.statusText) micState.statusText.textContent = '';
-          }, 1000);
-        } else {
-          if (micState.statusText) micState.statusText.textContent = 'No speech detected';
-          setTimeout(function () {
-            if (micState.statusText) micState.statusText.textContent = '';
-          }, 1500);
-        }
-      } else {
-    }).catch(function (e) {
-      console.error('[MateyMic] Transcription failed:', e);
-      if (micState.statusText) micState.statusText.textContent = 'Error: ' + (e.message || e);
-      setTimeout(function () {
-        if (micState.statusText) micState.statusText.textContent = '';
-      }, 2000);
-    });
-  }
+     /* Apply VAD if enabled */
+     var vadEnabled = false;
+     try { vadEnabled = localStorage.getItem('matey-vad-enabled') !== 'false'; } catch (e) {}
+
+     if (vadEnabled && window.MateySpeech && window.MateySpeech.SileroVADProcessor) {
+       var reader = new FileReader();
+       reader.onload = function () {
+         var audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+         audioCtx.decodeAudioData(reader.result, function (buffer) {
+           var channelData = buffer.getChannelData(0);
+           var sampleRate = buffer.sampleRate;
+           var cleanPCM = window.MateySpeech.SileroVADProcessor.filterSilence(channelData);
+           if (cleanPCM.length < 100) {
+             console.warn('[MateyMic] VAD removed all audio (too silent)');
+             if (micState.statusText) micState.statusText.textContent = 'No speech detected';
+             setTimeout(function () { if (micState.statusText) micState.statusText.textContent = ''; }, 1500);
+             if (micState._sttResolve) micState._sttResolve('');
+             return;
+           }
+           var finalBlob = window.MateySpeech.SileroVADProcessor.encodeFloat32ToWav(cleanPCM, sampleRate);
+           console.log('[MateyMic] VAD trimmed:', channelData.length, '->', cleanPCM.length, 'samples');
+           doSendToWhisper(finalBlob, input, startTime);
+         });
+       };
+       reader.readAsArrayBuffer(blob);
+     } else {
+       doSendToWhisper(blob, input, startTime);
+     }
+   }
+
+   function doSendToWhisper(blob, input, startTime) {
+     var sttResolve = micState._sttResolve;
+     var sttReject = micState._sttReject;
+     MateyWhisper.transcribe(blob, function (chunk) {
+       console.log('[MateyMic] Transcription chunk received:', JSON.stringify(chunk));
+     }).then(function (result) {
+       var elapsed = Date.now() - startTime;
+       console.log('[MateyMic] Transcription complete (' + elapsed + 'ms):', JSON.stringify(result).substring(0, 500));
+       var text = '';
+       if (typeof result === 'string') {
+         text = result;
+       } else if (Array.isArray(result)) {
+         text = result.map(function(r) { return (r && r.text) ? r.text : ''; }).join(' ').trim();
+       } else if (result && (result.text || result.transcription)) {
+         text = result.text || result.transcription;
+       }
+       if (text && text.trim()) {
+         insertTextAtCursor(input, text.trim());
+         if (micState.statusText) micState.statusText.textContent = 'Done';
+         setTimeout(function () { if (micState.statusText) micState.statusText.textContent = ''; }, 1000);
+         if (sttResolve) sttResolve(text.trim());
+       } else {
+         if (micState.statusText) micState.statusText.textContent = 'No speech detected';
+         setTimeout(function () { if (micState.statusText) micState.statusText.textContent = ''; }, 1500);
+         if (sttResolve) sttResolve('');
+       }
+     }).catch(function (e) {
+       console.error('[MateyMic] Transcription failed:', e);
+       if (micState.statusText) micState.statusText.textContent = 'Error: ' + (e.message || e);
+       setTimeout(function () {
+         if (micState.statusText) micState.statusText.textContent = '';
+       }, 2000);
+       if (sttReject) sttReject(e);
+     });
+   }
 
   /* ---- Inline mic button injection ---- */
   var MIC_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
@@ -311,6 +472,8 @@
       micState.micBtn = btn;
       micState.statusText = null;
       micState.targetInput = inputEl;
+      micState.currentDomain = detectDomain(inputEl);
+      micState.currentContextPayload = { inputId: inputEl.id || '' };
       micState.active = true;
       startRecording();
     });
@@ -367,28 +530,47 @@
       }, 300);
     });
 
-    /* Wire up the md-voice button on agent page to use Whisper */
+    /* Wire up the md-voice button on agent page */
     var voiceBtn = document.getElementById('md-voice');
     if (voiceBtn) {
       voiceBtn.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
-        if (micState.active) {
-          micState.active = false;
-          voiceBtn.classList.remove('mic-active');
-          voiceBtn.style.opacity = '';
+        console.log('[MateyMic] md-voice clicked, isRecording:', micState.isRecording);
+        if (micState.isRecording) {
+          // Stop recording
+          console.log('[MateyMic] Stopping recording from button click');
           stopRecording();
-        } else {
-          micState.micBtn = voiceBtn;
-          micState.statusText = null;
-          micState.active = true;
-          voiceBtn.classList.add('mic-active');
-          voiceBtn.style.opacity = '0.5';
-          startRecording();
+          return;
         }
+        // Start recording
+        micState.micBtn = voiceBtn;
+        micState.statusText = document.getElementById('md-voice-status');
+        micState.currentDomain = detectDomain(micState.targetInput);
+        micState.currentContextPayload = {};
+        startRecording();
       });
     }
   }
+
+  /* Auto-stop mic on page hide/visibility change (section switch, app background) */
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden && micState.active) {
+      console.log('[MateyMic] Auto-stopping on visibility change');
+      stopRecording();
+    }
+  });
+
+  /* Auto-stop mic on click outside the mic button or its target input */
+  document.addEventListener('click', function (e) {
+    if (!micState.active || !micState.micBtn) return;
+    var clickedInside = micState.micBtn.contains(e.target);
+    var clickedInInput = micState.targetInput && micState.targetInput.contains(e.target);
+    if (!clickedInside && !clickedInInput) {
+      console.log('[MateyMic] Auto-stopping on outside click');
+      stopRecording();
+    }
+  }, true);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
@@ -404,9 +586,37 @@
     injectMicButton: injectMicButton,
     setTargetInput: function(input) {
       micState.targetInput = input;
+      if (input) this.setDomainFromInput(input);
+    },
+    setMicBtn: function(btn) {
+      micState.micBtn = btn;
+    },
+    setDomain: function(domain, contextPayload) {
+      micState.currentDomain = domain;
+      micState.currentContextPayload = contextPayload || {};
+    },
+    setDomainFromInput: function(inputEl) {
+      micState.currentDomain = detectDomain(inputEl);
+      micState.currentContextPayload = { inputId: (inputEl && inputEl.id) || '' };
+    },
+    STT_DOMAINS: {
+      CULINARY: 'culinary',
+      WARDROBE: 'wardrobe',
+      GROOMING: 'grooming',
+      LIVING: 'living',
+      JOURNAL: 'journal',
+      EDITOR: 'editor',
+      AGENT: 'agent'
     },
     getState: function() {
-      return { active: micState.active, modelId: window.MateyWhisper ? window.MateyWhisper.getState().modelId : null };
+      var modelId = null;
+      if (window.MateyWhisper) modelId = window.MateyWhisper.getState().modelId;
+      if (window.MateySpeech) modelId = window.MateySpeech.activeModelId;
+      return {
+        active: micState.active,
+        modelId: modelId,
+        domain: micState.currentDomain || STT_DOMAINS_DEFAULT,
+      };
     },
     onStateChange: function(callback) {
       micState._changeListeners = micState._changeListeners || [];
@@ -420,8 +630,58 @@
   function notifyStateChange() {
     if (micState._changeListeners) {
       micState._changeListeners.forEach(function(cb) {
-        try { cb({ active: micState.active, modelId: window.MateyWhisper ? window.MateyWhisper.getState().modelId : null }); } catch(e) {}
+        try { cb({ active: micState.active, modelId: window.MateyWhisper ? (window.MateyWhisper.getState && window.MateyWhisper.getState().modelId) : null, domain: micState.currentDomain }); } catch(e) {}
       });
     }
   }
+
+  /* ---- runLocalSTT: promise-based STT for CommandPalette ---- */
+  window.runLocalSTT = function () {
+    return new Promise(function (resolve, reject) {
+      console.log('[MateyMic] runLocalSTT() called');
+
+      if (typeof navigator === 'undefined' || !navigator.mediaDevices) {
+        return reject(new Error('MediaDevices not supported'));
+      }
+
+      /* Capture transcription via a hidden input */
+      var captureInput = document.createElement('input');
+      captureInput.type = 'hidden';
+      document.body.appendChild(captureInput);
+
+      var originalTarget = micState.targetInput;
+      micState.targetInput = captureInput;
+      micState._sttResolve = function (text) {
+        micState._sttResolve = null;
+        micState.targetInput = originalTarget;
+        if (captureInput.parentNode) captureInput.parentNode.removeChild(captureInput);
+        resolve(text);
+      };
+      micState._sttReject = function (err) {
+        micState._sttReject = null;
+        micState.targetInput = originalTarget;
+        if (captureInput.parentNode) captureInput.parentNode.removeChild(captureInput);
+        reject(err);
+      };
+
+      if (!micState.micBtn) {
+        /* Find any available mic button to drive the recording lifecycle */
+        micState.micBtn = document.getElementById('toolbar-mic-btn') ||
+                          document.querySelector('.md-mic-btn') ||
+                          document.getElementById('md-voice') ||
+                          null;
+      }
+
+      console.log('[MateyMic] runLocalSTT: starting recording');
+      startRecording();
+
+      /* Safety timeout — if recording is still active after 25s, force-stop */
+      setTimeout(function () {
+        if (micState._sttResolve && micState.active) {
+          console.log('[MateyMic] runLocalSTT: safety timeout, stopping');
+          stopRecording();
+        }
+      }, 65000);
+    });
+  };
 })();

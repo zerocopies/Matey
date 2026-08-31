@@ -8,19 +8,19 @@
   --space-2xl: 48px;
 
   /* Colors — exact blueprint tokens */
-  --bg: #000000;
-  --card-bg: #0D0D0D;
-  --border: #2A2A2A;
-  --text: #FFFFFF;
+  --bg: var(--app-bg);
+  --card-bg: var(--app-surface-raised, var(--app-surface));
+  --border: var(--app-border, #2A2A2A);
+  --text: var(--app-fg, #FFFFFF);
   --text-secondary: #B3B3B3;
-  --text-dim: #6B6B6B;
+  --text-dim: var(--app-muted, #6B6B6B);
   --accent-gold: #B583FC;
   --accent-green: #3DDC84;
   --danger: #E85D5D;
 
   /* Legacy aliases (for gradual migration) */
   --surface: var(--card-bg);
-  --surface-raised: #1A1A1A;
+  --surface-raised: var(--app-surface-raised, var(--app-surface));
   --border-subtle: #3A3A3A;
   --muted: var(--text-dim);
   --text-on-card: var(--text);
@@ -79,16 +79,24 @@
   --header-safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+html, body {
+  background-color: var(--app-bg);
+  color: var(--app-fg);
+}
+
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
-  transition: background var(--duration-base) var(--ease-out),
-              color var(--duration-base) var(--ease-out),
-              border-color var(--duration-base) var(--ease-out),
-              opacity var(--duration-fast) var(--ease-out),
+}
+
+/* Only animate opacity/transform globally. Background/color/border-color
+   transitions on *every* element were causing theme-switch/navigation
+   repaint flashes and sluggishness. */
+* {
+  transition: opacity var(--duration-fast) var(--ease-out),
               transform var(--duration-base) var(--ease-spring);
 }
 
@@ -102,7 +110,7 @@
 /* Selection */
 ::selection {
   background: var(--accent);
-  color: #000;
+  color: var(--app-fg);
 }
 
 /* ───── Design System: Motion & Polish ───── */
@@ -276,7 +284,7 @@ body {
 
 .ide-toggle-btn {
   background: var(--accent);
-  color: #000;
+  color: var(--app-fg);
   border: none;
   border-radius: 8px;
   padding: 6px 14px;
@@ -321,18 +329,25 @@ body {
 .matey-logo {
   width: 60px;
   height: 60px;
-  border-radius: 6px;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
   object-fit: contain;
   flex-shrink: 0;
 }
 
 .matey-logo-sm {
-  width: 76px;
-  height: 76px;
+  width: 128px;
+  height: 128px;
   border-radius: 4px;
   object-fit: contain;
   display: block;
   margin: 0 auto 8px;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
 }
 
 .pill-btn,
@@ -365,38 +380,28 @@ body {
 }
 
 .usage-ring {
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 36px;
   display: block;
+  flex-shrink: 0;
 }
 
+/* Solid filled disc behind the pie */
 .usage-ring-track {
-  fill: none;
-  stroke: var(--border);
-  stroke-width: 2;
+  fill: var(--app-border);
+  stroke: none;
+  opacity: 0.35;
 }
 
+/* True filled pie-slice: fills from 12 o'clock clockwise */
 .usage-ring-segment {
-  fill: none;
-  stroke-width: 2;
-  stroke: var(--accent-green);
-  stroke-linecap: round;
-  transition: opacity 0.3s ease;
-}
-
-.usage-ring-segment.inactive {
-  opacity: 0.15;
+  fill: var(--app-accent);
+  stroke: none;
+  transition: d 0.35s var(--ease-out);
 }
 
 .usage-ring-segment.low {
-  stroke: var(--danger);
-}
-
-.usage-ring-text {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
-  font-size: 8px;
-  font-weight: 700;
-  fill: var(--text);
+  fill: var(--danger);
 }
 
 .tabs-wrap {
@@ -416,11 +421,11 @@ body {
   min-width: 0;
   border: none;
   background: transparent;
-  color: var(--text-dim);
+  color: var(--app-muted);
   padding: 12px 4px;
   border-radius: 0;
-  font-size: 13px;
-  font-weight: 400;
+  font-size: 0.95rem;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   text-decoration: none;
@@ -434,8 +439,8 @@ body {
 }
 
 .tab.active {
-  color: var(--text);
-  font-weight: 600;
+  color: var(--app-fg);
+  font-weight: 700;
 }
 
 /* Draggable tabs */
@@ -1561,39 +1566,89 @@ body {
   opacity: 0.65;
 }
 
-/* Incognito trigger on main header */
+/* ===== Incognito Toggle ===== */
 .incognito-trigger {
   border: none;
   background: transparent;
   width: auto;
   height: auto;
-  padding: 8px;
+  padding: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--accent);
+  color: var(--app-fg);
 }
- .incognito-trigger svg {
-  width: 32px;
-  height: 32px;
+.incognito-trigger svg {
   display: block;
- }
+  width: 36px;
+  height: 44px;
+}
 .incognito-trigger:active {
   transform: scale(0.92);
   opacity: 0.65;
 }
 
-.incognito-trigger.active path {
-  fill: currentColor;
+/* Default (inactive): transparent body + theme-adaptive stroke */
+.incognito-trigger .ghost-body,
+.incognito-trigger .ghost-eye,
+.incognito-trigger .ghost-pupil,
+.incognito-trigger .ghost-eyebrow,
+.incognito-trigger .ghost-mouth,
+.incognito-trigger .ghost-teeth {
+  fill: transparent;
+  stroke: var(--app-fg);
+  transition: fill 0.2s ease, stroke 0.2s ease;
 }
 
-.incognito-trigger.active circle {
-  fill: var(--bg);
-  stroke: none;
+/* Active-state fill per theme (matte, theme-adaptive) */
+
+/* Graphite XX — black theme: white body, red face */
+[data-theme="graphitexx"] .incognito-trigger.active .ghost-body {
+  fill: #f2f2f2; stroke: var(--app-fg);
+}
+[data-theme="graphitexx"] .incognito-trigger.active .ghost-pupil,
+[data-theme="graphitexx"] .incognito-trigger.active .ghost-eyebrow,
+[data-theme="graphitexx"] .incognito-trigger.active .ghost-mouth {
+  fill: #ff2d55; stroke: #ff2d55;
+}
+[data-theme="graphitexx"] .incognito-trigger.active .ghost-teeth {
+  fill: #f2f2f2; stroke: none;
 }
 
-/* ===== Workspace Dropdown (Simple) ===== */
+/* Cool Panda — grey theme: black body, red face */
+[data-theme="cool-panda"] .incognito-trigger.active .ghost-body {
+  fill: #000000; stroke: var(--app-fg);
+}
+[data-theme="cool-panda"] .incognito-trigger.active .ghost-pupil,
+[data-theme="cool-panda"] .incognito-trigger.active .ghost-eyebrow,
+[data-theme="cool-panda"] .incognito-trigger.active .ghost-mouth {
+  fill: #ff2d55; stroke: #ff2d55;
+}
+[data-theme="cool-panda"] .incognito-trigger.active .ghost-teeth {
+  fill: #000000; stroke: none;
+}
+
+/* Minimal — light theme: black body, white face */
+[data-theme="minimal"] .incognito-trigger.active .ghost-body {
+  fill: #000000; stroke: var(--app-fg);
+}
+[data-theme="minimal"] .incognito-trigger.active .ghost-pupil,
+[data-theme="minimal"] .incognito-trigger.active .ghost-eyebrow,
+[data-theme="minimal"] .incognito-trigger.active .ghost-mouth {
+  fill: #ffffff; stroke: #ffffff;
+}
+[data-theme="minimal"] .incognito-trigger.active .ghost-teeth {
+  fill: #000000; stroke: none;
+}
+
+/* Eyes always stay transparent (cutouts) */
+.incognito-trigger.active .ghost-eye {
+  fill: transparent !important;
+  stroke: var(--app-fg);
+}
+
+/* ===== Workspace Dropdown ===== */
 .workspace-display-container {
   display: flex;
   align-items: center;
@@ -1603,83 +1658,160 @@ body {
 .workspace-dropdown {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: 10px;
-  color: var(--text);
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-raised, var(--app-surface));
+  border-radius: 999px;
+  color: var(--app-fg);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s ease;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+.workspace-dropdown .ws-folder-icon {
+  color: var(--app-accent);
   flex-shrink: 0;
 }
-.workspace-dropdown:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.workspace-dropdown.active {
-  color: var(--text);
-}
-.workspace-dropdown svg {
-  display: block;
+.workspace-dropdown .ws-chevron {
   flex-shrink: 0;
+  opacity: 0.6;
   transition: transform 0.2s ease;
 }
-.workspace-dropdown.open svg {
+.workspace-dropdown .workspace-name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.workspace-dropdown:hover {
+  border-color: var(--app-accent);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+.workspace-dropdown.no-workspace {
+  border-color: var(--app-accent);
+  border-style: dashed;
+  color: var(--app-muted);
+  font-weight: 500;
+}
+.workspace-dropdown.no-workspace .ws-folder-icon {
+  color: var(--app-muted);
+}
+.workspace-dropdown.no-workspace:hover {
+  color: var(--app-fg);
+}
+.workspace-dropdown.active {
+  color: var(--app-fg);
+  border-style: solid;
+  border-color: var(--app-border);
+}
+.workspace-dropdown.active .ws-folder-icon {
+  color: var(--app-accent);
+}
+.workspace-dropdown.open .ws-chevron {
   transform: rotate(180deg);
 }
 
-/* Simple dropdown — no card design */
+/* Dropdown menu card */
 .workspace-selector {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 10px);
   left: 0;
-  min-width: 180px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 6px;
+  min-width: 272px;
+  max-width: calc(100vw - 32px);
+  background: var(--app-surface-raised, var(--app-surface));
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  padding: 8px;
   display: none;
   flex-direction: column;
   gap: 2px;
   z-index: 100;
-  margin-top: 4px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.35);
+  overflow: hidden;
+  animation: wsMenuIn 0.16s var(--ease-out);
 }
-.workspace-dropdown.open .workspace-selector {
+@keyframes wsMenuIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.workspace-dropdown.open ~ .workspace-selector {
   display: flex;
 }
+.workspace-selector .ws-menu-header {
+  padding: 9px 12px 5px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--app-muted);
+}
 .workspace-selector button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
   border: none;
   background: transparent;
-  color: var(--text);
-  font-size: 13px;
-  padding: 8px 12px;
-  border-radius: 8px;
+  color: var(--app-fg);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 11px 12px;
+  border-radius: 10px;
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s ease, color 0.15s ease;
   white-space: nowrap;
+  width: 100%;
+}
+.workspace-selector button .ws-item-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  opacity: 0.85;
+}
+.workspace-selector button .ws-item-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.workspace-selector button .ws-item-check {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--app-accent);
+}
+.workspace-selector button .ws-item-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-accent);
+  background: var(--accent-dim);
+  padding: 2px 6px;
+  border-radius: 5px;
+  margin-left: 6px;
 }
 .workspace-selector button:hover {
-  background: rgba(245,197,66,0.08);
-  color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--app-fg);
 }
-.workspace-selector button.active {
-  background: rgba(245,197,66,0.15);
-  color: var(--accent);
+.workspace-selector button.ws-option.active {
+  background: var(--accent-dim);
+  color: var(--app-fg);
 }
+.workspace-selector button.ws-create .ws-item-icon { color: var(--app-accent); }
+.workspace-selector button.ws-usb .ws-item-icon { color: var(--accent-green, #3DDC84); }
+.workspace-selector button.ws-clear { color: var(--danger); }
+.workspace-selector button.ws-clear:hover { background: var(--danger); color: #fff; }
+.workspace-selector button.ws-clear:hover .ws-item-icon { color: #fff; }
 .ws-divider {
   height: 1px;
-  background: var(--border);
-  margin: 4px 0;
+  background: var(--app-border);
+  margin: 6px 4px;
 }
-.ws-create { color: var(--accent-green); }
-.ws-usb { color: var(--accent); }
-.ws-clear { color: #f87171; }
 
 /* Category list (Starring page) */
 .category-list {
@@ -1711,7 +1843,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text);
+  color: var(--app-fg) !important;
   opacity: 0.9;
   flex-shrink: 0;
 }
@@ -1719,7 +1851,7 @@ body {
 .category-name {
   font-size: 19px;
   font-weight: 400;
-  color: var(--text);
+  color: var(--app-fg) !important;
   flex: 1;
 }
 
@@ -2930,7 +3062,7 @@ body {
   border: none; padding: 10px 22px; border-radius: 12px; font: inherit; font-size: 15px; font-weight: 400; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-.byok-btn-primary { background: var(--accent); color: #000; }
+.byok-btn-primary { background: var(--accent); color: var(--app-fg); }
 .byok-btn-secondary { background: var(--surface); color: var(--text); }
 .byok-empty { font-size: 13px; color: var(--text-dim); font-style: italic; padding: 4px 0; }
 .byok-provider-item {
@@ -2949,7 +3081,7 @@ body {
   border-radius: 10px; display: flex; align-items: center; justify-content: center;
   font-size: 14px; cursor: pointer;
 }
-.byok-delete { color: #f87171; }
+.byok-delete { color: var(--danger); }
 
 
 .byok-add-btn {
@@ -2969,7 +3101,7 @@ body {
 .whisper-model-btn {
   padding: 8px 16px;
   border: 1px solid var(--border);
-  background: var(--surface-raised, #ffffff);
+  background: var(--surface-raised);
   color: var(--text-on-card);
   border-radius: 8px;
   font-size: 13px;
@@ -3126,7 +3258,7 @@ body {
   border-radius: 14px;
   border: none;
   background: var(--accent);
-  color: #000;
+  color: var(--app-fg);
   font: inherit;
   font-size: 15px;
   font-weight: 500;
@@ -3517,7 +3649,7 @@ body {
 .lifestyle-error {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
+  color: var(--danger);
   border-radius: 14px;
   padding: 14px;
   font-size: 13px;
@@ -3772,7 +3904,7 @@ body {
 .micro-model-download-btn {
   padding: 8px 16px;
   border: 1px solid var(--border);
-  background: var(--surface-raised, #ffffff);
+  background: var(--surface-raised);
   color: var(--text-on-card);
   border-radius: 8px;
   font-size: 13px;
@@ -3849,7 +3981,7 @@ body {
 }
 
 .hook-item-status.error {
-  color: #ff4444;
+  color: var(--danger);
 }
 
 .settings-placeholder-small {
@@ -3882,8 +4014,8 @@ body {
     flex-direction: column;
     width: 100%;
     z-index: 9999;
-    background: #0D0D0D;
-    border-top: 1px solid #2A2A2A;
+    background: var(--app-bg);
+    border-top: 1px solid var(--app-border);
   }
 .md-composer-symbols-only {
     padding-top: 4px;
@@ -3983,7 +4115,7 @@ body {
   }
  /* ===== Agent Chat ===== */
 .agent-page { display: flex; flex-direction: column; width: 100%; height: 100%; flex: 1; min-height: 0; }
-.agent-chat { flex: 1; min-height: 0; max-height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding: 16px; display: flex; flex-direction: column; gap: 12px; contain: layout style; }
+.agent-chat { flex: 1; min-height: 0; max-height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding: 12px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
 
 .agent-welcome {
   display: flex;
@@ -3991,25 +4123,60 @@ body {
   align-items: center;
   justify-content: flex-start;
   text-align: center;
-  gap: 16px;
-  padding: 32px 16px 0;
+  gap: 12px;
+  padding: 24px 16px 0;
   flex-shrink: 0;
 }
 .agent-welcome-logo {
-  width: 64px;
-  height: 64px;
-  opacity: 0.7;
+  width: 120px;
+  height: 120px;
+  opacity: 1;
   object-fit: contain;
   display: block;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
 }
+
+/* Equalizer stripes — animated rising bars below the logo */
+.agent-stripes {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  margin: 4px 0;
+}
+.agent-stripes .stripe {
+  width: 5px;
+  border-radius: 3px;
+  background: var(--app-accent);
+  animation: stripeRise 0.9s ease-in-out infinite alternate;
+}
+.agent-stripes .stripe:nth-child(1) { height: 12px; animation-delay: 0s; }
+.agent-stripes .stripe:nth-child(2) { height: 24px; animation-delay: 0.15s; }
+.agent-stripes .stripe:nth-child(3) { height: 16px; animation-delay: 0.3s; }
+.agent-stripes .stripe:nth-child(4) { height: 28px; animation-delay: 0.45s; }
+.agent-stripes .stripe:nth-child(5) { height: 20px; animation-delay: 0.6s; }
+
+@keyframes stripeRise {
+  from { transform: scaleY(0.4); opacity: 0.5; }
+  to   { transform: scaleY(1.0); opacity: 1.0; }
+}
+
 .agent-welcome-text {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-dim);
-  max-width: 280px;
-  line-height: 1.5;
+  max-width: 340px;
+  line-height: 1.4;
 }
 .agent-welcome-text strong {
-  color: var(--accent);
+  color: var(--app-fg);
+  display: block;
+  font-size: 15px;
+  margin-bottom: 4px;
+  font-weight: 700;
 }
 .agent-msg {
   max-width: 75%;
@@ -4132,6 +4299,25 @@ body {
 .md-voice-btn:hover {
   opacity: 0.9;
 }
+.md-voice-btn.mic-active {
+  background: #ffffff;
+  color: #000000;
+  border-radius: 50%;
+}
+.md-voice-status {
+  grid-column: 1 / -1;
+  min-height: 16px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--accent, #4da3ff);
+  padding: 2px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.md-voice-status:empty {
+  display: none;
+}
 .md-send-btn {
   background: var(--accent);
   color: var(--bg);
@@ -4214,8 +4400,8 @@ body {
   border: 1px solid var(--border);
 }
 .fs-btn-danger {
-  background: #f87171;
-  color: #000;
+  background: var(--danger);
+  color: var(--app-fg);
 }
 .fs-btn-secondary:hover {
   background: var(--surface-alt);
@@ -4254,6 +4440,47 @@ body {
 /* Hide old card-only elements */
 .vots-link-prompt { display: none; }
 .vots-link-gate-title { display: none; }
+/* Standardized back arrow for Supported Extensions overlay */
+#btn-close-info,
+.overlay-view .view-header .icon-btn {
+  width: auto;
+  height: auto;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: var(--app-fg);
+}
+
+/* MY-VOTS entry form as a theme-aware floating card */
+#vots-entry-form {
+  background: var(--app-surface-raised, var(--app-surface));
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  padding: 16px;
+  color: var(--app-fg);
+}
+
+#vots-entry-form .journal-title-input,
+#vots-entry-form .journal-content-input,
+#vots-entry-form .journal-datetime {
+  color: var(--app-fg);
+}
+
+#vots-entry-form .journal-title-input::placeholder,
+#vots-entry-form .journal-content-input::placeholder {
+  color: var(--app-muted);
+}
+
+#vots-entry-menu-btn,
+#vots-header-menu-btn {
+  color: var(--app-fg);
+}
+
+#vots-entry-menu-btn:hover,
+#vots-header-menu-btn:hover {
+  color: var(--app-accent);
+}
+
 .vots-link-gate-note { display: none; }
 /* Landing menu (⋮) — positioned top-right */
 #vots-header-menu-btn {
@@ -4269,19 +4496,50 @@ body {
 /* Helper text — light gray, same style as .md-editor::placeholder */
 .vots-link-gate-desc { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
 
-/* ===== Card Surface Context — overrides text variables for content on white card surfaces (--surface-raised) ===== */
-/* This is the single root-level fix for the recurring low-contrast / dimming bug. */
-/* The Settings-screen fix (commit 3423040) introduced --text-on-card and applied it to */
-/* specific static CSS selectors, but dynamically-generated content from JS files used */
-/* inline color:var(--text-dim), which bypassed those overrides. By defining a contextual */
-/* class that redefines --muted for white-card contexts, ALL inline var(--text-dim) */
-/* references within these containers automatically get the correct dark-on-white value. */
+/* ===== Card Surface Context — overrides text variables for content on raised card surfaces (--surface-raised) ===== */
+/* Derives muted/secondary/dim tints from --text-on-card so light themes get dark-on-light text */
+/* and dark themes get high-contrast light-on-dark text automatically. */
 .card-surface,
 .surface-raised {
-  --muted: #4a4a4a;
-  --text-secondary: #6b6b6b;
   --text: var(--text-on-card);
-  --text-on-card: #121212;
+  --muted: color-mix(in srgb, var(--text-on-card) 55%, transparent);
+  --text-secondary: color-mix(in srgb, var(--text-on-card) 75%, transparent);
+  --text-dim: color-mix(in srgb, var(--text-on-card) 45%, transparent);
+}
+
+/* Theme-aware card surfaces and file list cards */
+.card-surface,
+.surface-raised,
+.fs-item,
+.vots-card {
+  background: var(--app-surface-raised, var(--app-surface));
+}
+
+/* File titles forced to app foreground for contrast across themes */
+.file-name,
+.md-attachment-name,
+.journal-attachment-name {
+  color: var(--app-fg);
+}
+
+/* Card action links (Share / Rename / Remove) */
+.file-card-actions,
+.action-link,
+.action-item {
+  gap: 16px;
+  font-size: 14px;
+  color: var(--app-fg);
+}
+.action-link:hover,
+.action-item:hover {
+  color: var(--app-muted);
+}
+
+/* Raw editor / file explorer heading */
+.explorer-header h1 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--app-fg);
 }
 .vots-link-field { display: flex; gap: 8px; }
 .vots-link-input {
@@ -4422,7 +4680,7 @@ body {
   cursor: pointer;
 }
 .vots-btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-.vots-btn-danger { background: #f87171; color: #000; }
+.vots-btn-danger { background: var(--danger); color: var(--app-fg); }
 .vots-btn-secondary:hover { background: var(--card-bg); }
 .vots-btn-danger:hover { opacity: 0.9; }
 
@@ -4433,7 +4691,7 @@ body {
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   background: rgba(0,0,0,0.85);
-  color: #fff;
+  color: var(--app-fg);
   padding: 10px 24px;
   border-radius: 12px;
   font-size: 13px;
@@ -5059,7 +5317,7 @@ body {
   width: 18px;
   height: 18px;
   background: var(--danger);
-  color: #fff;
+  color: var(--app-fg);
   border: none;
   border-radius: 50%;
   font-size: 10px;
@@ -5237,12 +5495,12 @@ body {
   position: fixed;
   bottom: 140px;
   right: 20px;
-  width: 52px;
-  height: 52px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   background: var(--accent-gold);
   border: none;
-  color: #000000;
+  color: var(--app-fg);
   box-shadow: 0 2px 8px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.15);
   cursor: pointer;
   display: flex;
@@ -5385,8 +5643,8 @@ body {
 
 /* ===== Shared Toolbar Component (matey-toolbar.js) ===== */
 .matey-toolbar-container {
-  background: #0D0D0D;
-  border-top: 1px solid #2A2A2A;
+  background: var(--app-bg);
+  border-top: 1px solid var(--app-border);
 }
 
 .matey-toolbar-row {
@@ -5435,7 +5693,7 @@ body {
 .matey-nav-overlay {
   position: fixed;
   inset: 0;
-  background: #000;
+  background: var(--app-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5450,7 +5708,7 @@ body {
 .matey-nav-spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid #2A2A2A;
+  border: 3px solid var(--app-border);
   border-top-color: var(--accent-gold);
   border-radius: 50%;
   animation: matey-spin 0.8s linear infinite;
@@ -5523,7 +5781,7 @@ body {
 .matey-mic-btn.mic-active {
   background: var(--accent-gold);
   border-color: var(--accent-gold);
-  color: #000;
+  color: var(--app-fg);
   animation: matey-mic-pulse 1s ease-in-out infinite;
 }
 
@@ -5539,8 +5797,8 @@ body {
 
 /* Toolbar container */
 .matey-toolbar-container {
-  background: #0D0D0D;
-  border-top: 1px solid #2A2A2A;
+  background: var(--app-bg);
+  border-top: 1px solid var(--app-border);
 }
 
 /* Ensure rows stack with no gap */
@@ -5653,7 +5911,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--surface-raised, #ffffff);
+  background: var(--surface-raised);
   border: 1px solid var(--border, #1c1c1c);
   border-top: 1px solid var(--border, #1c1c1c);
   border-top-left-radius: 14px;
@@ -5673,7 +5931,7 @@ body {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: var(--text, #ffffff);
+  color: var(--text);
 }
 
 .inner-panel-content {
@@ -5687,75 +5945,7 @@ body {
   text-align: center;
 }
 
-/* Dark text on white card backgrounds */
-.card-surface,
-.coach-tip-dismiss,
-.feature-card,
-feed-card,
-.journal-attachment-name,
-.journal-attachments,
-.journal-attachment-thumb,
-.journal-calendar-option,
-.journal-content-input,
-.journal-cover-icon.selected,
-.journal-search-box,
-.journal-search-box input,
-.journal-setting-btn,
-.journal-setting-row,
-.journal-setting-row label,
-.journal-tag-filter,
-.journal-tags-filter,
-.journal-tags-input,
-.journal-tags-input input,
-.journal-toolbar,
-.journal-tooltip,
-.lifestyle-actions,
-.lifestyle-dislike,
-.lifestyle-like,
- .lifestyle-suggestion strong,
-.toast,
-.vots-badge-article,
-.vots-badge-instagram,
-.vots-badge-video,
-.vots-btn-danger,
-.vots-btn-secondary,
-.vots-confirm-actions,
-.vots-confirm-desc,
-.vots-confirm-icon,
-.vots-confirm-title,
-.vots-link-gate-note,
-.vots-link-journal,
-.vots-link-ref,
-.vots-source-card,
-.vots-your-version-header,
-.vots-setting-row label,
-.journal-entry-card,
-.journal-cover,
-.journal-cover.selected,
-.journal-cover-selector,
-.journal-editor,
-.journal-entry-content,
-.journal-entry-header,
-.journal-entry-meta,
-.journal-entry-title,
-.journal-search-result,
-.lifestyle-card,
-.lifestyle-category,
-.lifestyle-content,
-.lifestyle-header,
-.lifestyle-item,
-.lifestyle-suggestion,
-.lifestyle-suggestion-list,
-.usage-ring-text,
-.usage-ring-segment,
-.workspace-selector,
-.workspace-selector button,
-.workspace-selector button:hover,
-.ws-create,
-.ws-usb,
-.ws-clear {
-  color: var(--text-on-card);
-}
+
 
 /* ==================== Voice Models Screen ==================== */
 

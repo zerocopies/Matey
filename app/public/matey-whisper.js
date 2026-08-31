@@ -1,7 +1,7 @@
 /* Matey Whisper — browser-first WASM speech-to-text via Transformers.js CDN */
 (function () {
   'use strict';
-  var WHISPER_STATE = { ready: false, model: null, transcriber: null, loading: false, modelId: null, progress: 0 };
+  var WHISPER_STATE = { ready: false, model: null, transcriber: null, loading: false, modelId: null, progress: 0, isMultilingual: false };
   var MODEL_OPTIONS = [
     { id: 'Xenova/whisper-tiny', label: 'Whisper Tiny (multilingual)', size: '99MB', desc: 'Fast — supports English, Chinese, French, German, Spanish, Arabic, Japanese, Korean, Russian, Portuguese, Italian, Dutch, Czech, Danish, Swedish, Polish, Hindi, Thai, Vietnamese, Turkish, and more', langs: 'multilingual' },
     { id: 'Xenova/whisper-base', label: 'Whisper Base (multilingual)', size: '300MB', desc: 'Higher accuracy — all languages supported by Tiny plus Finnish, Hungarian, Romanian, Norwegian, Croatian, Serbian, Bulgarian, Greek, Hebrew, Urdu, Bengali, Tamil, Telugu, Marathi, Indonesian, Malay, Welsh, Afrikaans, Swahili, Zulu, and others', langs: 'multilingual' },
@@ -92,10 +92,12 @@ return loadFromCDN().then(function () {
         /* Configure Transformers.js to load models from local filesystem */
         if (window.transformersEnv) {
           window.transformersEnv.localModelPath = './models/';
-          window.transformersEnv.allowRemoteModels = false;
+          if (window.transformersEnv.allowRemoteModels !== true) {
+            window.transformersEnv.allowRemoteModels = false;
+          }
           window.transformersEnv.useBrowserCache = false;
           window.transformersEnv.useFSCache = false;
-          console.log('[MateyWhisper] Local model path:', './models/');
+          console.log('[MateyWhisper] Local model path:', './models/', 'allowRemote:', window.transformersEnv.allowRemoteModels);
         }
 
         return window.pipeline('automatic-speech-recognition', modelId, {
@@ -117,6 +119,18 @@ return loadFromCDN().then(function () {
       WHISPER_STATE.modelId = modelId;
       WHISPER_STATE.ready = true;
       WHISPER_STATE.loading = false;
+      WHISPER_STATE.isMultilingual = modelId.indexOf('.en') === -1 && modelId.indexOf('-en-') === -1;
+      var opts = MODEL_OPTIONS.find(function (m) { return m.id === modelId; });
+      console.log('[MateyWhisper] ★ MODEL LOADED:', JSON.stringify({
+        modelId: modelId,
+        label: opts ? opts.label : 'unknown',
+        size: opts ? opts.size : 'unknown',
+        langs: opts ? opts.langs : 'unknown',
+        isMultilingual: WHISPER_STATE.isMultilingual,
+        quantized: true,
+        format: 'web-wasm-onnx',
+        status: 'ready'
+      }));
       if (onProgress) onProgress(100);
       return transcriber;
     }).catch(function (err) {
@@ -159,8 +173,14 @@ return loadFromCDN().then(function () {
                       ', channels=' + buffer.numberOfChannels + ', length=' + channelData.length);
           var resampled = resampleToMono16kHz(channelData, buffer.sampleRate);
           console.log('[MateyWhisper] Resampled to 16kHz: length=' + resampled.length);
-          WHISPER_STATE.transcriber(resampled, {
-            sampling_rate: 16000
+           WHISPER_STATE.transcriber(resampled, {
+            sampling_rate: 16000,
+            language: WHISPER_STATE.isMultilingual ? 'en' : undefined,
+            num_beams: 5,
+            repetition_penalty: 1.05,
+            no_repeat_ngram_size: 3,
+            max_new_tokens: 224,
+            temperature: 0.0
           }).then(function (result) {
             console.log('[MateyWhisper] Transcription result:', result);
             resolve(result);
@@ -206,6 +226,26 @@ return loadFromCDN().then(function () {
     storeModel: storeModel,
     getDownloadedModels: getDownloadedModels,
     isModelDownloaded: isModelDownloaded,
-    markModelDownloaded: markModelDownloaded
+    markModelDownloaded: markModelDownloaded,
+    debugSwapModel: function (modelId) {
+      var opts = MODEL_OPTIONS.find(function (m) { return m.id === modelId; });
+      if (!opts) {
+        console.error('[MateyWhisper] debugSwapModel: unknown model ID:', modelId);
+        console.log('[MateyWhisper] Available models:', MODEL_OPTIONS.map(function (m) { return m.id; }).join(', '));
+        return Promise.reject('Unknown model: ' + modelId);
+      }
+      console.log('[MateyWhisper.DEBUG] Swapping to model:', modelId);
+      return loadModel(modelId);
+    },
+    debugTranscribeParams: function () {
+      return {
+        language: WHISPER_STATE.isMultilingual ? 'en' : undefined,
+        num_beams: 5,
+        repetition_penalty: 1.05,
+        no_repeat_ngram_size: 3,
+        max_new_tokens: 224,
+        temperature: 0.0
+      };
+    }
   };
 })();

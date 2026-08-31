@@ -1,179 +1,272 @@
 package com.matey.app;
 
 import android.app.Activity;
-import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
-import com.getcapacitor.BridgeActivity;
-import com.getcapacitor.Plugin;
-import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
-
-import java.io.InputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
 
 @CapacitorPlugin(name = "FilePicker")
 public class FilePickerPlugin extends Plugin {
 
     private static final String TAG = "MateyJS";
-    private static final int SAVE_REQUEST_CODE = 9001;
-    private static final int OPEN_REQUEST_CODE = 9002;
+    private static final String PREFS_NAME = "MateyFilePicker";
+    private static final String KEY_PENDING_URI = "pending_dir_uri";
+    private static final String KEY_PENDING_NAME = "pending_dir_name";
+    private static final String KEY_PENDING_TIME = "pending_dir_time";
 
-    private PluginCall saveCall;
-    private PluginCall openCall;
-    private boolean isSaveRequest;
+    private static MainActivity mainActivity;
+    private static PluginCall pendingDirectoryCall;
+    private static PluginCall pendingFileCall;
 
-    public void saveFile(@NonNull PluginCall call) {
-        String content = call.getString("content", "");
-        String filename = call.getString("filename", "note.md");
-        String mimeType = call.getString("mimeType", "text/plain");
-
-        Activity activity = getActivity();
-        if (activity == null) {
-            call.reject("Activity not available");
-            return;
-        }
-
-        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType(mimeType);
-        intent.putExtra(Intent.EXTRA_TITLE, filename);
-        intent.putExtra(Intent.EXTRA_TEXT, content);
-
-        this.saveCall = call;
-        this.isSaveRequest = true;
-
-        startActivityForResult(call, intent, SAVE_REQUEST_CODE);
+    static void setMainActivity(MainActivity activity) {
+        mainActivity = activity;
     }
 
-    public void openFile(@NonNull PluginCall call) {
-        Activity activity = getActivity();
-        if (activity == null) {
-            call.reject("Activity not available");
+    static PluginCall getPendingDirectoryCall() {
+        PluginCall call = pendingDirectoryCall;
+        pendingDirectoryCall = null;
+        return call;
+    }
+
+    static PluginCall getPendingFileCall() {
+        PluginCall call = pendingFileCall;
+        pendingFileCall = null;
+        return call;
+    }
+
+    @PluginMethod
+    public void pickDirectory(@NonNull PluginCall call) {
+        Log.i(TAG, "pickDirectory called instance=" + System.identityHashCode(mainActivity));
+        if (mainActivity == null) {
+            call.reject("MainActivity not available");
             return;
         }
+        pendingDirectoryCall = call;
+        mainActivity.launchDirectoryPicker();
+    }
 
+    @PluginMethod
+    public void pickFile(@NonNull PluginCall call) {
+        Log.i(TAG, "pickFile called instance=" + System.identityHashCode(mainActivity));
+        if (mainActivity == null) {
+            call.reject("MainActivity not available");
+            return;
+        }
+        pendingFileCall = call;
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("text/*");
-        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false);
+        intent.setType("*/*");
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
 
-        this.openCall = call;
-        this.isSaveRequest = false;
-
-        startActivityForResult(call, intent, OPEN_REQUEST_CODE);
+        mainActivity.startActivityForResult(Intent.createChooser(intent, "Select File"), 9004);
     }
 
-    @Override
-    protected void handleOnActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.handleOnActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == SAVE_REQUEST_CODE && saveCall != null && isSaveRequest) {
-            handleSaveResult(resultCode, data);
-        } else if (requestCode == OPEN_REQUEST_CODE && openCall != null && !isSaveRequest) {
-            handleOpenResult(resultCode, data);
+    @PluginMethod
+    public void getPendingResult(@NonNull PluginCall call) {
+        Log.i(TAG, "getPendingResult called");
+        Activity activity = getActivity();
+        if (activity == null) {
+            call.reject("Activity not available");
+            return;
         }
-    }
 
-    private void handleSaveResult(int resultCode, @Nullable Intent data) {
-        PluginCall call = saveCall;
-        saveCall = null;
+        SharedPreferences prefs = activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String uri = prefs.getString(KEY_PENDING_URI, null);
+        String name = prefs.getString(KEY_PENDING_NAME, null);
 
-        if (call == null) return;
-
-        if (resultCode == Activity.RESULT_OK && data != null) {
-            Uri uri = data.getData();
-            if (uri != null) {
-                String content = call.getString("content", "");
-                try {
-                    ContentResolver resolver = getActivity().getContentResolver();
-                    OutputStream out = resolver.openOutputStream(uri);
-                    if (out != null) {
-                        out.write(content.getBytes("UTF-8"));
-                        out.close();
-                    }
-                    JSObject result = new JSObject();
-                    result.put("uri", uri.toString());
-                    result.put("saved", true);
-                    call.resolve(result);
-                } catch (Exception e) {
-                    Log.e(TAG, "Save failed", e);
-                    call.reject("Failed to save file: " + e.getMessage());
-                }
-            } else {
-                call.reject("No file selected");
-            }
+        if (uri != null) {
+            Log.i(TAG, "Found pending result: " + name + " uri=" + uri);
+            JSObject result = new JSObject();
+            result.put("uri", uri);
+            result.put("name", name);
+            call.resolve(result);
         } else {
-            call.reject("Save cancelled by user");
+            JSObject result = new JSObject();
+            result.put("uri", "");
+            result.put("name", "");
+            call.resolve(result);
         }
     }
 
-    private void handleOpenResult(int resultCode, @Nullable Intent data) {
-        PluginCall call = openCall;
-        openCall = null;
-
-        if (call == null) return;
-
-        if (resultCode == Activity.RESULT_OK && data != null) {
-            Uri uri = data.getData();
-            if (uri != null) {
-                try {
-                    String content = readTextFromUri(uri);
-                    String name = getFileName(uri);
-                    JSObject result = new JSObject();
-                    result.put("uri", uri.toString());
-                    result.put("name", name);
-                    result.put("content", content);
-                    call.resolve(result);
-                } catch (Exception e) {
-                    Log.e(TAG, "Open failed", e);
-                    call.reject("Failed to read file: " + e.getMessage());
-                }
-            } else {
-                call.reject("No file selected");
-            }
-        } else {
-            call.reject("Open cancelled by user");
+    @PluginMethod
+    public void clearPendingResult(@NonNull PluginCall call) {
+        Log.i(TAG, "clearPendingResult called");
+        Activity activity = getActivity();
+        if (activity == null) {
+            call.reject("Activity not available");
+            return;
         }
+        SharedPreferences prefs = activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit().remove(KEY_PENDING_URI).remove(KEY_PENDING_NAME).remove(KEY_PENDING_TIME).apply();
+        call.resolve();
     }
 
-    private String readTextFromUri(Uri uri) throws Exception {
-        ContentResolver resolver = getActivity().getContentResolver();
-        InputStream inputStream = resolver.openInputStream(uri);
-        if (inputStream == null) return "";
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        byte[] buf = new byte[4096];
-        int nRead;
-        while ((nRead = inputStream.read(buf)) != -1) {
-            buffer.write(buf, 0, nRead);
-        }
-        buffer.flush();
-        inputStream.close();
-        return buffer.toString("UTF-8");
-    }
+    /* === Native file operations for Android (FSA not available) === */
 
-    private String getFileName(Uri uri) {
-        String displayName = "unknown";
-        Cursor cursor = null;
+    @PluginMethod
+    public void listFiles(@NonNull PluginCall call) {
+        Log.i(TAG, "listFiles called");
+        String uriStr = call.getString("uri");
+        String subDir = call.getString("subDir", "");
+        if (uriStr == null) {
+            call.reject("uri is required");
+            return;
+        }
         try {
-            cursor = getActivity().getContentResolver().query(
-                uri, new String[]{android.provider.OpenableColumns.DISPLAY_NAME}, null, null, null);
-            if (cursor != null && cursor.moveToFirst()) {
-                displayName = cursor.getString(cursor.getColumnIndexOrThrow(android.provider.OpenableColumns.DISPLAY_NAME));
+            Uri uri = Uri.parse(uriStr);
+            // Use DocumentFile to list files
+            androidx.documentfile.provider.DocumentFile dir = androidx.documentfile.provider.DocumentFile.fromTreeUri(getContext(), uri);
+            if (dir == null || !dir.exists()) {
+                call.reject("Directory not found");
+                return;
             }
+            // Navigate to subdirectory if needed
+            if (subDir != null && !subDir.isEmpty()) {
+                String[] parts = subDir.split("/");
+                for (String part : parts) {
+                    if (part.isEmpty()) continue;
+                    dir = dir.findFile(part);
+                    if (dir == null || !dir.isDirectory()) {
+                        call.reject("Subdirectory not found: " + part);
+                        return;
+                    }
+                }
+            }
+            JSObject result = new JSObject();
+            org.json.JSONArray entries = new org.json.JSONArray();
+            androidx.documentfile.provider.DocumentFile[] files = dir.listFiles();
+            for (androidx.documentfile.provider.DocumentFile f : files) {
+                JSObject entry = new JSObject();
+                entry.put("name", f.getName());
+                entry.put("kind", f.isDirectory() ? "directory" : "file");
+                entries.put(entry);
+            }
+            result.put("entries", entries);
+            call.resolve(result);
         } catch (Exception e) {
-            Log.w(TAG, "Could not get file name", e);
-        } finally {
-            if (cursor != null) cursor.close();
+            Log.e(TAG, "listFiles failed", e);
+            call.reject("listFiles failed: " + e.getMessage());
         }
-        return displayName;
+    }
+
+    @PluginMethod
+    public void readFile(@NonNull PluginCall call) {
+        Log.i(TAG, "readFile called");
+        String uriStr = call.getString("uri");
+        String path = call.getString("fileName");
+        if (uriStr == null || path == null) {
+            call.reject("uri and fileName are required");
+            return;
+        }
+        try {
+            Uri uri = Uri.parse(uriStr);
+            androidx.documentfile.provider.DocumentFile dir = androidx.documentfile.provider.DocumentFile.fromTreeUri(getContext(), uri);
+            if (dir == null || !dir.exists()) {
+                call.reject("Directory not found");
+                return;
+            }
+            // Navigate to subdirectory if path contains /
+            String fileName = path;
+            if (path.contains("/")) {
+                String[] parts = path.split("/");
+                for (int i = 0; i < parts.length - 1; i++) {
+                    if (parts[i].isEmpty()) continue;
+                    dir = dir.findFile(parts[i]);
+                    if (dir == null || !dir.isDirectory()) {
+                        call.reject("Subdirectory not found: " + parts[i]);
+                        return;
+                    }
+                }
+                fileName = parts[parts.length - 1];
+            }
+            androidx.documentfile.provider.DocumentFile file = dir.findFile(fileName);
+            if (file == null || !file.exists()) {
+                call.reject("File not found: " + fileName);
+                return;
+            }
+            java.io.InputStream is = getContext().getContentResolver().openInputStream(file.getUri());
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                baos.write(buffer, 0, len);
+            }
+            is.close();
+            String content = baos.toString("UTF-8");
+            JSObject result = new JSObject();
+            result.put("content", content);
+            call.resolve(result);
+        } catch (java.io.FileNotFoundException e) {
+            call.reject("File not found: " + path);
+        } catch (Exception e) {
+            Log.e(TAG, "readFile failed", e);
+            call.reject("readFile failed: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void writeFile(@NonNull PluginCall call) {
+        Log.i(TAG, "writeFile called");
+        String uriStr = call.getString("uri");
+        String path = call.getString("fileName");
+        String content = call.getString("content");
+        if (uriStr == null || path == null || content == null) {
+            call.reject("uri, fileName, and content are required");
+            return;
+        }
+        try {
+            Uri uri = Uri.parse(uriStr);
+            androidx.documentfile.provider.DocumentFile dir = androidx.documentfile.provider.DocumentFile.fromTreeUri(getContext(), uri);
+            if (dir == null || !dir.exists()) {
+                call.reject("Directory not found");
+                return;
+            }
+            // Navigate to subdirectory if path contains /
+            String fileName = path;
+            if (path.contains("/")) {
+                String[] parts = path.split("/");
+                for (int i = 0; i < parts.length - 1; i++) {
+                    if (parts[i].isEmpty()) continue;
+                    dir = dir.findFile(parts[i]);
+                    if (dir == null || !dir.isDirectory()) {
+                        call.reject("Subdirectory not found: " + parts[i]);
+                        return;
+                    }
+                }
+                fileName = parts[parts.length - 1];
+            }
+            // Check if file exists, delete if so
+            androidx.documentfile.provider.DocumentFile existing = dir.findFile(fileName);
+            if (existing != null && existing.exists()) {
+                existing.delete();
+            }
+            // Create new file
+            androidx.documentfile.provider.DocumentFile file = dir.createFile("application/octet-stream", fileName);
+            if (file == null) {
+                call.reject("Failed to create file");
+                return;
+            }
+            java.io.OutputStream os = getContext().getContentResolver().openOutputStream(file.getUri());
+            os.write(content.getBytes("UTF-8"));
+            os.close();
+            JSObject result = new JSObject();
+            result.put("success", true);
+            call.resolve(result);
+        } catch (Exception e) {
+            Log.e(TAG, "writeFile failed", e);
+            call.reject("writeFile failed: " + e.getMessage());
+        }
     }
 }
