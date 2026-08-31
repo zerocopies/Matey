@@ -17,6 +17,14 @@ export default defineConfig({
   root: '.',
   plugins: [tailwindcss(), react(), stripCrossorigin()],
   base: './',
+  resolve: {
+    dedupe: [
+      '@codemirror/state',
+      '@codemirror/view',
+      '@codemirror/language',
+      '@lezer/highlight'
+    ]
+  },
   server: {
     host: '0.0.0.0',
     port: 37245,
