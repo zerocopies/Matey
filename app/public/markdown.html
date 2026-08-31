@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>if(!window.location.href.includes('raw-editor.html')){window.location.href='./raw-editor.html';}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
     <style>
       html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
@@ -10,7 +11,7 @@
     <meta name="description" content="Matey — your on-device personal AI assistant with BYOK AI providers, offline Whisper STT, encrypted journal, and syntax-driven note vault." />
     <link rel="icon" href="./images/matey-logo.png" type="image/png" />
     <meta name="theme-color" content="#000000" />
-    <title>Matey - .EDITOR</title>
+    <title>Matey - &gt;edit</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -34,9 +35,19 @@
             <div class="workspace-selector" id="workspace-selector"></div>
           </div>
           <div class="header-actions">
-            <svg class="usage-ring" viewBox="0 0 36 36" id="usage-ring" aria-hidden="true"><circle class="usage-ring-track" cx="18" cy="18" r="15"></circle><g id="usage-ring-segments"><circle class="usage-ring-segment s1" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(0 18 18)"></circle><circle class="usage-ring-segment s2" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(90 18 18)"></circle><circle class="usage-ring-segment s3" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(180 18 18)"></circle><circle class="usage-ring-segment s4" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(270 18 18)"></circle></g><text x="18" y="21" text-anchor="middle" id="usage-ring-text">65</text></svg>
+            <svg class="usage-ring" viewBox="0 0 36 36" id="usage-ring" aria-hidden="true"><circle class="usage-ring-track" cx="18" cy="18" r="15"></circle><path class="usage-ring-segment" d="" /></svg>
             <button class="incognito-trigger" type="button" aria-label="Incognito" title="Incognito">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3.5 0-6 2.5-6 6v9.5c0 .3.3.6.7.4l1.3-1 1.3 1c.4.3 1 .3 1.4 0l1.3-1 1.3 1c.4.3 1 .3 1.4 0l1.3-1 1.3 1c.4.2.7-.1.7-.4V9c0-3.5-2.5-6-6-6z"/><circle cx="9.5" cy="10" r="1.5"/><circle cx="14.5" cy="10" r="1.5"/></svg>
+              <svg class="incognito-ghost" viewBox="0 0 100 120" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path class="ghost-body" d="M 50 4 C 20 4 5 28 5 52 L 5 92 C 5 105 15 105 20 98 C 25 105 35 105 40 98 C 45 105 55 105 60 98 C 65 105 75 105 80 98 C 85 105 95 105 95 92 L 95 52 C 95 28 80 4 50 4 Z"/>
+                <ellipse class="ghost-eye" cx="35" cy="50" rx="10" ry="15"/>
+                <ellipse class="ghost-pupil" cx="35" cy="52" rx="4" ry="8"/>
+                <ellipse class="ghost-eye" cx="65" cy="50" rx="10" ry="15"/>
+                <ellipse class="ghost-pupil" cx="65" cy="52" rx="4" ry="8"/>
+                <path class="ghost-eyebrow" d="M 26 34 L 38 40"/>
+                <path class="ghost-eyebrow" d="M 74 34 L 62 40"/>
+                <path class="ghost-mouth" d="M 38 78 Q 50 94 62 78 Q 50 88 38 78 Z"/>
+                <path class="ghost-teeth" d="M 40 80 L 43 85 L 46 80 L 49 85 L 52 80 L 55 85 L 58 80 L 60 82"/>
+              </svg>
             </button>
             <button class="icon-btn settings-trigger" type="button" aria-label="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6"/>
@@ -51,35 +62,16 @@
         <div class="tabs">
           <a class="tab" href="./lifestyle.html">Lifestyle</a>
           <a class="tab" href="./vots.html">My-VOTS</a>
-          <a class="tab active" href="./markdown.html">.EDITOR</a>
+<a class="tab active" href="./raw-editor.html">&gt;edit</a>
           <a class="tab" href="./journal.html">Journal</a>
-          <a class="tab" href="./preview.html#agent">Agent</a>
+          <a class="tab" href="./preview.html#agent">&gt;agent</a>
         </div>
       </nav>
 
 <main class="md-page">
-        <textarea class="md-editor md-editor-full" id="md-editor" placeholder="# Type freely — Markdown & syntax supported&#10;&#10;** Permanent note — saved to vault&#10;## Scratchpad — auto-expires 24h&#10;// Silent automation&#10;?? Search your knowledge bank&#10;!! Priority flag&#10;&#10;Standard markdown formatting also works."></textarea>
+        <!-- CodeMirror 6 IDE container — replaces textarea with full editor (line numbers, syntax highlighting, etc.) -->
+        <div id="md-ide-container" style="flex:1;min-height:0;display:flex;flex-direction:column;height:100%;"></div>
         <div class="md-attachment-list" id="md-attachment-list"></div>
-        <!-- Composer toolbar: shared edit/symbol/mic toolbar (injected by matey-toolbar.js) -->
-        <div class="md-composer md-composer-symbols-only matey-toolbar-container" id="md-composer"></div>
-        <!-- File operations row (New, Open, Save, Save As, Attach) - stays unchanged -->
-        <div class="md-composer-actions">
-          <button type="button" class="md-toolbar-btn" id="md-new-btn" aria-label="New file" title="New file" style="width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-          </button>
-          <button type="button" class="md-toolbar-btn" id="md-open-btn" aria-label="Open file" title="Open file" style="width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          </button>
-          <button type="button" class="md-toolbar-btn" id="md-save-btn" aria-label="Save" title="Save" style="width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><line x1="7" y1="21" x2="7" y2="9"/></svg>
-          </button>
-          <button type="button" class="md-toolbar-btn" id="md-saveas-btn" aria-label="Save as" title="Save as" style="width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          </button>
-          <button type="button" class="md-file-btn" id="md-attach-btn" aria-label="Attach file" title="Attach file">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-          </button>
-        </div>
       </main>
     </div>
     <script src="./matey-themes.js?v=100"></script>
@@ -89,7 +81,6 @@
      <script src="./matey-feed.js?v=100"></script>
      <script src="./matey-ai.js?v=100"></script>
 <script src="./matey-fs-adapter.js?v=100"></script>
-      <script src="./matey-toolbar.js?v=100"></script>
        <script src="./matey-md.js?v=100"></script>
      <script src="./matey-byok.js?v=100"></script>
     <script src="./matey-beat.js?v=100"></script>
@@ -98,6 +89,8 @@
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.2/mammoth.min.js"></script>
     <script src="./matey-whisper.js?v=100"></script>
+    <script src="./matey-stt.js?v=100"></script>
+    <script src="./matey-mic.js?v=100"></script>
     <script src="./matey-models.js?v=100"></script>
 <script src="./matey-rss.js?v=100"></script>
     <script src="./matey-license.js?v=100"></script>
@@ -109,9 +102,57 @@
     <script src="./matey-init.js?v=100"></script>
     <script src="./matey-tabs.js?v=100"></script>
     <script src="./matey-keyboard.js?v=100"></script>
-    <script src="./matey-mic.js?v=100"></script>
     <script src="./matey-fs.js?v=100"></script>
+    <script type="module" src="./matey-shadow-twin.js"></script>
     <script src="./matey-hooks-manager.js?v=100"></script>
+    <script type="module" src="./matey-agent-bundle.js?v=100"></script>
+    <script>
+      /* Initialize CodeMirror 6 IDE and CommandPalette on the &gt;edit page */
+      (function () {
+        var initIDE = function () {
+          var container = document.getElementById('md-ide-container');
+          if (!container) return;
+
+          container.style.height = 'calc(100vh - 72px)';
+          window.mateyIDE = window.mateyIDE || {};
+
+          /* Wait for MateyIDE to be available from the agent bundle module */
+          var attempts = 0;
+          var maxAttempts = 50;
+          var checkAndInit = function () {
+            attempts++;
+            if (window.MateyIDE && !window.mateyIDE.instance) {
+              var provider = window.MateyByok ? (window.MateyByok.getProvider('text') || {}) : {};
+              window.mateyIDE.instance = new window.MateyIDE('md-ide-container', provider);
+
+              /* Command palette with keyboard shortcut (Cmd/Ctrl + K) */
+              if (window.CommandPalette) {
+                window.mateyIDE.palette = new window.CommandPalette(window.mateyIDE.instance);
+              }
+
+              /* Keyboard shortcuts */
+              document.addEventListener('keydown', function (e) {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                  e.preventDefault();
+                  if (window.mateyIDE.palette) {
+                    window.mateyIDE.palette.openPalette();
+                  }
+                }
+              });
+            } else if (!window.MateyIDE && attempts < maxAttempts) {
+              setTimeout(checkAndInit, 100);
+            }
+          };
+          checkAndInit();
+        };
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initIDE);
+        } else {
+          initIDE();
+        }
+      })();
+    </script>
 
   </body>
 </html>

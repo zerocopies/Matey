@@ -1,0 +1,21 @@
+{
+  "themes": [
+    { "id": "zed-default",       "name": "Default (oneDark)", "path": null, "builtin": true },
+    { "id": "zed-graphitexx",    "name": "GraphiteXX",        "path": "themes/GraphiteXX.json" },
+    { "id": "zed-metal",         "name": "Metal",             "path": "themes/Metal.json" },
+    { "id": "zed-code-green",    "name": "Code Green",        "path": "themes/code_green.json" },
+    { "id": "zed-dark-death",    "name": "Dark Death",        "path": "themes/Dark Death.json" },
+    { "id": "zed-nixdorf",       "name": "Nixdorf 8870",      "path": "themes/Nixdorf 8870.json" },
+    { "id": "vscode-nicer",      "name": "VSCode Nicer Dark", "path": "themes/VSCode Nicer Dark High Contrast.json" },
+    { "id": "catppuccin-oil",    "name": "Catppuccin Oil",    "path": "themes/Catppuccin Oil.json" },
+    { "id": "zulzin",            "name": "zulzin",            "path": "themes/zulzin.json" },
+    { "id": "gruvbox-light",     "name": "Gruvbox light soft", "path": "themes/Gruvbox light soft (mimic vscode-theme-gruvbox).json" },
+    { "id": "bububu",            "name": "Bububu",            "path": "themes/Bububu.json" },
+    { "id": "sombre-eclat",      "name": "Sombre Éclat",      "path": "themes/Sombre \u00c9clat.json" },
+    { "id": "xcodium",           "name": "xCodium",           "path": "themes/xCodium.json" },
+    { "id": "crouyrr",           "name": "Crouyrr Themes",    "path": "themes/Crouyrr Themes.json" },
+    { "id": "kaimandres",        "name": "Kaimandres",        "path": "themes/Kaimandres.json" },
+    { "id": "cool-panda",        "name": "Cool Panda",        "path": "themes/Cool Panda.json" },
+    { "id": "minimal",           "name": "Minimal",           "path": "themes/Minimal.json" }
+  ]
+}

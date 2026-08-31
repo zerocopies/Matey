@@ -1,0 +1,104 @@
+{
+  "name": "zulzin",
+  "author": "c0utin",
+  "themes": [
+    {
+      "name": "",
+      "appearance": "light",
+      "style": {
+        "background": "#0013de",
+        "syntax": {
+          "attribute": {
+            "color": null,
+            "font_style": null,
+            "font_weight": null
+          },
+          "function": {
+            "color": "#dbff00",
+            "font_style": null,
+            "font_weight": null
+          }
+        },
+        "players": [],
+        "background.appearance": "opaque",
+        "text": "#ffffff",
+        "text.accent": "#ffffff",
+        "text.disabled": "#ffffff",
+        "text.placeholder": "#ffffff",
+        "drop_target.background": "#ffffff",
+        "element.active": "#ffffff"
+      }
+    },
+    {
+      "name": "New Theme",
+      "appearance": "light",
+      "style": {
+        "background": "#0013de",
+        "syntax": {},
+        "players": [],
+        "background.appearance": "opaque",
+        "text": "#ffffff",
+        "text.accent": "#ffffff",
+        "text.disabled": "#ffffff",
+        "text.placeholder": "#ffffff",
+        "drop_target.background": "#ffffff",
+        "element.active": "#ffffff"
+      }
+    },
+    {
+      "name": "New Theme",
+      "appearance": "light",
+      "style": {
+        "background": "#0013de",
+        "syntax": {},
+        "players": [],
+        "background.appearance": "opaque",
+        "text": "#ffffff",
+        "text.accent": "#ffffff",
+        "text.disabled": "#ffffff",
+        "text.placeholder": "#ffffff",
+        "drop_target.background": "#ffffff",
+        "element.active": "#ffffff"
+      }
+    },
+    {
+      "name": "New Theme",
+      "appearance": "light",
+      "style": {
+        "background": "#0013de",
+        "syntax": {
+          "attribute": {
+            "color": null,
+            "font_style": null,
+            "font_weight": null
+          },
+          "function": {
+            "color": "#dbff00",
+            "font_style": null,
+            "font_weight": null
+          }
+        },
+        "players": [
+          {
+            "background": "transparent",
+            "cursor": "#ffffff"
+          },
+          {
+            "background": "transparent"
+          },
+          {
+            "background": "transparent"
+          }
+        ],
+        "background.appearance": "opaque",
+        "text": "#ffffff",
+        "text.accent": "#ffffff",
+        "text.disabled": "#ffffff",
+        "text.placeholder": "#ffffff",
+        "drop_target.background": "#ffffff",
+        "element.active": "#ffffff"
+      }
+    }
+  ],
+  "id": "3Oajwbfeu_amhRFSIhXTR"
+}

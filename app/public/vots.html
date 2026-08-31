@@ -35,9 +35,19 @@
             <div class="workspace-selector" id="workspace-selector"></div>
           </div>
           <div class="header-actions">
-            <svg class="usage-ring" viewBox="0 0 36 36" id="usage-ring" aria-hidden="true"><circle class="usage-ring-track" cx="18" cy="18" r="15"></circle><g id="usage-ring-segments"><circle class="usage-ring-segment s1" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(0 18 18)"></circle><circle class="usage-ring-segment s2" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(90 18 18)"></circle><circle class="usage-ring-segment s3" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(180 18 18)"></circle><circle class="usage-ring-segment s4" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(270 18 18)"></circle></g><text x="18" y="21" text-anchor="middle" id="usage-ring-text">65</text></svg>
+            <svg class="usage-ring" viewBox="0 0 36 36" id="usage-ring" aria-hidden="true"><circle class="usage-ring-track" cx="18" cy="18" r="15"></circle><path class="usage-ring-segment" d="" /></svg>
             <button class="incognito-trigger" type="button" aria-label="Incognito" title="Incognito">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3.5 0-6 2.5-6 6v9.5c0 .3.3.6.7.4l1.3-1 1.3 1c.4.3 1 .3 1.4 0l1.3-1 1.3 1c.4.3 1 .3 1.4 0l1.3-1 1.3 1c.4.2.7-.1.7-.4V9c0-3.5-2.5-6-6-6z"/><circle cx="9.5" cy="10" r="1.5"/><circle cx="14.5" cy="10" r="1.5"/></svg>
+              <svg class="incognito-ghost" viewBox="0 0 100 120" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path class="ghost-body" d="M 50 4 C 20 4 5 28 5 52 L 5 92 C 5 105 15 105 20 98 C 25 105 35 105 40 98 C 45 105 55 105 60 98 C 65 105 75 105 80 98 C 85 105 95 105 95 92 L 95 52 C 95 28 80 4 50 4 Z"/>
+                <ellipse class="ghost-eye" cx="35" cy="50" rx="10" ry="15"/>
+                <ellipse class="ghost-pupil" cx="35" cy="52" rx="4" ry="8"/>
+                <ellipse class="ghost-eye" cx="65" cy="50" rx="10" ry="15"/>
+                <ellipse class="ghost-pupil" cx="65" cy="52" rx="4" ry="8"/>
+                <path class="ghost-eyebrow" d="M 26 34 L 38 40"/>
+                <path class="ghost-eyebrow" d="M 74 34 L 62 40"/>
+                <path class="ghost-mouth" d="M 38 78 Q 50 94 62 78 Q 50 88 38 78 Z"/>
+                <path class="ghost-teeth" d="M 40 80 L 43 85 L 46 80 L 49 85 L 52 80 L 55 85 L 58 80 L 60 82"/>
+              </svg>
             </button>
             <button class="icon-btn settings-trigger" type="button" aria-label="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6"/>
@@ -52,9 +62,9 @@
         <div class="tabs">
           <a class="tab" href="./lifestyle.html">Lifestyle</a>
           <a class="tab active" href="./vots.html">My-VOTS</a>
-          <a class="tab" href="./markdown.html">.EDITOR</a>
+          <a class="tab" href="./raw-editor.html">&gt;edit</a>
           <a class="tab" href="./journal.html">Journal</a>
-          <a class="tab" href="./preview.html#agent">Agent</a>
+          <a class="tab" href="./preview.html#agent">&gt;agent</a>
         </div>
       </nav>
       <div class="tab-border" style="height:1px;background:#1a1a1a;width:100%"></div>
@@ -191,7 +201,6 @@
     </div>
 
     <script src="./matey-themes.js?v=100"></script>
-    <script src="./matey-toolbar.js?v=100"></script>
     <script src="./matey-swipe.js?v=100"></script>
     <script src="./matey-profile.js?v=100"></script>
     <script src="./matey-greet.js?v=100"></script>
@@ -199,7 +208,10 @@
     <script src="./matey-settings.js?v=100"></script>
     <script src="./matey-fs.js?v=100"></script>
     <script src="./matey-keyboard.js?v=100"></script>
+    <script src="./matey-whisper.js?v=100"></script>
+    <script src="./matey-stt.js?v=100"></script>
     <script src="./matey-mic.js?v=100"></script>
+    <script src="./matey-toolbar.js?v=100"></script>
     <script src="./matey-init.js?v=100"></script>
     <script src="./matey-recall.js?v=100"></script>
     <script src="./matey-rss.js?v=100"></script>
@@ -218,22 +230,5 @@
     <script src="./matey-syntax.js?v=100"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.2/mammoth.min.js"></script>
-    <script src="./matey-whisper.js?v=100"></script>
-    <script src="./matey-models.js?v=100"></script>
-    <script>
-    /* Usage ring */
-    (function () {
-      var ringFill = document.getElementById('usage-ring-fill'), ringText = document.getElementById('usage-ring-text');
-      function upd(v) {
-        v = Math.max(0, Math.min(100, v));
-        if (!ringFill || !ringText) return;
-        ringFill.setAttribute('stroke-dasharray', (v / 100 * 94.2).toFixed(1) + ' 94.2');
-        ringFill.classList.toggle('low', v < 30);
-        ringText.textContent = Math.round(v);
-      }
-      upd(65);
-      window.MateyUsage = { update: upd };
-    })();
-    </script>
   </body>
 </html>

@@ -9,7 +9,7 @@
   var TOOLBAR_CONFIG = {
     editor: {
       targetInputs: ['md-editor'],
-      showMic: true,
+      showMic: false,
       symbolKeys: ['*', '/', '#', '$', '?', '!', '=', '+', '-', '÷', '(', ')']
     },
     vots: {
@@ -181,6 +181,7 @@
           } else {
             var input = getActiveTextInput(config.targetInputs);
             if (input) {
+              window.MateyMic.setMicBtn && window.MateyMic.setMicBtn(micBtn);
               window.MateyMic.setTargetInput && window.MateyMic.setTargetInput(input);
               window.MateyMic.startRecording();
             }
