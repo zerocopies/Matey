@@ -98,6 +98,21 @@
   }
 
   function init() {
+    var field = document.getElementById('hook-field');
+    var addBtn = document.getElementById('hook-add');
+    if (addBtn) addBtn.addEventListener('click', function () {
+      if (!field) return;
+      addHook(field.value.trim());
+      field.value = '';
+    });
+    if (field) field.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!field.value.trim()) return;
+        addHook(field.value.trim());
+        field.value = '';
+      }
+    });
     var form = document.getElementById('hook-form');
     if (form) form.addEventListener('submit', function (e) {
       e.preventDefault();
