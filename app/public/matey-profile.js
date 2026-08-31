@@ -19,6 +19,6 @@
     return { about: localStorage.getItem(PROFILE_KEY) || '' };
   }
 
-  window.MateyProfile = window.SnapProfile = { load: loadProfile, save: saveProfile, get: getProfile };
+  window.MateyProfile = { load: loadProfile, save: saveProfile, get: getProfile };
   document.addEventListener('DOMContentLoaded', loadProfile);
 })();

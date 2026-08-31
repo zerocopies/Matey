@@ -129,7 +129,7 @@
 
   /* ---------- Grooming ---------- */
   function openGrooming() {
-    var body = '<div class="lifestyle-upload-area"><input type="file" accept="image/*" id="grooming-file" style="display:none" /><div class="lifestyle-upload-prompt" id="grooming-prompt"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7"/></svg><p>Upload a selfie for face shape &amp; skin tone analysis</p><button class="lifestyle-btn" id="grooming-choose">Choose Photo</button></div><div class="lifestyle-preview" id="grooming-preview" style="display:none"><img id="grooming-img" /><button class="lifestyle-btn lifestyle-btn-secondary" id="grooming-retake">Retake</button></div></div><button class="lifestyle-btn" id="grooming-validate" style="display:none;margin-top:12px;width:100%">Validate Photo</button><div id="grooming-result" class="lifestyle-result-container"></div>';
+    var body = '<div class="lifestyle-upload-area"><input type="file" accept="image/*" id="grooming-file" style="position:absolute;opacity:0;width:0;height:0;overflow:hidden" /><div class="lifestyle-upload-prompt" id="grooming-prompt"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7"/></svg><p>Upload a selfie for face shape &amp; skin tone analysis</p><button class="lifestyle-btn" id="grooming-choose">Choose Photo</button></div><div class="lifestyle-preview" id="grooming-preview" style="display:none"><img id="grooming-img" /><button class="lifestyle-btn lifestyle-btn-secondary" id="grooming-retake">Retake</button></div></div><button class="lifestyle-btn" id="grooming-validate" style="display:none;margin-top:12px;width:100%">Validate Photo</button><div id="grooming-result" class="lifestyle-result-container"></div>';
     var modal = createModal('modal-grooming', 'Grooming Analysis', body);
     var promptEl = modal.querySelector('#grooming-prompt');
     var previewEl = modal.querySelector('#grooming-preview');
@@ -203,7 +203,7 @@
   function openWardrobe() {
     var body = '<div class="lifestyle-tabs"><button class="lifestyle-tab active" data-tab="wardrobe-digital">My Wardrobe</button><button class="lifestyle-tab" data-tab="wardrobe-outfits">Get Outfits</button></div>' +
       '<div class="lifestyle-tab-body" id="wardrobe-digital">' +
-        '<input type="file" accept="image/*" id="wardrobe-item-file" style="display:none" />' +
+        '<input type="file" accept="image/*" id="wardrobe-item-file" style="position:absolute;opacity:0;width:0;height:0;overflow:hidden" />' +
         '<button class="lifestyle-btn lifestyle-btn-secondary" id="wardrobe-item-choose" style="width:100%;margin-bottom:8px">📷 Add Photo</button>' +
         '<div class="lifestyle-photo-preview" id="wardrobe-photo-preview" style="display:none;">' +
           '<img id="wardrobe-item-preview" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;border:1px solid var(--border);display:block" />' +
@@ -439,11 +439,7 @@
     var resultEl = modal.querySelector('#culinary-result');
     var prefs = store.culinaryPrefs();
 
-    /* Inject inline mic button for recipe-ingredients textarea */
-    var ingredientsInput = modal.querySelector('#recipe-ingredients');
-    if (ingredientsInput && window.MateyMic && typeof MateyMic.injectMicButton === 'function') {
-      MateyMic.injectMicButton(ingredientsInput);
-    }
+    /* No mic button on Culinary inputs — user preference */
     modal.querySelector('#cuisine-prefs').value = prefs.cuisines || '';
 
     modal.querySelectorAll('.lifestyle-tab').forEach(function (tab) {
@@ -467,13 +463,36 @@
       var learning = buildLearningContext();
       var context = 'Ingredients: ' + ingredients;
       if (cuisines) context += '\nPreferred cuisines: ' + cuisines;
-      var messages = [{ role: 'system', content: PERSONA + '\n\n' + learning }, { role: 'user', content: [{ type: 'text', text: context + '\n\nSuggest 2-4 creative recipe ideas using these ingredients. Work with what is on hand. For each recipe provide step-by-step cooking instructions. Return ONLY JSON array: [{ "name": string, "description": string, "ingredients_used": [string], "steps": [string] }]' }] }];
+      var messages = [{ role: 'system', content: PERSONA + '\n\n' + learning }, { role: 'user', content: [{ type: 'text', text: context + '\n\nSuggest recipes organized by cuisine blocks. For each cuisine, provide 3-5 complete recipes. Each recipe must include: name, description, ingredients_used (from the provided ingredients), and step-by-step cooking instructions.\n\nReturn ONLY a JSON object with this structure:\n{\n  "cuisines": [\n    {\n      "cuisine_name": "Italian",\n      "recipes": [\n        { "name": "Recipe Name", "description": "Brief description", "ingredients_used": ["ingredient1", "ingredient2"], "steps": ["Step 1", "Step 2", "Step 3"] }\n      ]\n    }\n  ]\n}\n\nProvide 3-5 cuisine blocks, each with 3-5 fully defined recipes.' }] }];
       try {
         var text = await MateyByok.chat(messages);
-        var recipes = (function () { try { return JSON.parse(text); } catch (e) { return null; } })();
-        if (recipes && Array.isArray(recipes)) {
+        var data = (function () { try { return JSON.parse(text); } catch (e) { return null; } })();
+        if (data && data.cuisines && Array.isArray(data.cuisines)) {
           var html = '<div class="lifestyle-suggestions">';
-          recipes.forEach(function (r, i) {
+          data.cuisines.forEach(function (cuisine) {
+            var cuisineName = esc(cuisine.cuisine_name || 'Cuisine');
+            html += '<div class="lifestyle-cuisine-block" style="margin-bottom:24px;border:1px solid var(--app-border,#2A2A2A);border-radius:12px;padding:16px;background:rgba(255,255,255,0.02);">';
+            html += '<h4 style="margin:0 0 12px 0;font-size:16px;color:var(--app-accent,#B583FC);">🍽 ' + cuisineName + '</h4>';
+            if (cuisine.recipes && cuisine.recipes.length) {
+              cuisine.recipes.forEach(function (r, i) {
+                var stepsHtml = '';
+                if (r.steps && r.steps.length) {
+                  stepsHtml = '<div class="lifestyle-steps"><strong>Steps</strong><ol>' +
+                    r.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') +
+                  '</ol></div>';
+                }
+                html += '<div class="lifestyle-suggestion" data-id="recipe-' + i + '" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.05);"><strong>' + esc(r.name || 'Recipe ' + (i + 1)) + '</strong><div class="lifestyle-sub">' + esc(r.description || '') + '</div><div class="lifestyle-body"><strong>Uses:</strong> ' + esc((r.ingredients_used || []).join(', ')) + '</div>' + stepsHtml + likeDislikeBtns('recipe-' + i, 'culinary') + '</div>';
+              });
+            }
+            html += '</div>';
+          });
+          html += '</div>';
+          resultEl.innerHTML = html;
+          wireLikeDislike(resultEl, 'culinary');
+        } else if (data && Array.isArray(data)) {
+          // Fallback for old flat format
+          var html = '<div class="lifestyle-suggestions">';
+          data.forEach(function (r, i) {
             var stepsHtml = '';
             if (r.steps && r.steps.length) {
               stepsHtml = '<div class="lifestyle-steps"><strong>Steps</strong><ol>' +
@@ -494,7 +513,7 @@
 
   /* ---------- Lifestyle Beat ---------- */
   function openLiving() {
-    var body = '<div class="lifestyle-upload-area"><input type="file" accept="image/*" id="living-file" style="display:none" /><div class="lifestyle-upload-prompt" id="living-prompt"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l6-6 4 4 8-8"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/></svg><p>Upload a photo of your space — entrance, far-end, left side, right side (4 views)</p><button class="lifestyle-btn" id="living-choose">Choose Photo</button></div><div class="lifestyle-preview" id="living-preview" style="display:none"><img id="living-img" /><button class="lifestyle-btn lifestyle-btn-secondary" id="living-retake">Retake</button></div></div><button class="lifestyle-btn" id="living-analyze" style="display:none;margin-top:12px;width:100%">Analyze Space</button><div id="living-result" class="lifestyle-result-container"></div>';
+    var body = '<div class="lifestyle-upload-area"><input type="file" accept="image/*" id="living-file" style="position:absolute;opacity:0;width:0;height:0;overflow:hidden" /><div class="lifestyle-upload-prompt" id="living-prompt"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l6-6 4 4 8-8"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/></svg><p>Upload a photo of your space — entrance, far-end, left side, right side (4 views)</p><button class="lifestyle-btn" id="living-choose">Choose Photo</button></div><div class="lifestyle-preview" id="living-preview" style="display:none"><img id="living-img" /><button class="lifestyle-btn lifestyle-btn-secondary" id="living-retake">Retake</button></div></div><button class="lifestyle-btn" id="living-analyze" style="display:none;margin-top:12px;width:100%">Analyze Space</button><div id="living-result" class="lifestyle-result-container"></div>';
     var modal = createModal('modal-living', 'Spatial Room Restyler', body);
     var resultEl = modal.querySelector('#living-result');
     var dataUrl = null;

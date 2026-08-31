@@ -132,6 +132,5 @@
   }
 
   window.MateyFeed = { get: getFeed, generate: generateFeed, save: saveFeedItem, render: render, pullRSS: pullRSS };
-  window.SnapFeed = window.MateyFeed; // legacy alias
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render); else render();
 })();

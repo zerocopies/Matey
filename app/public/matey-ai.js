@@ -51,6 +51,5 @@
   }
   function init() { initLearning(); analyzeBehavior(); }
   window.MateyAI = { analyze: analyzeBehavior, insight: getContextualInsight, prioritizedTopics: getPrioritizedTopics, learning: getLearning, daysSinceStart: getDaysSinceStart };
-  window.SnapAI = window.MateyAI; // legacy alias
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

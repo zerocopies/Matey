@@ -21,7 +21,7 @@
   function saveOrder(o) { try { localStorage.setItem('matey-tab-order', JSON.stringify(o)); } catch (e) {} }
 
   function tabUrl(id) {
-    return ({ 'lifestyle': './lifestyle.html', 'vots': './vots.html', 'editor': './markdown.html', 'journal': './journal.html', 'agent': './preview.html#agent' })[id] || '#';
+    return ({ 'lifestyle': './lifestyle.html', 'vots': './vots.html', 'editor': './raw-editor.html', 'journal': './journal.html', 'agent': './preview.html#agent' })[id] || '#';
   }
 
   function ensureNavOverlay() {
@@ -45,7 +45,7 @@
   }
 
   function tabUrl(id) {
-    return ({ 'lifestyle': './lifestyle.html', 'vots': './vots.html', 'editor': './markdown.html', 'journal': './journal.html', 'agent': './preview.html#agent' })[id] || '#';
+    return ({ 'lifestyle': './lifestyle.html', 'vots': './vots.html', 'editor': './raw-editor.html', 'journal': './journal.html', 'agent': './preview.html#agent' })[id] || '#';
   }
 
   function renderTabs() {
@@ -55,13 +55,13 @@
     var path = window.location.pathname.replace(/\/$/, ''), hash = window.location.hash || '', active = '';
     if (path.indexOf('lifestyle') !== -1) active = 'lifestyle';
      else if (path.indexOf('vots') !== -1) active = 'vots';
-    else if (path.indexOf('markdown') !== -1) active = 'editor';
+    else if (path.indexOf('raw-editor') !== -1) active = 'editor';
     else if (path.indexOf('journal') !== -1) active = 'journal';
     else if (hash === '#agent') active = 'agent';
     else if (path.indexOf('preview') !== -1) active = 'agent';
     else if (path.indexOf('editor') !== -1) active = 'editor';
     else active = 'lifestyle';
-      var labels = { 'lifestyle': 'Lifestyle', 'vots': 'My-VOTS', 'editor': '.EDITOR', 'journal': 'Journal', 'agent': 'Agent' };
+      var labels = { 'lifestyle': 'Lifestyle', 'vots': 'My-VOTS', 'editor': '>edit', 'journal': 'Journal', 'agent': '>agent' };
     order.forEach(function (id) {
       var a = document.createElement('a');
       a.className = 'tab' + (id === active ? ' active' : '');

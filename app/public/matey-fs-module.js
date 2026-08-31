@@ -1,7 +1,9 @@
-/* MateyFileSystem — ES Module interface for the Agent IDE
+/* MateyFS — ES Module interface for the Agent IDE
  * Provides dual-mode storage (sandbox + USB SAF) using @capacitor/filesystem
- * The existing MateyFS IIFE (loaded via <script> tag) provides the legacy window.MateyFS global
- * This module provides the ES module interface used by matey-agent.js, matey-ide.js
+ * This module is the single source of truth for Capacitor Filesystem logic.
+ * The minified bundle previously embedded this logic inline (qi, Kf, ra, mt).
+ * It is now extracted here so both matey-agent.js (source) and the bundle
+ * reference the same code path.
  */
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 
@@ -40,12 +42,11 @@ async function ensureSandboxDir() {
 }
 
 export async function readFile(filePath) {
-  // Try workspace (user files from USB or sandbox writes) first
   if (WorkspaceManager.mode === 'usb' && WorkspaceManager.usbRootUri) {
     try {
       const res = await window.CapacitorSAF.readFile({ rootUri: WorkspaceManager.usbRootUri, path: filePath });
       return res.data;
-    } catch (e) { /* fall through to bundled file read */ }
+    } catch (e) { /* fall through to sandbox/bundled file read */ }
   }
   await ensureSandboxDir();
   try {
@@ -86,3 +87,15 @@ export async function listFiles(subDir = '') {
     return [];
   }
 }
+
+async function openSingleFile() {
+  const result = await FilePicker.pickFile();
+  if (result?.uri) {
+    const content = await FilePicker.readFile({ uri: result.uri });
+    window.mateyIDE.setContent(content);
+    localStorage.setItem('matey_last_file_uri', result.uri);
+    return content;
+  }
+}
+
+export { WorkspaceManager as mt, readFile as qi, writeFile as Kf, listFiles as ra, openSingleFile as openSingleFile };

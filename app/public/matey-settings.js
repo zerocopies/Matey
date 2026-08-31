@@ -132,42 +132,73 @@
                 </div>
                 <svg class="setting-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </div>
-               <div class="setting-slider-row" id="voice-tts-speed-row">
-                 <div class="setting-slider-label">
-                   <span class="setting-slider-title">TTS Speed</span>
-                   <span class="setting-slider-desc">Controls playback speed (0.5x – 2.0x)</span>
-                 </div>
-                 <div class="setting-slider-value" id="voice-tts-speed-value">1.00x</div>
-                 <input type="range" class="setting-slider" id="voice-tts-speed" min="50" max="200" value="100" />
-               </div>
-            </div>
-          </div>
-
-          <div class="settings-section" id="sec-features">
-            <div class="settings-section-header" data-toggle="sec-features">
-              <div class="settings-section-left">
-                <div>
-                  <div class="settings-section-title">Features</div>
-                  <div class="settings-section-desc">Experimental and upcoming capabilities</div>
+                <div class="setting-slider-row" id="voice-tts-speed-row">
+                  <div class="setting-slider-label">
+                    <span class="setting-slider-title">TTS Speed</span>
+                    <span class="setting-slider-desc">Controls playback speed (0.5x – 2.0x)</span>
+                  </div>
+                  <div class="setting-slider-value" id="voice-tts-speed-value">1.00x</div>
+                  <input type="range" class="setting-slider" id="voice-tts-speed" min="50" max="200" value="100" />
                 </div>
-              </div>
-              <span class="settings-section-arrow"></span>
-            </div>
-            <div class="settings-section-body">
-              <div class="setting-row setting-row-with-icon">
-                <div class="setting-row-icon">🎙️</div>
-                <div class="setting-row-body">
-                  <div class="setting-row-label">Continuous Voice <span class="experimental-badge">Experimental</span></div>
-                  <div class="setting-row-desc">Keeps the microphone listening between messages for hands-free conversation.</div>
-                  <div class="setting-row-caption">Limited to short sessions. Not reliable on iOS Safari. May interrupt itself with background noise.</div>
+                <div class="setting-row setting-row-with-icon">
+                  <div class="setting-row-icon">🎙️</div>
+                  <div class="setting-row-body">
+                    <div class="setting-row-label">Voice Activity Detection</div>
+                    <div class="setting-row-desc">Trim silence before sending to AI</div>
+                  </div>
+                  <label class="setting-toggle">
+                    <input type="checkbox" id="feature-vad-enabled" />
+                    <span class="setting-toggle-slider"></span>
+                  </label>
                 </div>
-               <label class="setting-toggle">
-                 <input type="checkbox" id="feature-continuous-voice" />
-                 <span class="setting-toggle-slider"></span>
-               </label>
              </div>
            </div>
-         </div>
+
+           <div class="settings-section" id="sec-features">
+             <div class="settings-section-header" data-toggle="sec-features">
+               <div class="settings-section-left">
+                 <div>
+                   <div class="settings-section-title">Features</div>
+                   <div class="settings-section-desc">Experimental and upcoming capabilities</div>
+                 </div>
+               </div>
+               <span class="settings-section-arrow"></span>
+             </div>
+             <div class="settings-section-body">
+               <div class="setting-row setting-row-with-icon">
+                 <div class="setting-row-icon">🔮</div>
+                 <div class="setting-row-body">
+                   <div class="setting-row-label">Predictive Assist <span class="experimental-badge">Experimental</span></div>
+                   <div class="setting-row-desc">Uses extra API calls to feel faster</div>
+                   <div class="setting-row-caption" style="color:#e8a838;">⚠ Costs additional API tokens — speculative calls are made proactively</div>
+                 </div>
+                <label class="setting-toggle">
+                  <input type="checkbox" id="feature-shadow-twin" />
+                  <span class="setting-toggle-slider"></span>
+                </label>
+              </div>
+              <div class="setting-row setting-row-with-icon" id="shadow-twin-log-row" style="display:none;">
+                <div class="setting-row-icon">📋</div>
+                <div class="setting-row-body">
+                  <div class="setting-row-label">Transparency Log</div>
+                  <div class="setting-row-desc" id="shadow-twin-log-summary">No speculative calls yet</div>
+                </div>
+                <svg class="setting-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+               <div class="setting-row setting-row-with-icon">
+                 <div class="setting-row-icon">🎙️</div>
+                 <div class="setting-row-body">
+                   <div class="setting-row-label">Continuous Voice <span class="experimental-badge">Experimental</span></div>
+                   <div class="setting-row-desc">Keeps the microphone listening between messages for hands-free conversation.</div>
+                   <div class="setting-row-caption">Limited to short sessions. Not reliable on iOS Safari. May interrupt itself with background noise.</div>
+                 </div>
+                <label class="setting-toggle">
+                  <input type="checkbox" id="feature-continuous-voice" />
+                  <span class="setting-toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
 
           <div class="settings-section" id="sec-fs">
             <div class="settings-section-header" data-toggle="sec-fs">
@@ -356,8 +387,10 @@
 
     var fsInit = document.getElementById('fs-init-workspace');
     if (fsInit && window.MateyFS) fsInit.addEventListener('click', function () {
-      MateyFS.initializeWorkspace().then(function (result) {
+      MateyFS.selectWorkspace().then(function (result) {
         updateFSSetup(result);
+      }).catch(function (err) {
+        console.error('[MateySettings] selectWorkspace failed:', err);
       });
     });
 
@@ -440,6 +473,92 @@
       try { localStorage.setItem(CONTINUOUS_VOICE_KEY, String(this.checked)); } catch (e) {}
     });
   }
+
+  /* VAD toggle wiring — default ON */
+   var vadToggle = document.getElementById('feature-vad-enabled');
+   if (vadToggle) {
+     var storedVAD = true;
+     try { storedVAD = localStorage.getItem('matey-vad-enabled') !== 'false'; } catch (e) {}
+     vadToggle.checked = storedVAD;
+     vadToggle.addEventListener('change', function () {
+       try { localStorage.setItem('matey-vad-enabled', String(this.checked)); } catch (e) {}
+     });
+   }
+
+   /* Shadow Twin (Predictive Assist) toggle wiring — default OFF */
+   var shadowTwinToggle = document.getElementById('feature-shadow-twin');
+   if (shadowTwinToggle) {
+     var storedST = false;
+     try { storedST = localStorage.getItem('matey-shadow-twin-enabled') === 'true'; } catch (e) {}
+     shadowTwinToggle.checked = storedST;
+     shadowTwinToggle.addEventListener('change', function () {
+       try { localStorage.setItem('matey-shadow-twin-enabled', String(this.checked)); } catch (e) {}
+       if (window.MateyShadowTwin) window.MateyShadowTwin.setEnabled(this.checked);
+       updateShadowTwinLogSummary();
+     });
+   }
+
+   /* Shadow Twin transparency log */
+   var shadowTwinLogRow = document.getElementById('shadow-twin-log-row');
+   if (shadowTwinLogRow) {
+     shadowTwinLogRow.style.display = '';
+     shadowTwinLogRow.addEventListener('click', function () {
+       renderShadowTwinLog();
+     });
+   }
+
+   function updateShadowTwinLogSummary() {
+     var summary = document.getElementById('shadow-twin-log-summary');
+     if (!summary || !window.MateyShadowTwin) return;
+     var log = window.MateyShadowTwin.getLog();
+     if (!log.length) { summary.textContent = 'No speculative calls yet'; return; }
+     var fired = log.filter(function(e) { return e.status === 'fired'; }).length;
+     var blocked = log.filter(function(e) { return e.status === 'blocked'; }).length;
+     summary.textContent = fired + ' fired, ' + blocked + ' blocked (' + log.length + ' total)';
+   }
+
+   function renderShadowTwinLog() {
+     if (!window.MateyShadowTwin) return;
+     var log = window.MateyShadowTwin.getLog();
+     var pending = window.MateyShadowTwin.getPending();
+     var modal = document.createElement('div');
+     modal.className = 'lifestyle-modal';
+     modal.id = 'shadow-twin-log-modal';
+     var body = '<div class="lifestyle-backdrop"></div><div class="lifestyle-dialog" style="max-width:500px;"><div class="lifestyle-header"><span class="lifestyle-title">Predictive Assist Log</span><button class="lifestyle-close" data-close="shadow-twin-log-modal" type="button">&times;</button></div><div class="lifestyle-body" style="max-height:60vh;overflow-y:auto;">';
+     if (pending.length) {
+       body += '<div style="font-weight:600;margin-bottom:8px;color:#22ff22;">Active Predictions</div>';
+       pending.forEach(function(p) {
+         body += '<div style="background:#1a2e1a;border:1px solid #2a4a2a;border-radius:8px;padding:8px;margin-bottom:6px;font-size:12px;">' +
+           '<div style="color:#7fff7f;">' + p.status + ' — ' + p.age + 's ago</div>' +
+           '<div style="color:#aaa;">' + (p.errorContext || '').substring(0, 120) + '</div>' +
+           '</div>';
+       });
+     }
+     if (!log.length) {
+       body += '<p style="color:var(--text-secondary);">No speculative calls yet. Enable Predictive Assist and edit code with syntax errors to see activity.</p>';
+     } else {
+       body += '<div style="font-weight:600;margin:12px 0 8px;">History</div>';
+       log.slice(0, 50).forEach(function(entry) {
+         var color = entry.status === 'fired' ? '#22ff22' : entry.status === 'blocked' ? '#ffaa22' : entry.status === 'used' ? '#2288ff' : '#888';
+         var ts = new Date(entry.timestamp);
+         var timeStr = ts.getHours().toString().padStart(2, '0') + ':' + ts.getMinutes().toString().padStart(2, '0') + ':' + ts.getSeconds().toString().padStart(2, '0');
+         body += '<div style="background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:8px;margin-bottom:6px;font-size:12px;">' +
+           '<div style="color:' + color + ';">[' + timeStr + '] ' + entry.status.toUpperCase() + '</div>' +
+           '<div style="color:#aaa;">' + (entry.details || '').substring(0, 150) + '</div>' +
+           '</div>';
+       });
+     }
+     body += '</div></div>';
+     modal.innerHTML = body;
+     document.body.appendChild(modal);
+     modal.querySelector('.lifestyle-backdrop').addEventListener('click', function () { modal.remove(); });
+     modal.querySelector('[data-close]').addEventListener('click', function () { modal.remove(); });
+   }
+
+   window.MateyShadowTwinSettings = {
+     updateSummary: updateShadowTwinLogSummary,
+     renderLog: renderShadowTwinLog
+   };
 
   /* Voice model summary — update STT/TTS value rows */
   function updateVoiceSummary() {
@@ -538,7 +657,7 @@
        });
     });
     var pf = document.getElementById('profile-form');
-    if (pf && window.SnapProfile) pf.addEventListener('submit', SnapProfile.save);
+    if (pf && window.MateyProfile) pf.addEventListener('submit', MateyProfile.save);
   }
 
   function inject() {
