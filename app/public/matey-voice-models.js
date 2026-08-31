@@ -25,56 +25,47 @@
   function lsGetJson(key, defaultVal) { try { return JSON.parse(localStorage.getItem(key) || 'null') || defaultVal; } catch (e) { return defaultVal; } }
   function lsSetJson(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
 
-  var STT_MODELS = [
-    {
-      id: 'Xenova/whisper-tiny',
-      label: 'Whisper Tiny (multilingual)',
-      size: '99MB',
-      desc: 'Fast — supports English, Chinese, French, German, Spanish, Arabic, Japanese, Korean, Russian, Portuguese, Italian, Dutch, Czech, Danish, Swedish, Polish, Hindi, Thai, Vietnamese, Turkish, and more',
-      langs: 'multilingual',
-      group: 'whisper',
-    },
-    {
-      id: 'Xenova/whisper-base',
-      label: 'Whisper Base (multilingual)',
-      size: '300MB',
-      desc: 'Higher accuracy — all languages of Tiny plus Finnish, Hungarian, Romanian, Norwegian, Croatian, Serbian, Bulgarian, Greek, Hebrew, Urdu, Bengali, Tamil, Telugu, Marathi, Indonesian, Malay, Welsh, Afrikaans, Swahili, Zulu, and others',
-      langs: 'multilingual',
-      group: 'whisper',
-    },
-    {
-      id: 'Xenova/whisper-tiny.en',
-      label: 'Whisper Tiny (English)',
-      size: '99MB',
-      desc: 'Fast English-only dictation',
-      langs: 'english',
-      group: 'whisper',
-    },
-    {
-      id: 'Xenova/whisper-base.en',
-      label: 'Whisper Base (English)',
-      size: '300MB',
-      desc: 'Higher accuracy English-only dictation',
-      langs: 'english',
-      group: 'whisper',
-    },
-    {
-      id: 'Xenova/whisper-small',
-      label: 'Whisper Small (multilingual)',
-      size: '760MB',
-      desc: 'Balanced speed and accuracy — all languages supported, higher fidelity transcription',
-      langs: 'multilingual',
-      group: 'whisper',
-    },
-    {
-      id: 'Xenova/whisper-medium',
-      label: 'Whisper Medium (multilingual)',
-      size: '1.5GB',
-      desc: 'Highest quality offline STT — larger download, best accuracy across 99+ languages',
-      langs: 'multilingual',
-      group: 'whisper',
-    },
-  ];
+  /* STT models: merge Whisper models (from matey-whisper.js) with MateySpeech models */
+  var STT_MODELS = [];
+
+  function buildSttModels() {
+    var models = [];
+
+    /* Add Whisper models from MateyWhisper if available */
+    if (window.MateyWhisper && typeof MateyWhisper.getModelOptions === 'function') {
+      var opts = MateyWhisper.getModelOptions();
+      opts.forEach(function (o) {
+        models.push({
+          id: o.id,
+          label: o.label,
+          size: o.size,
+          desc: o.desc,
+          langs: o.langs,
+          group: 'whisper',
+        });
+      });
+    }
+
+    /* Add MateySpeech STT models if available */
+    if (window.MateySpeech && window.MateySpeech.STT_MODEL_CATALOG) {
+      var catalog = window.MateySpeech.STT_MODEL_CATALOG;
+      catalog.forEach(function (m) {
+        if (m.type === 'stt' || m.type === 'vad') {
+          models.push({
+            id: m.id,
+            label: m.name,
+            size: m.sizeMB + 'MB',
+            desc: m.description,
+            langs: m.type === 'vad' ? 'universal' : 'multilingual',
+            group: m.type === 'vad' ? 'silero' : 'matey-speech',
+            recommended: m.recommended,
+          });
+        }
+      });
+    }
+
+    STT_MODELS = models;
+  }
 
   var TTS_MODELS = [
     {
@@ -229,7 +220,11 @@
   var SELECTED_MODEL_ID = null;
 
   function getModelsForTab(tab) {
-    return tab === 'speech' ? STT_MODELS : TTS_MODELS;
+    if (tab === 'speech') {
+      if (STT_MODELS.length === 0) buildSttModels();
+      return STT_MODELS;
+    }
+    return TTS_MODELS;
   }
 
   function isModelDownloaded(modelId, tab) {
@@ -357,7 +352,7 @@
     var btn = document.querySelector('[data-action="download"][data-model="' + modelId + '"]');
     if (btn) btn.disabled = true;
 
-    if (tab === 'speech' && window.MateyWhisper && typeof MateyWhisper.loadModel === 'function') {
+    if (tab === 'speech' && window.MateyWhisper && typeof MateyWhisper.loadModel === 'function' && model.group === 'whisper') {
       MateyWhisper.loadModel(modelId, function (progress) {
         window._voiceModelProgress = progress;
         if (progressFill) progressFill.style.width = (progress > 100 ? 100 : progress) + '%';
@@ -384,8 +379,35 @@
         window._voiceModelLoading = null;
         window._voiceModelProgress = 0;
       });
+    } else if (tab === 'speech' && window.MateySpeech && typeof MateySpeech.downloadModel === 'function') {
+      MateySpeech.downloadModel(modelId, function (progress) {
+        window._voiceModelProgress = progress.percent;
+        if (progressFill) progressFill.style.width = (progress.percent > 100 ? 100 : progress.percent) + '%';
+        if (progressText) progressText.textContent = 'Downloading… ' + Math.round(progress.percent) + '%';
+        if (btn) btn.textContent = 'Downloading… ' + Math.round(progress.percent) + '%';
+      }).then(function () {
+        markModelDownloaded(modelId, tab);
+        if (progressContainer) progressContainer.style.display = 'none';
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Downloaded';
+          btn.className = 'model-btn downloaded';
+        }
+        window._voiceModelLoading = null;
+        window._voiceModelProgress = 0;
+        renderModelGrid(tab);
+      }).catch(function (err) {
+        console.error('Model download failed:', err);
+        if (progressContainer) progressContainer.style.display = 'none';
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Retry';
+        }
+        window._voiceModelLoading = null;
+        window._voiceModelProgress = 0;
+      });
     } else {
-      var models2 = getModelsForTab(tab);
+      /* TTS model fallback: simulated progress (TTS models are not yet bundled) */
       var steps = 20;
       var interval = setInterval(function () {
         steps--;
