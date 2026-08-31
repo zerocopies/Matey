@@ -11,8 +11,9 @@
     '.journal-entries { padding-bottom: calc(16px + var(--keyboard-height, 0px) + env(safe-area-inset-bottom, 0px)) !important; }' +
     '.journal-entry-form { padding-bottom: calc(16px + var(--keyboard-height, 0px) + env(safe-area-inset-bottom, 0px)) !important; }' +
     '.vots-page { padding-bottom: calc(16px + var(--keyboard-height, 0px) + env(safe-area-inset-bottom, 0px)) !important; }' +
-    '.md-page { padding-bottom: calc(16px + var(--keyboard-height, 0px) + env(safe-area-inset-bottom, 0px)) !important; }' +
-    '#vots-compose { padding-bottom: calc(16px + var(--keyboard-height, 0px) + env(safe-area-inset-bottom, 0px)) !important; }';
+  '.md-page { padding-bottom: calc(16px + var(--keyboard-height, 0px) + env(safe-area-inset-bottom, 0px)) !important; }' +
+     '#md-ide-container { bottom: var(--keyboard-height, 0px); }' +
+     '#vots-compose { padding-bottom: calc(16px + var(--keyboard-height, 0px) + env(safe-area-inset-bottom, 0px)) !important; }';
 
   var styleEl = document.createElement('style');
   styleEl.textContent = KEYBOARD_CSS;

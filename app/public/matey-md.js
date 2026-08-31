@@ -516,41 +516,50 @@
   }
 
   function initAttachments() {
-    var btn = document.getElementById('md-attach-btn');
-    if (!btn) return;
+     var btn = document.getElementById('md-attach-btn');
+     if (!btn) return;
 
-    attachmentList = document.getElementById('md-attachment-list');
+     attachmentList = document.getElementById('md-attachment-list');
 
-    btn.addEventListener('click', function () {
-      var input = document.createElement('input');
-      input.type = 'file';
-      input.multiple = true;
-      input.accept = '*/*';
-      input.onchange = function (e) {
-        var files = Array.from(e.target.files || []);
-        if (!files.length) return;
-        files.forEach(function (file) {
-          var item = {
-            id: Date.now().toString() + '_' + Math.random().toString(36).slice(2),
-            name: file.name,
-            size: file.size,
-            type: file.type || extToMime(file.name.split('.').pop().toLowerCase()) || 'application/octet-stream',
-            category: getFileCategory(file),
-            preview: null
-          };
-          currentAttachments.push(item);
+     btn.addEventListener('click', function () {
+       var input = document.createElement('input');
+       input.type = 'file';
+       input.multiple = true;
+       input.accept = '*/*';
+       /* Must be in DOM for click() to work on Android WebView */
+       input.style.position = 'fixed';
+       input.style.opacity = '0';
+       input.style.width = '0';
+       input.style.height = '0';
+       input.style.overflow = 'hidden';
+       input.style.pointerEvents = 'none';
+       document.body.appendChild(input);
+       input.onchange = function (e) {
+         var files = Array.from(e.target.files || []);
+         if (!files.length) return;
+         files.forEach(function (file) {
+           var item = {
+             id: Date.now().toString() + '_' + Math.random().toString(36).slice(2),
+             name: file.name,
+             size: file.size,
+             type: file.type || extToMime(file.name.split('.').pop().toLowerCase()) || 'application/octet-stream',
+             category: getFileCategory(file),
+             preview: null
+           };
+           currentAttachments.push(item);
 
-          extractFileContent(file, function (result) {
-            item.preview = result.preview;
-            item.category = result.category || item.category;
-            saveAttachments();
-            renderAttachments();
-          });
-        });
-        e.target.value = '';
-      };
-      input.click();
-    });
+           extractFileContent(file, function (result) {
+             item.preview = result.preview;
+             item.category = result.category || item.category;
+             saveAttachments();
+             renderAttachments();
+           });
+         });
+         e.target.value = '';
+         if (input.parentNode) input.parentNode.removeChild(input);
+       };
+       input.click();
+     });
 
     var existingRemove = attachmentList;
     if (existingRemove) {

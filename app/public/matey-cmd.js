@@ -27,11 +27,32 @@ export class CommandPalette {
     const micBtn = document.getElementById('toolbar-mic-btn');
     if (micBtn) {
       micBtn.addEventListener('click', async () => {
-        this.openPalette("Listening...");
-        if (typeof window.runLocalSTT === 'function') {
-          this.input.value = await window.runLocalSTT();
-        } else {
+        console.log('[CommandPalette] mic button tapped');
+        if (typeof window.runLocalSTT !== 'function') {
+          console.error('[CommandPalette] runLocalSTT not available');
+          this.openPalette("");
           this.input.value = "Error: window.runLocalSTT not found.";
+          return;
+        }
+        /* If already recording, stop and transcribe */
+        if (window.MateyMic && window.MateyMic.getState && window.MateyMic.getState().active) {
+          console.log('[CommandPalette] stopping recording');
+          window.MateyMic.stopRecording();
+          return;
+        }
+        /* Start recording directly — show palette after transcription */
+        try {
+          console.log('[CommandPalette] calling runLocalSTT()...');
+          const text = await window.runLocalSTT();
+          console.log('[CommandPalette] runLocalSTT result:', text ? JSON.stringify(text).substring(0, 100) : '(empty)');
+          this.openPalette("");
+          this.input.value = text || "";
+          this.input.focus();
+        } catch (e) {
+          console.error('[CommandPalette] runLocalSTT error:', e);
+          this.openPalette("");
+          this.input.value = "";
+          this.input.placeholder = "Mic error: " + (e.message || e);
         }
       });
     }

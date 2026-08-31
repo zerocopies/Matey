@@ -11,16 +11,59 @@ import { markdown } from '@codemirror/lang-markdown';
 import { sql } from '@codemirror/lang-sql';
 import { yaml } from '@codemirror/lang-yaml';
 import { xml } from '@codemirror/lang-xml';
-import { oneDark } from '@codemirror/theme-one-dark';
-import { bracketMatching, syntaxHighlighting, defaultHighlightStyle, language } from '@codemirror/language';
+import { HighlightStyle, syntaxHighlighting, bracketMatching, defaultHighlightStyle, language } from '@codemirror/language';
 import { keymap, highlightActiveLine, highlightActiveLineGutter, lineNumbers } from '@codemirror/view';
+import { tags as t } from '@lezer/highlight';
 
 import { readFile, writeFile } from './matey-fs-module.js';
 import { AgentOrchestrator } from './matey-agent.js';
 import { diffField, addDiffEffect, clearDiffEffect } from './matey-diff.js';
+import { zedThemeFromObject, zedThemeFromJsonString, applyGlobalZedTheme, clearGlobalZedTheme, convertZedThemeToCodeMirror } from './matey-zed-theme-bridge.js';
 
 const BINARY_REGEX = /[\x00-\x08\x0E-\x1F\x7F]/;
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
+
+/* Native dark theme — replaces @codemirror/theme-one-dark which fails
+ * to import correctly through Vite (bundles to a 2D-array shape that
+ * trips CodeMirror's extension validator). Hand-written using the
+ * same color values as the canonical oneDark theme. */
+const oneDarkTheme = EditorView.theme({
+  '&': {
+    color: '#abb2bf',
+    backgroundColor: '#282c34',
+    height: '100%',
+  },
+  '.cm-scroller': {
+    backgroundColor: '#282c34',
+    color: '#abb2bf',
+    fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+    lineHeight: '1.5',
+  },
+  '.cm-content': { color: '#abb2bf', caretColor: '#528bff', fontFamily: 'inherit' },
+  '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#528bff' },
+  '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection':
+    { backgroundColor: '#3e4451' },
+  '.cm-activeLine': { backgroundColor: '#2c313a' },
+  '.cm-activeLineGutter': { backgroundColor: '#2c313a', color: '#7d8590' },
+  '.cm-gutters': { backgroundColor: '#282c34', color: '#7d8590', border: 'none' },
+  '.cm-lineNumbers .cm-gutterElement': { color: '#7d8590' },
+}, { dark: true });
+
+const oneDarkHighlightStyle = HighlightStyle.define([
+  { tag: t.keyword, color: '#c678dd' },
+  { tag: [t.name, t.deleted, t.character, t.propertyName, t.macroName], color: '#e06c75' },
+  { tag: [t.function(t.variableName), t.labelName], color: '#61afef' },
+  { tag: [t.typeName, t.namespace], color: '#e5c07b' },
+  { tag: [t.operator, t.punctuation, t.bracket], color: '#abb2bf' },
+  { tag: [t.string, t.special(t.string), t.regexp], color: '#98c379' },
+  { tag: [t.number, t.bool, t.atom], color: '#d19a66' },
+  { tag: [t.variableName, t.className], color: '#e06c75' },
+  { tag: [t.comment, t.docComment, t.blockComment, t.lineComment], color: '#7f848e', fontStyle: 'italic' },
+  { tag: t.meta, color: '#61afef' },
+  { tag: t.invalid, color: '#ffffff' },
+]);
+
+const oneDark = [oneDarkTheme, syntaxHighlighting(oneDarkHighlightStyle)];
 
 const floatingActionStyle = `
   .matey-floating-diff-bar {
@@ -88,6 +131,7 @@ export class MateyIDE {
     this.agent = new AgentOrchestrator(provider);
     this.languageCompartment = new Compartment();
     this.readOnlyCompartment = new Compartment();
+    this.themeCompartment = new Compartment();
     this.currentDiff = null;
 
     injectFloatingActionStyle();
@@ -98,21 +142,25 @@ export class MateyIDE {
 
   initHeaderUI() {
     const headerHTML = `
-      <div id="ide-header" style="display:flex;align-items:center;justify-content:space-between;background:#0D0D0D;border-bottom:1px solid #262626;padding:8px 12px;font-family:sans-serif;font-size:13px;color:#e5e5e5;min-height:41px;box-sizing:border-box;">
+      <div id="ide-header" style="display:flex;align-items:center;justify-content:space-between;background:var(--app-header-bg, #0D0D0D);border-bottom:1px solid var(--app-border, #262626);padding:8px 12px;font-family:sans-serif;font-size:13px;color:var(--app-fg, #e5e5e5);min-height:41px;box-sizing:border-box;">
         <div style="display:flex;align-items:center;gap:8px;overflow:hidden;min-width:0;flex:1;">
           <span id="ide-lang-badge" style="background:#312e81;color:#a5b4fc;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;white-space:nowrap;">TXT</span>
-          <span id="ide-file-path" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#a3a3a3;font-family:monospace;min-width:0;flex:1;">No file open</span>
+          <span id="ide-file-path" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--app-muted, #a3a3a3);font-family:monospace;min-width:0;flex:1;">No file open</span>
           <span id="ide-dirty-dot" style="display:none;color:#f59e0b;font-size:14px;line-height:1;white-space:nowrap;">\u25CF</span>
+          <span id="ide-theme-label" title="Active editor theme" style="font-size:10px;color:var(--app-muted, #6b6b6b);white-space:nowrap;"></span>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-          <button id="ide-btn-save" title="Save (Cmd+S)" style="background:#4f46e5;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">Save</button>
-          <button id="ide-btn-saveas" title="Save As" style="background:#262626;color:#d4d4d4;border:1px solid #404040;border-radius:4px;padding:4px 8px;font-size:12px;cursor:pointer;">Save As</button>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;position:relative;">
+          <button id="ide-btn-theme" title="Pick editor theme" style="background:var(--app-surface, #262626);color:var(--app-fg, #d4d4d4);border:1px solid var(--app-border, #404040);border-radius:4px;padding:4px 8px;font-size:12px;cursor:pointer;">Theme\u2026</button>
+          <div id="ide-theme-menu" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--app-surface, #1a1a1a);border:1px solid var(--app-border, #404040);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.55);padding:4px 0;z-index:9999;max-height:60vh;overflow-y:auto;min-width:220px;"></div>
+          <button id="ide-btn-theme-reset" title="Revert to default theme" style="background:transparent;color:var(--app-muted, #9ca3af);border:1px solid var(--app-border, #404040);border-radius:4px;padding:4px 6px;font-size:11px;cursor:pointer;display:none;">\u2715</button>
+          <input type="file" id="ide-theme-file" accept=".json,application/json" style="display:none" />
+          <button id="ide-btn-save" title="Save (Cmd+S)" style="background:var(--app-accent, #4f46e5);color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">Save</button>
+          <button id="ide-btn-saveas" title="Save As" style="background:var(--app-surface, #262626);color:var(--app-fg, #d4d4d4);border:1px solid var(--app-border, #404040);border-radius:4px;padding:4px 8px;font-size:12px;cursor:pointer;">Save As</button>
           <button id="ide-btn-delete" title="Delete file" style="background:transparent;color:#ef4444;border:1px solid #7f1d1d;border-radius:4px;padding:4px 8px;font-size:12px;cursor:pointer;">Delete</button>
         </div>
       </div>
       <div id="editor-cm-target" style="flex:1;min-height:0;overflow:hidden;"></div>
     `;
-
     this.container.style.display = 'flex';
     this.container.style.flexDirection = 'column';
     this.container.style.height = '100%';
@@ -122,6 +170,11 @@ export class MateyIDE {
     this.elDirtyDot = document.getElementById('ide-dirty-dot');
     this.elLangBadge = document.getElementById('ide-lang-badge');
     this.elEditorTarget = document.getElementById('editor-cm-target');
+    this.elThemeLabel = document.getElementById('ide-theme-label');
+    this.elThemeFile = document.getElementById('ide-theme-file');
+    this.elBtnTheme = document.getElementById('ide-btn-theme');
+    this.elBtnThemeReset = document.getElementById('ide-btn-theme-reset');
+    this.elThemeMenu = document.getElementById('ide-theme-menu');
 
     this.elBtnSave = document.getElementById('ide-btn-save');
     this.elBtnSaveAs = document.getElementById('ide-btn-saveas');
@@ -130,6 +183,127 @@ export class MateyIDE {
     this.elBtnSave.addEventListener('click', () => this.saveFile());
     this.elBtnSaveAs.addEventListener('click', () => this.saveFileAs());
     this.elBtnDelete.addEventListener('click', () => this.deleteCurrentFile());
+    this.elBtnTheme.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleThemeMenu();
+    });
+    this.elBtnThemeReset.addEventListener('click', () => this.resetTheme());
+    this.elThemeFile.addEventListener('change', (e) => this.handleThemeFileChosen(e));
+    document.addEventListener('click', (e) => {
+      if (this.elThemeMenu && this.elThemeMenu.style.display !== 'none' &&
+          !this.elThemeMenu.contains(e.target) && e.target !== this.elBtnTheme) {
+        this.elThemeMenu.style.display = 'none';
+      }
+    });
+  }
+
+  /* Build the theme dropdown menu from /themes-registry.json. Each
+   * entry fetches the theme JSON, parses it, and calls applyThemeFromJson
+   * (which updates both the CodeMirror theme and the app CSS vars). */
+  async toggleThemeMenu() {
+    if (!this.elThemeMenu) return;
+    if (this.elThemeMenu.style.display !== 'none') {
+      this.elThemeMenu.style.display = 'none';
+      return;
+    }
+    this.elThemeMenu.innerHTML = '<div style="padding:8px 12px;color:var(--app-muted,#9ca3af);font-size:11px;">Loading\u2026</div>';
+    this.elThemeMenu.style.display = 'block';
+    let registry = { themes: [{ id: 'zed-default', name: 'Default (oneDark)', builtin: true }] };
+    try {
+      const r = await fetch('themes-registry.json');
+      if (r.ok) registry = await r.json();
+    } catch (e) { /* fall through to default-only menu */ }
+    this.renderThemeMenu(registry.themes || []);
+  }
+
+  renderThemeMenu(themes) {
+    if (!this.elThemeMenu) return;
+    const fg = getComputedStyle(document.documentElement).getPropertyValue('--app-fg').trim() || '#e5e5e5';
+    const muted = getComputedStyle(document.documentElement).getPropertyValue('--app-muted').trim() || '#9ca3af';
+    const hover = getComputedStyle(document.documentElement).getPropertyValue('--app-surface').trim() || '#262626';
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--app-accent').trim() || '#5e2baf';
+    this.elThemeMenu.innerHTML = '';
+    themes.forEach((t) => {
+      const item = document.createElement('div');
+      item.textContent = t.name;
+      item.style.cssText = `padding:8px 14px;cursor:pointer;font-size:12px;color:${fg};white-space:nowrap;`;
+      item.addEventListener('mouseenter', () => { item.style.background = hover; });
+      item.addEventListener('mouseleave', () => { item.style.background = 'transparent'; });
+      item.addEventListener('click', () => {
+        this.elThemeMenu.style.display = 'none';
+        if (t.builtin) {
+          this.resetTheme();
+        } else {
+          this.applyThemeByPath(t.id, t.name, t.path);
+        }
+      });
+      this.elThemeMenu.appendChild(item);
+    });
+    const divider = document.createElement('div');
+    divider.style.cssText = `height:1px;background:${muted};opacity:0.3;margin:4px 0;`;
+    this.elThemeMenu.appendChild(divider);
+    const fileItem = document.createElement('div');
+    fileItem.textContent = 'Choose file\u2026';
+    fileItem.style.cssText = `padding:8px 14px;cursor:pointer;font-size:12px;color:${muted};white-space:nowrap;font-style:italic;`;
+    fileItem.addEventListener('mouseenter', () => { fileItem.style.background = hover; });
+    fileItem.addEventListener('mouseleave', () => { fileItem.style.background = 'transparent'; });
+    fileItem.addEventListener('click', () => {
+      this.elThemeMenu.style.display = 'none';
+      this.elThemeFile.click();
+    });
+    this.elThemeMenu.appendChild(fileItem);
+  }
+
+  async applyThemeByPath(id, name, path) {
+    try {
+      const r = await fetch(path);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const text = await r.text();
+      const result = this.applyZedThemeJson(text);
+      if (result.ok) {
+        localStorage.setItem('matey-editor-theme-id', id);
+        localStorage.setItem('matey_selected_theme', name);
+        this.elThemeLabel.textContent = name;
+        this.elThemeLabel.title = `Active theme: ${name} (${path})`;
+        this.elBtnThemeReset.style.display = 'inline-block';
+      } else {
+        alert('Failed to apply theme: ' + result.error);
+      }
+    } catch (e) {
+      alert('Failed to load theme ' + name + ': ' + e.message);
+    }
+  }
+
+  handleThemeFileChosen(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || '');
+      const result = this.applyZedThemeJson(text);
+      if (result.ok) {
+        this.elThemeLabel.textContent = file.name.replace(/\.json$/i, '');
+        this.elThemeLabel.title = `Active theme: ${file.name}`;
+        this.elBtnThemeReset.style.display = 'inline-block';
+      } else {
+        alert('Failed to apply theme: ' + result.error);
+      }
+    };
+    reader.onerror = () => alert('Failed to read theme file: ' + reader.error);
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  resetTheme() {
+    localStorage.removeItem('matey-editor-theme');
+    localStorage.removeItem('matey-editor-theme-source');
+    localStorage.removeItem('matey-editor-theme-id');
+    localStorage.setItem('matey_selected_theme', 'default');
+    this.setTheme(oneDark);
+    try { clearGlobalZedTheme(); } catch (_) { /* ignore */ }
+    this.elThemeLabel.textContent = '';
+    this.elThemeLabel.title = '';
+    this.elBtnThemeReset.style.display = 'none';
   }
 
   initGlobalShortcuts() {
@@ -188,7 +362,7 @@ export class MateyIDE {
   buildBaseExtensions() {
     return [
       basicSetup,
-      oneDark,
+      this.themeCompartment.of(oneDark),
       diffField,
       history(),
       bracketMatching(),
@@ -197,7 +371,6 @@ export class MateyIDE {
       highlightActiveLineGutter(),
       lineNumbers(),
       autocompletion(),
-      language,
       this.languageCompartment.of([]),
       this.readOnlyCompartment.of([]),
       EditorView.lineWrapping,
@@ -206,11 +379,83 @@ export class MateyIDE {
         indentWithTab,
       ]),
       EditorView.updateListener.of((update) => {
-        if (update.docChanged) {
-          this.setDirty(true);
-        }
-      }),
+         if (update.docChanged) {
+           this.setDirty(true);
+           /* Stage 5: Shadow Twin — error pattern detection on content change */
+           if (window.MateyShadowTwin && this._shadowTwinDebounce) {
+             clearTimeout(this._shadowTwinDebounce);
+           }
+           if (window.MateyShadowTwin) {
+             this._shadowTwinDebounce = setTimeout(function () {
+               var content = update.state.doc.toString();
+               var path = this.activeFilePath || '';
+               window.MateyShadowTwin.checkContent(content, path);
+             }.bind(this), 1500);
+           }
+         }
+       }),
     ];
+  }
+
+  /* Apply a CodeMirror theme extension to the live editor.
+   * Pass `oneDark` (or any Extension) to switch themes at runtime.
+   * CodeMirror 6 themes are additive in the theme facet; reconfigure
+   * alone leaves stale CSS rules from the previous theme. Dispatch
+   * a clear first, then the new theme in a second transaction. */
+  setTheme(themeExtension) {
+    if (!this.view) return;
+    const ext = [].concat(themeExtension).flat(Infinity);
+    /* Step 1: clear the compartment */
+    this.view.dispatch({
+      effects: this.themeCompartment.reconfigure([]),
+    });
+    /* Step 2: apply the new theme. requestAnimationFrame ensures
+     * the browser has processed the clear before the new theme's
+     * CSS rules land in the StyleModule. */
+    requestAnimationFrame(() => {
+      if (!this.view) return;
+      this.view.dispatch({
+        effects: this.themeCompartment.reconfigure(ext),
+      });
+    });
+  }
+
+  /* Convenience: parse a Zed theme JSON string and apply it.
+   * Saves the theme name to localStorage('matey_selected_theme') so
+   * the choice persists across app restarts. The applyThemeByPath
+   * path also writes the registry id to the same key. */
+  applyZedThemeJson(jsonString) {
+    try {
+      const obj = JSON.parse(jsonString);
+      const ext = zedThemeFromObject(obj);
+      this.setTheme(ext);
+      try { applyGlobalZedTheme(obj); } catch (_) { /* ignore global apply */ }
+      const themeName = (obj && (obj.name || (obj.themes && obj.themes[0] && obj.themes[0].name))) || 'custom';
+      localStorage.setItem('matey-editor-theme-source', 'zed');
+      localStorage.setItem('matey-editor-theme', jsonString);
+      localStorage.setItem('matey_selected_theme', themeName);
+      return { ok: true, theme: themeName };
+    } catch (e) {
+      console.error('[MateyIDE] Failed to apply Zed theme:', e);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /* Restore the last-applied editor theme (or oneDark default). */
+  restoreStoredTheme() {
+    const stored = localStorage.getItem('matey-editor-theme');
+    if (stored) {
+      const result = this.applyZedThemeJson(stored);
+      if (result.ok && this.elThemeLabel) {
+        try {
+          const parsed = JSON.parse(stored);
+          const name = (parsed && parsed.name) || 'custom';
+          this.elThemeLabel.textContent = name;
+          this.elThemeLabel.title = 'Active theme: ' + name;
+          if (this.elBtnThemeReset) this.elBtnThemeReset.style.display = 'inline-block';
+        } catch (_) { /* ignore label update */ }
+      }
+    }
   }
 
   initEditor() {
@@ -226,6 +471,8 @@ export class MateyIDE {
       effects: this.readOnlyCompartment.reconfigure(EditorState.readOnly.of(true)),
     });
     this.isReadOnly = true;
+
+    this.restoreStoredTheme();
   }
 
   setDirty(state) {

@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+    <style>
+      html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
+      .app-shell { position: fixed; inset: 0; width: 100%; max-width: none; display: flex; flex-direction: column; }
+      .edit-page { flex: 1; display: flex; flex-direction: column; min-height: 0; height: 100%; }
+
+      /* File Explorer State */
+      .file-explorer { flex: 1; min-height: 0; display: flex; flex-direction: column; height: 100%; overflow-y: auto; }
+      .explorer-header { display: flex; justify-content: space-between; align-items: center; padding: 0 16px 4px 16px; border: none; background: transparent; }
+      .explorer-header h1 { font-family: inherit; font-size: 0.95rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--app-fg); margin: 0; font-weight: 600; }
+      .explorer-header .icon-btn { background: none; border: none; color: var(--app-fg); font-size: 1.25rem; padding: 8px; cursor: pointer; }
+
+      .action-bar { display: flex; gap: 6px; align-items: center; padding: 6px 16px; }
+      .btn-main { flex: 1; height: 32px; padding: 0 12px; background: var(--app-surface, var(--app-bg)); color: var(--app-fg); border: 1px solid var(--app-border); border-radius: 6px; font-size: 12px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+      .btn-square { width: 32px; height: 32px; background: var(--app-surface, var(--app-bg)); color: var(--app-fg); border: 1px solid var(--app-border); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1rem; cursor: pointer; }
+
+      .file-list { display: flex; flex-direction: column; gap: 6px; padding: 8px 16px; }
+      .file-card { background: var(--app-surface-raised, var(--app-surface)); border: 1px solid var(--app-border); border-radius: 12px; padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+      .file-card-top { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+      .file-info { display: flex; align-items: center; gap: 12px; overflow: hidden; }
+      .ext-badge { font-family: monospace; font-size: 0.68rem; font-weight: 600; padding: 4px 8px; border-radius: 6px; min-width: 40px; text-align: center; }
+      .file-name { font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--app-fg); }
+      .chevron-icon { color: var(--app-muted); font-size: 0.9rem; }
+      .card-divider { height: 1px; background-color: var(--app-border); width: 100%; }
+      .file-card-actions { display: flex; gap: 16px; align-items: center; }
+      .action-item { background: none; border: none; color: var(--app-fg); font-size: 14px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+      .action-link { color: var(--app-fg); font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; opacity: 0.85; }
+      .action-link:hover { opacity: 1; color: var(--app-muted); }
+      .action-item:hover { color: var(--app-muted); }
+
+      /* Extension Badge Colors */
+      .ext-badge.txt { background: rgba(255,255,255,0.1); color: #d1d5db; }
+      .ext-badge.gradle { background: rgba(139,92,246,0.2); color: #a78bfa; }
+      .ext-badge.md { background: rgba(6,182,212,0.2); color: #67e8f9; }
+      .ext-badge.json { background: rgba(249,115,22,0.2); color: #fdba74; }
+      .ext-badge.csv { background: rgba(34,197,94,0.2); color: #86efac; }
+      .ext-badge.xml, .ext-badge.html { background: rgba(59,130,246,0.2); color: #93c5fd; }
+      .ext-badge.js, .ext-badge.jsx, .ext-badge.ts, .ext-badge.tsx { background: rgba(253,186,47,0.2); color: #facc15; }
+      .ext-badge.css, .ext-badge.scss, .ext-badge.sass { background: rgba(252,143,76,0.2); color: #fdba74; }
+      .ext-badge.yaml, .ext-badge.yml { background: rgba(34,197,94,0.2); color: #86efac; }
+      .ext-badge.sh { background: rgba(107,114,128,0.2); color: #9ca3af; }
+      .ext-badge.py { background: rgba(57,151,214,0.2); color: #60a5fa; }
+      .ext-badge.go { background: rgba(93,122,255,0.2); color: #84a4f4; }
+      .ext-badge.rs { background: rgba(224,100,187,0.2); color: #f7729e; }
+
+      /* Supported Extensions Modal */
+      .overlay-view { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg); z-index: 100; display: none; flex-direction: column; padding: max(16px, env(safe-area-inset-top)) 16px 16px 16px; overflow-y: auto; }
+      .overlay-view.active { display: flex; }
+      .view-header { display: flex; align-items: center; gap: 16px; padding-bottom: 20px; }
+      .view-title { font-family: monospace; font-size: 1.25rem; font-weight: 700; }
+      .section-label { font-family: monospace; font-size: 1.2rem; font-weight: 700; margin: 16px 0 4px 0; }
+      .section-sub { color: var(--text-dim); font-size: 0.8rem; margin-bottom: 12px; }
+      .handler-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+      .handler-icon { font-size: 1.5rem; width: 40px; display: flex; justify-content: center; }
+      .handler-info h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 2px; }
+      .handler-info p { font-size: 0.75rem; color: var(--text-dim); }
+      .pill-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+      .pill { background: rgba(139,92,246,0.15); color: #c084fc; font-family: monospace; font-size: 0.7rem; font-weight: 700; padding: 8px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+      /* Editor State */
+      .editor-view { flex: 1; display: flex; flex-direction: column; min-height: 0; height: 100%; }
+      .edit-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--surface); }
+      .edit-header .file-path { color: var(--text-dim); font-family: monospace; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+      .edit-header .lang-badge { background: #312e81; color: #a5b4fc; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; white-space: nowrap; }
+      .edit-header .actions { display: flex; gap: 6px; flex-shrink: 0; }
+      .edit-header button { background: #4f46e5; color: #fff; border: none; border-radius: 4px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+      .edit-header button.secondary { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+      .edit-header button.danger { background: transparent; color: #ef4444; border: 1px solid #7f1d1d; }
+      .edit-viewport { flex: 1; min-height: 0; overflow: hidden; position: relative; }
+      .edit-viewport .cm-editor { height: 100% !important; }
+      .edit-footer { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-top: 1px solid var(--border); background: var(--surface); }
+      .edit-footer .status { color: var(--text-dim); font-size: 12px; font-family: monospace; }
+      .edit-footer .voice-controls { display: flex; align-items: center; gap: 8px; }
+      .edit-footer .voice-controls button { background: #262626; color: var(--text); border: 1px solid #404040; border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+      .edit-footer .voice-controls button.recording { background: #ef4444; color: #fff; }
+
+      /* Card BG fallback */
+      :root { --bg: var(--app-bg); --card-bg: var(--app-surface-raised, var(--app-surface)); --card-border: var(--app-border); --text: var(--app-fg); --text-dim: var(--app-muted); --border: var(--app-border); --surface: var(--app-surface); }
+
+      /* === >edit Hyper-Compact Header === */
+      .tabs-wrap { padding: 0 !important; margin: 0 !important; border-bottom: none !important; }
+      .tabs { border-bottom: none !important; }
+      .tab { padding: 6px 4px !important; }
+      .text-editor-header { background: transparent !important; border: none !important; padding: 0 !important; margin: 0 !important; }
+      .action-bar-container { margin-top: 4px !important; }
+    </style>
+    <meta name="description" content="Matey - >edit — Raw text editor with file explorer, voice input, and language routing" />
+    <link rel="icon" href="./images/matey-logo.png" type="image/png" />
+    <meta name="theme-color" content="#000000" />
+    <title>Matey - &gt;edit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <script src="./version.js"></script>
+    <script>
+      document.write('<link rel="stylesheet" href="./matey-preview.css?v=' + MATEY_CSS_VERSION + '">');
+    </script>
+    <script src="./matey-boot.js?v=100"></script>
+    <script src="./matey-sentry.js?v=101"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="header">
+        <div class="header-top">
+          <img class="matey-logo" src="./images/matey-logo.png" alt="Matey" />
+          <div class="workspace-display-container" id="workspace-display-container">
+            <div class="workspace-dropdown" id="workspace-dropdown">
+              <span class="workspace-name" id="workspace-display">Workspace</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="workspace-selector" id="workspace-selector"></div>
+          </div>
+          <div class="header-actions">
+            <svg class="usage-ring" viewBox="0 0 36 36" id="usage-ring" aria-hidden="true"><circle class="usage-ring-track" cx="18" cy="18" r="15"></circle><path class="usage-ring-segment" d="" /></svg>
+            <button class="incognito-trigger" type="button" aria-label="Incognito" title="Incognito">
+              <svg class="incognito-ghost" viewBox="0 0 100 120" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path class="ghost-body" d="M 50 4 C 20 4 5 28 5 52 L 5 92 C 5 105 15 105 20 98 C 25 105 35 105 40 98 C 45 105 55 105 60 98 C 65 105 75 105 80 98 C 85 105 95 105 95 92 L 95 52 C 95 28 80 4 50 4 Z"/>
+                <ellipse class="ghost-eye" cx="35" cy="50" rx="10" ry="15"/>
+                <ellipse class="ghost-pupil" cx="35" cy="52" rx="4" ry="8"/>
+                <ellipse class="ghost-eye" cx="65" cy="50" rx="10" ry="15"/>
+                <ellipse class="ghost-pupil" cx="65" cy="52" rx="4" ry="8"/>
+                <path class="ghost-eyebrow" d="M 26 34 L 38 40"/>
+                <path class="ghost-eyebrow" d="M 74 34 L 62 40"/>
+                <path class="ghost-mouth" d="M 38 78 Q 50 94 62 78 Q 50 88 38 78 Z"/>
+                <path class="ghost-teeth" d="M 40 80 L 43 85 L 46 80 L 49 85 L 52 80 L 55 85 L 58 80 L 60 82"/>
+              </svg>
+            </button>
+            <button class="icon-btn settings-trigger" type="button" aria-label="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+              </svg></button>
+          </div>
+        </div>
+      </header>
+
+      <nav class="tabs-wrap" id="tabs-wrap">
+        <div class="tabs">
+          <a class="tab" href="./lifestyle.html">Lifestyle</a>
+          <a class="tab" href="./vots.html">My-VOTS</a>
+          <a class="tab active" href="./raw-editor.html">&gt;edit</a>
+          <a class="tab" href="./journal.html">Journal</a>
+          <a class="tab" href="./preview.html#agent">&gt;agent</a>
+        </div>
+      </nav>
+
+      <div class="edit-page">
+        <!-- File Explorer State -->
+        <div id="file-explorer" class="file-explorer text-editor-header" style="display: flex; flex-direction: column; height: 100%;">
+          <div class="explorer-header">
+            <h1>Text Editor</h1>
+          </div>
+
+          <div class="action-bar-container">
+          <div class="action-bar">
+            <button class="btn-main" id="btn-create"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Create</button>
+            <button class="btn-main" id="btn-import"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1"/><path d="M10 17l5-5-5-5M15 12H3"/></svg>Import</button>
+            <button class="btn-square" id="btn-favorites"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+            <button class="btn-square" id="btn-info-overlay"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
+          </div>
+          </div>
+
+          <div class="file-list" id="file-list-container"></div>
+        </div>
+
+        <!-- Editor State (hidden by default) -->
+        <div id="editor-view" class="editor-view" style="display: none;">
+          <div class="edit-header">
+            <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+              <span id="edit-lang-badge" class="lang-badge">TXT</span>
+              <span id="edit-file-path" class="file-path">No file open</span>
+              <span id="edit-dirty-dot" style="display:none; color:#f59e0b; font-size:14px; line-height:1;">●</span>
+            </div>
+            <div class="actions">
+              <button id="edit-btn-back" class="secondary">Back</button>
+              <button id="edit-btn-save">Save</button>
+              <button id="edit-btn-saveas" class="secondary">Save As</button>
+              <button id="edit-btn-delete" class="danger">Delete</button>
+            </div>
+          </div>
+
+          <div class="edit-viewport" id="edit-viewport">
+            <div id="edit-editor-container" data-matey-ide-skip-header="true" style="width:100%; height:100%;"></div>
+          </div>
+
+          <div class="edit-footer">
+            <div class="status" id="edit-status">Ready — Cmd/Ctrl+K for command palette</div>
+            <div class="voice-controls">
+              <button id="edit-mic-btn" type="button">Voice Input</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Supported Extensions Overlay Modal -->
+    <div class="overlay-view" id="supported-extensions-view">
+      <div class="view-header">
+        <button class="icon-btn" id="btn-close-info"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <h2 class="view-title">Supported Extensions</h2>
+      </div>
+
+      <div class="section-label">Specialized Handlers</div>
+      <div class="section-sub">Formats with dedicated Beautify & Tree views</div>
+
+      <div class="handler-card">
+        <div class="handler-icon" style="color: var(--accent-orange);"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h8M8 9h8"/></svg></div>
+        <div class="handler-info">
+          <h4>JSON Group</h4>
+          <p>arb, json, jsonl, ndjson</p>
+        </div>
+      </div>
+
+      <div class="handler-card">
+        <div class="handler-icon" style="color: var(--accent-blue);">&lt;&gt;</div>
+        <div class="handler-info">
+          <h4>XML Group</h4>
+          <p>xml, html, xhtml, svg, rss, atom, xjb, xsd, xsl, plist, wsf</p>
+        </div>
+      </div>
+
+      <div class="handler-card">
+        <div class="handler-icon" style="color: var(--accent-green);"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7l4 4h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/></svg></div>
+        <div class="handler-info">
+          <h4>CSV</h4>
+          <p>Table view for data manipulation</p>
+        </div>
+      </div>
+
+      <div class="handler-card">
+        <div class="handler-icon" style="color: #3b82f6;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h8M8 9h8"/></svg></div>
+        <div class="handler-info">
+          <h4>Markdown</h4>
+          <p>Full preview support</p>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top: 24px;">Code Highlights</div>
+      <div class="section-sub">Supported with Syntax Highlighting</div>
+
+      <div class="pill-grid" id="pill-grid-container"></div>
+    </div>
+
+    <input type="file" id="file-input" style="display: none;" multiple>
+
+    <script src="./matey-themes.js?v=100"></script>
+    <script src="./matey-swipe.js?v=100"></script>
+    <script src="./matey-profile.js?v=100"></script>
+    <script src="./matey-greet.js?v=100"></script>
+    <script src="./matey-feed.js?v=100"></script>
+    <script src="./matey-ai.js?v=100"></script>
+    <script src="./matey-fs-adapter.js?v=100"></script>
+    <script src="./matey-byok.js?v=100"></script>
+    <script src="./matey-beat.js?v=100"></script>
+    <script src="./matey-lifestyle.js?v=100"></script>
+    <script src="./matey-syntax.js?v=100"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.2/mammoth.min.js"></script>
+    <script src="./matey-whisper.js?v=101"></script>
+    <script src="./matey-stt.js?v=101"></script>
+    <script src="./matey-mic.js?v=100"></script>
+    <script src="./matey-models.js?v=100"></script>
+    <script src="./matey-rss.js?v=100"></script>
+    <script src="./matey-license.js?v=100"></script>
+    <script src="./matey-settings.js?v=100"></script>
+    <script src="./matey-recall.js?v=101"></script>
+    <script src="./matey-behavior.js?v=101"></script>
+    <script src="./matey-adaptive.js?v=101"></script>
+    <script src="./matey-init.js?v=101"></script>
+    <script src="./matey-tabs.js?v=101"></script>
+    <script src="./matey-keyboard.js?qv=101"></script>
+    <script src="./matey-fs.js?v=101"></script>
+    <script type="module" src="./matey-shadow-twin.js"></script>
+    <script src="./matey-hooks-manager.js?v=101"></script>
+    <script type="module" src="./matey-agent-bundle.js?v=101"></script>
+
+    <script>
+      /* >edit — Unified Two-View Architecture: File Explorer + CodeMirror Editor */
+      (function () {
+        'use strict';
+
+        var SPECIALIZED_HANDLERS = {
+          json: ['json', 'jsonl', 'arb', 'ndjson'],
+          xml: ['xml', 'html', 'xhtml', 'svg', 'rss', 'atom', 'xjb', 'xsd', 'xsl', 'plist', 'wsf'],
+          csv: ['csv'],
+          markdown: ['md', 'markdown', 'mkd']
+        };
+
+        var ALL_EXTENSIONS = [
+          "1c", "abnf", "accesslog", "actionscript", "ada", "adoc", "adoc", "adlink",
+          "agile", "agda", "agora", "apex", "asciidoc", "asm", "antlr", "antlr4",
+          "apache", "apex", "apib", "applescript", "arcade", "arduino", "awk", "bash",
+          "brainfuck", "cal", "cpp", "c", "clojure", "cmake", "cobol", "coffee", "cpp",
+          "crmsh", "csp", "css", "dart", "dockerfile", "elm", "erb", "Erlang", "excel",
+          "factor", "false", "fish", "fsharp", "gams", "gcode", "genie", "go", "golfscript",
+          "gradle", "groovy", "haml", "handlebars", "haskell", "haxe", "http", "ini",
+          "java", "javascript", "jl", "js", "json", "kotlin", "less", "lisp", "llvm",
+          "lua", "makefile", "markdown", "mathematica", "matlab", "meson", "mizar",
+          "perl", "php", "postgresql", "powershell", "privacypro", "processing", "protobuf",
+          "python", "reasonml", "racket", "r", "raw", "ruby", "rust", "scala", "scheme",
+          "scss", "shell", "smali", "solidity", "solution", "sql", "stl", "swift",
+          "tcl", "tex", "ts", "typescript", "vb", "vhd", "vim", "yaml", "xml", "xquery"
+        ];
+
+        var LANGUAGE_EXTENSIONS = {
+          'js': 'javascript', 'jsx': 'javascript', 'ts': 'typescript', 'tsx': 'typescript',
+          'cpp': 'cpp', 'c': 'c', 'h': 'c', 'hpp': 'cpp', 'cc': 'cpp',
+          'html': 'html', 'htm': 'html', 'svg': 'xml', 'rss': 'xml', 'atom': 'xml',
+          'xhtml': 'html', 'xml': 'xml',
+          'css': 'css', 'scss': 'scss', 'sass': 'css', 'less': 'css', 'styl': 'css', 'stylus': 'css',
+          'json': 'json', 'json5': 'json', 'jsonl': 'json', 'ndjson': 'json', 'arb': 'json',
+          'py': 'python', 'pyw': 'python',
+          'md': 'markdown', 'markdown': 'markdown', 'mkd': 'markdown',
+          'sql': 'sql', 'psql': 'sql', 'mysql': 'sql',
+          'yaml': 'yaml', 'yml': 'yaml',
+          'go': 'go', 'rs': 'rust', 'java': 'java', 'kt': 'kotlin', 'kts': 'kotlin',
+          'sh': 'shell', 'bash': 'shell', 'zsh': 'shell', 'fish': 'shell',
+          'rb': 'ruby', 'php': 'php', 'pl': 'perl', 'lua': 'lua', 'scala': 'scala',
+          'tf': 'hcl', 'hcl': 'hcl', 'gradle': 'gradle'
+        };
+
+        var SUPPORTED_EXTENSIONS_FOR_PILLS = [
+          '1C', 'ABNF', 'APACHE', 'C', 'C++', 'C#', 'CMAKE', 'COFFEESCRIPT',
+          'CSS', 'DART', 'DOCKERFILE', 'ELIXIR', 'ERLANG', 'FACTOR', 'FAIR',
+          'FORTRAN', 'FSHARP', 'GAMS', 'GRADLE', 'GROOVY', 'GO', 'GLSL',
+          'HTML', 'HTTP', 'INI', 'JAVA', 'JAVASCRIPT', 'JSON', 'KOTLIN',
+          'LESS', 'LISP', 'LIVE_SCRIPT', 'LLVM', 'LUA', 'MAKEFILE', 'MARKDOWN',
+          'MATLAB', 'MONKEY', 'NIX', 'PHP', 'PLAINTEXT', 'PYTHON', 'R',
+          'RUBY', 'RUST', 'SCALA', 'SCSS', 'SHELL', 'SQL', 'SWIFT', 'TS',
+          'TYPESCRIPT', 'VB', 'XML', 'YAML'
+        ];
+
+        var activeFilePath = null;
+        var editorView = null;
+
+        var explorerEl = document.getElementById('file-explorer');
+        var editorWrapperEl = document.getElementById('editor-view');
+        var fileListEl = document.getElementById('file-list-container');
+        var fileInputEl = document.getElementById('file-input');
+        var extensionsViewEl = document.getElementById('supported-extensions-view');
+        var editorContainerEl = document.getElementById('edit-editor-container');
+
+        function getFS() {
+          try {
+            if (window.MateyFSAdapter && typeof window.MateyFSAdapter.listDirectory === 'function') {
+              return window.MateyFSAdapter;
+            }
+            if (window.MateyFS && typeof window.MateyFS.listFiles === 'function') {
+              return window.MateyFS;
+            }
+          } catch (e) {
+            console.error('[>edit] FS access error:', e);
+          }
+          return null;
+        }
+
+        function getExtensionBadgeClass(ext) {
+          ext = ext.toLowerCase();
+          if (SPECIALIZED_HANDLERS.json.includes(ext)) return 'json';
+          if (SPECIALIZED_HANDLERS.xml.includes(ext)) return 'xml';
+          if (SPECIALIZED_HANDLERS.csv.includes(ext)) return 'csv';
+          if (SPECIALIZED_HANDLERS.markdown.includes(ext)) return 'md';
+          if (['js', 'jsx', 'ts', 'tsx'].includes(ext)) return 'js';
+          if (['css', 'scss', 'sass', 'less'].includes(ext)) return 'css';
+          if (['yaml', 'yml'].includes(ext)) return 'yaml';
+          if (['go'].includes(ext)) return 'go';
+          if (['rs'].includes(ext)) return 'rs';
+          if (['sh', 'bash', 'zsh'].includes(ext)) return 'sh';
+          if (['py', 'pyw'].includes(ext)) return 'py';
+          if (['gradle'].includes(ext)) return 'gradle';
+          return 'txt';
+        }
+
+        function showExplorer() {
+          activeFilePath = null;
+          if (editorWrapperEl) editorWrapperEl.style.display = 'none';
+          if (explorerEl) explorerEl.style.display = 'flex';
+        }
+
+        function showEditor() {
+          if (explorerEl) explorerEl.style.display = 'none';
+          if (editorWrapperEl) editorWrapperEl.style.display = 'flex';
+        }
+
+        /* === File Explorer State === */
+        async function loadFiles() {
+          try {
+            var fs = getFS();
+            if (!fs) {
+              renderSampleFiles();
+              return;
+            }
+
+            var entries;
+            if (typeof fs.listDirectory === 'function') {
+              entries = await fs.listDirectory('');
+            } else if (typeof fs.listFiles === 'function') {
+              entries = await fs.listFiles('');
+              entries = entries.map(function(f) { return { name: f.name, path: f.path || f.name, kind: f.kind || (f.type === 'directory' ? 'directory' : 'file') }; });
+            } else {
+              throw new Error('No list method available');
+            }
+
+            if (!entries || !entries.length) {
+              renderSampleFiles();
+              return;
+            }
+            renderFileList(entries);
+          } catch (e) {
+            console.error('[>edit] Failed to list files:', e);
+            renderSampleFiles();
+          }
+        }
+
+        function renderSampleFiles() {
+          var sampleFiles = [
+            { name: 'README.md', path: 'README.md', kind: 'file' },
+            { name: 'build.gradle', path: 'build.gradle', kind: 'file' },
+            { name: 'config.json', path: 'config.json', kind: 'file' },
+            { name: 'data.csv', path: 'data.csv', kind: 'file' },
+            { name: 'notes.txt', path: 'notes.txt', kind: 'file' }
+          ];
+          renderFileList(sampleFiles);
+        }
+
+        function renderFileList(files) {
+          if (!fileListEl) return;
+          fileListEl.innerHTML = '';
+          if (!files || !files.length) {
+            fileListEl.innerHTML = '<div style="padding:16px; color:var(--text-dim);">No files available. Create one using + Create.</div>';
+            return;
+          }
+
+          files.filter(function(f) {
+            return f.kind !== 'directory';
+          }).forEach(function(file) {
+            var ext = file.name.split('.').pop().toLowerCase();
+            var badgeClass = getExtensionBadgeClass(ext);
+            var card = document.createElement('div');
+            card.className = 'file-card';
+            card.innerHTML =
+               '<div class="file-card-top" onclick="window.openFile(\'' + file.name + '\')">' +
+                '<div class="file-info">' +
+                  '<span class="ext-badge ' + badgeClass + '">.' + ext + '</span>' +
+                  '<span class="file-name">' + file.name + '</span>' +
+                '</div>' +
+                '<svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg>' +
+              '</div>' +
+              '<div class="card-divider"></div>' +
+              '<div class="file-card-actions">' +
+                '<a class="action-link" href="#" onclick="window.shareFile(\'' + file.name + '\');return false;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.72 19.72 0 0 1-8.63-3 19.72 19.72 0 0 1-8.63 3 2 2 0 0 1-2.18-2v-3M8 12l4-4 4 4m0 0-4 4-4-4"/></svg>Share</a>' +
+                '<a class="action-link" href="#" onclick="window.renameFile(\'' + file.name + '\');return false;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><path d="M12 20h9"/><path d="M15.41 3.76l5.83 5.83a2 2 0 0 1 0 2.82l-.72.72a.75.75 0 0 1-1.06 0L7.8 8.15a.75.75 0 0 1 0-1.06l.72-.72h0a2 2 0 0 1 2.82 0Z"/><path d="M9 16l-1.29-1.29a6 6 0 0 1 2.29-3.71L17 8l3 3-7 7-3 1v1a1 1 0 0 1-1 1z"/></svg>Rename</a>' +
+                '<a class="action-link" href="#" onclick="window.removeFile(\'' + file.name + '\');return false;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Remove</a>' +
+              '</div>';
+            fileListEl.appendChild(card);
+          });
+        }
+
+        /* === File Operations === */
+        window.openFile = function(filePath) {
+          var ext = filePath.split('.').pop().toLowerCase();
+          var badgeClass = getExtensionBadgeClass(ext);
+
+          if (window.MateyIDE && window.MateyIDE.prototype && editorContainerEl) {
+            if (!window.mateyIDE || !window.mateyIDE.ide) {
+              showEditor();
+              var provider = {};
+              if (window.MateyByok) {
+                provider = window.MateyByok.getProvider('text') || {};
+              }
+              window.mateyIDE = window.mateyIDE || {};
+              try {
+                window.mateyIDE.ide = new window.MateyIDE('edit-editor-container', provider);
+              } catch(e) {
+                console.error('[>edit] IDE init failed:', e);
+              }
+            }
+            if (window.mateyIDE && window.mateyIDE.ide) {
+              try {
+                window.mateyIDE.ide.openFile(filePath);
+              } catch(e) {
+                console.error('[>edit] openFile failed:', e);
+              }
+            }
+            activeFilePath = filePath;
+            document.getElementById('edit-file-path').innerText = filePath;
+            document.getElementById('edit-lang-badge').innerText = ext.toUpperCase().slice(0, 4);
+          } else {
+            var fs = getFS();
+            if (fs && fs.readFile) {
+              fs.readFile(filePath).then(function(content) {
+                showEditor();
+                activeFilePath = filePath;
+                document.getElementById('edit-file-path').innerText = filePath;
+                document.getElementById('edit-lang-badge').innerText = ext.toUpperCase().slice(0, 4);
+                if (window.mateyIDE && window.mateyIDE.ide) {
+                  window.mateyIDE.ide.openFile(filePath);
+                } else {
+                  alert('File: ' + filePath + '\n\nContent:\n' + content);
+                }
+              }).catch(function(err) {
+                alert('Cannot read file: ' + err.message);
+              });
+            } else {
+              alert('Opening ' + filePath + ' in editor...');
+            }
+          }
+        };
+
+        window.shareFile = function(filePath) {
+          var fs = getFS();
+          if (!fs) return;
+          fs.readFile(filePath).then(function(content) {
+            if (navigator.share) {
+              navigator.share({ title: filePath, text: content }).catch(function(){});
+            } else {
+              navigator.clipboard.writeText(content);
+              alert('Copied ' + filePath + ' to clipboard');
+            }
+          }).catch(function(err) {
+            alert('Cannot read file: ' + err.message);
+          });
+        };
+
+        window.renameFile = function(oldName) {
+          var newName = prompt('New filename:', oldName);
+          if (!newName || newName === oldName) return;
+          var fs = getFS();
+          if (!fs) return;
+          fs.readFile(oldName).then(function(content) {
+            return fs.writeFile(newName, content).then(function() {
+              if (fs.deleteFile) return fs.deleteFile(oldName);
+            });
+          }).then(function() {
+            loadFiles();
+          }).catch(function(err) {
+            alert('Rename failed: ' + err.message);
+          });
+        };
+
+        window.removeFile = function(filePath) {
+          if (!confirm('Remove ' + filePath + '?')) return;
+          var fs = getFS();
+          if (!fs || !fs.deleteFile) return;
+          fs.deleteFile(filePath).then(function() {
+            loadFiles();
+          }).catch(function(err) {
+            alert('Remove failed: ' + err.message);
+          });
+        };
+
+        function createPlaceholderCard(filePath) {
+          if (!fileListEl) return;
+          var ext = filePath.split('.').pop().toLowerCase();
+          var badgeClass = getExtensionBadgeClass(ext);
+          var card = document.createElement('div');
+          card.className = 'file-card';
+          card.innerHTML =
+            '<div class="file-card-top" onclick="window.openFile(\'' + filePath + '\')">' +
+              '<div class="file-info">' +
+                '<span class="ext-badge ' + badgeClass + '">.' + ext + '</span>' +
+                '<span class="file-name">' + filePath + '</span>' +
+              '</div>' +
+              '<svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg>' +
+            '</div>' +
+            '<div class="card-divider"></div>' +
+            '<div class="file-card-actions">' +
+              '<a class="action-link" href="#" onclick="window.shareFile(\'' + filePath + '\');return false;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.72 19.72 0 0 1-8.63-3 19.72 19.72 0 0 1-8.63 3 2 2 0 0 1-2.18-2v-3M8 12l4-4 4 4m0 0-4 4-4-4"/></svg>Share</a>' +
+              '<a class="action-link" href="#" onclick="window.renameFile(\'' + filePath + '\');return false;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><path d="M12 20h9"/><path d="M15.41 3.76l5.83 5.83a2 2 0 0 1 0 2.82l-.72.72a.75.75 0 0 1-1.06 0L7.8 8.15a.75.75 0 0 1 0-1.06l.72-.72h0a2 2 0 0 1 2.82 0Z"/><path d="M9 16l-1.29-1.29a6 6 0 0 1 2.29-3.71L17 8l3 3-7 7-3 1v1a1 1 0 0 1-1 1z"/></svg>Rename</a>' +
+              '<a class="action-link" href="#" onclick="window.removeFile(\'' + filePath + '\');return false;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Remove</a>' +
+            '</div>';
+          fileListEl.appendChild(card);
+        }
+
+        function attachButtonHandlers() {
+          function safeClick(id, handler) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('click', handler);
+          }
+
+          var editBackBtn = document.getElementById('edit-btn-back');
+          if (editBackBtn) {
+            editBackBtn.addEventListener('click', function() {
+              if (window.mateyIDE && window.mateyIDE.ide) {
+                window.mateyIDE.ide.dispose();
+                window.mateyIDE.ide = null;
+              }
+              showExplorer();
+              loadFiles();
+            });
+          }
+
+          safeClick('btn-back', function() {
+            if (window.mateyIDE && window.mateyIDE.ide) {
+              window.mateyIDE.ide.dispose();
+              window.mateyIDE.ide = null;
+            }
+            showExplorer();
+            loadFiles();
+          });
+
+          safeClick('btn-save', function() {
+            if (window.mateyIDE && window.mateyIDE.ide) {
+              window.mateyIDE.ide.saveFile();
+            }
+          });
+
+          safeClick('btn-saveas', function() {
+            if (window.mateyIDE && window.mateyIDE.ide) {
+              window.mateyIDE.ide.saveFileAs();
+            }
+          });
+
+          safeClick('btn-delete', function() {
+            if (window.mateyIDE && window.mateyIDE.ide) {
+              window.mateyIDE.ide.deleteCurrentFile();
+              showExplorer();
+              loadFiles();
+            }
+          });
+
+          safeClick('btn-create', function() {
+            var name = prompt('File name (e.g., script.js):', 'newfile.txt');
+            if (!name) return;
+            var fs = getFS();
+            if (!fs || !fs.writeFile) {
+              createPlaceholderCard(name);
+              return;
+            }
+            fs.writeFile(name, '').then(function() {
+              loadFiles();
+            }).catch(function(err) {
+              console.error('[>edit] Create failed:', err);
+              createPlaceholderCard(name);
+            });
+          });
+
+          if (fileInputEl) {
+            fileInputEl.addEventListener('change', function(e) {
+              var fs = getFS();
+              var files = e.target.files;
+              if (!fs || !fs.writeFile) {
+                var promises = [];
+                for (var i = 0; i < files.length; i++) {
+                  var f = files[i];
+                  promises.push(new Promise(function(resolve) {
+                    var reader = new FileReader();
+                    reader.onload = function(evt) { resolve(); };
+                    reader.readAsText(f);
+                  }));
+                }
+                Promise.all(promises).then(function() {
+                  loadFiles();
+                });
+                return;
+              }
+              var promises = [];
+              for (var i = 0; i < files.length; i++) {
+                var f = files[i];
+                var reader = new FileReader();
+                promises.push(new Promise(function(resolve) {
+                  reader.onload = function(evt) {
+                    fs.writeFile(f.name, evt.target.result).then(resolve).catch(resolve);
+                  };
+                  reader.readAsText(f);
+                }));
+              }
+              Promise.all(promises).then(function() {
+                loadFiles();
+              });
+            });
+          }
+
+          safeClick('btn-import', function() {
+            if (fileInputEl) fileInputEl.click();
+          });
+
+            if (extensionsViewEl) {
+            safeClick('btn-info-overlay', function() {
+              extensionsViewEl.classList.add('active');
+            });
+
+            safeClick('btn-info', function() {
+              extensionsViewEl.classList.add('active');
+            });
+
+            safeClick('btn-close-info', function() {
+              extensionsViewEl.classList.remove('active');
+            });
+          }
+        }
+
+        /* === Voice Input === */
+        function setupVoiceInput() {
+          var micBtn = document.getElementById('edit-mic-btn');
+          if (!micBtn) return;
+
+          micBtn.addEventListener('click', function() {
+            if (window.MateySpeech && window.MateySpeech.isRecording) {
+              stopVoiceInput();
+            } else {
+              startVoiceInput();
+            }
+          });
+
+          function startVoiceInput() {
+            if (!window.MateySpeech) {
+              alert('STT engine not loaded');
+              return;
+            }
+            micBtn.disabled = true;
+            micBtn.classList.add('recording');
+            var statusEl = document.getElementById('edit-status');
+            if (statusEl) statusEl.innerText = 'Listening...';
+
+            window.MateySpeech.setDomain('editor');
+
+            var callback = function(result) {
+              if (result && result.text) {
+                if (statusEl) statusEl.innerText = 'Voice: ' + result.text.substring(0, 40);
+                if (window.mateyIDE && window.mateyIDE.ide && window.mateyIDE.ide.view) {
+                  var view = window.mateyIDE.ide.view;
+                  var pos = view.state.selection.main;
+                  view.dispatch({
+                    changes: { from: pos.from, to: pos.to, insert: result.text }
+                  });
+                }
+              }
+              micBtn.disabled = false;
+              micBtn.classList.remove('recording');
+              if (statusEl) statusEl.innerText = 'Ready';
+            };
+
+            if (typeof window.MateySpeech.startRecording === 'function') {
+              window.MateySpeech.startRecording(callback);
+            } else {
+              micBtn.disabled = false;
+              micBtn.classList.remove('recording');
+            }
+          }
+
+          function stopVoiceInput() {
+            if (window.MateySpeech) {
+              window.MateySpeech.stopRecording();
+            }
+            micBtn.disabled = false;
+            micBtn.classList.remove('recording');
+            var statusEl = document.getElementById('edit-status');
+            if (statusEl) statusEl.innerText = 'Ready';
+          }
+        }
+
+        /* === Command Palette === */
+        function setupKeyboardShortcuts() {
+          document.addEventListener('keydown', function(e) {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+              e.preventDefault();
+              var cmd = prompt('Enter command (open, save, save as, delete, voice, back):', '');
+              if (!cmd) return;
+              cmd = cmd.toLowerCase().trim();
+              switch (cmd) {
+                case 'open':
+                  var path = prompt('File path:', '');
+                  if (path) window.openFile(path);
+                  break;
+                case 'save':
+                  if (window.mateyIDE && window.mateyIDE.ide) window.mateyIDE.ide.saveFile();
+                  break;
+                case 'save as':
+                  if (window.mateyIDE && window.mateyIDE.ide) window.mateyIDE.ide.saveFileAs();
+                  break;
+                case 'delete':
+                  if (window.mateyIDE && window.mateyIDE.ide) window.mateyIDE.ide.deleteCurrentFile();
+                  break;
+                case 'voice':
+                case 'voice input':
+                case 'mic':
+                  setupVoiceInput();
+                  break;
+                case 'back':
+                  showExplorer();
+                  loadFiles();
+                  break;
+                default:
+                  alert('Commands: open, save, save as, delete, voice, back');
+              }
+            }
+            if ((e.metaKey || e.ctrlKey) && e.key === 's' && editorWrapperEl && editorWrapperEl.style.display !== 'none') {
+              e.preventDefault();
+              if (window.mateyIDE && window.mateyIDE.ide) window.mateyIDE.ide.saveFile();
+            }
+            if (e.key === 'Escape' && editorWrapperEl && editorWrapperEl.style.display !== 'none') {
+              if (window.mateyIDE && window.mateyIDE.ide) {
+                window.mateyIDE.ide.dispose();
+                window.mateyIDE.ide = null;
+              }
+              showExplorer();
+              loadFiles();
+            }
+          });
+        }
+
+        /* === Init === */
+        function renderPills() {
+          var grid = document.getElementById('pill-grid-container');
+          if (!grid) return;
+          grid.innerHTML = SUPPORTED_EXTENSIONS_FOR_PILLS.map(function(ext) {
+            return '<span class="pill">' + ext + '</span>';
+          }).join('');
+        }
+
+        function bootstrap() {
+          try {
+            renderPills();
+            if (explorerEl) explorerEl.style.display = 'flex';
+            if (editorWrapperEl) editorWrapperEl.style.display = 'none';
+            loadFiles().catch(function(e) {
+              console.error('[>edit] File load error:', e);
+              renderSampleFiles();
+            });
+          } catch (e) {
+            console.error('[>edit] Bootstrap error:', e);
+            if (fileListEl) {
+              renderSampleFiles();
+            }
+          }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+          attachButtonHandlers();
+          setupVoiceInput();
+          setupKeyboardShortcuts();
+          bootstrap();
+        });
+
+        // Fallback if DOMContentLoaded already fired
+        if (document.readyState !== 'loading') {
+          attachButtonHandlers();
+          setupVoiceInput();
+          setupKeyboardShortcuts();
+          bootstrap();
+        }
+      })();
+    </script>
+  </body>
+</html>
