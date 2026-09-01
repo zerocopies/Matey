@@ -7,6 +7,18 @@
       html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
       .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; }
     </style>
+    <script>
+      /* Instant matte background — set --app-bg before first paint so the
+         html { background-color: var(--app-bg) !important } rule resolves
+         to the themed color immediately. No white flash. */
+      try {
+        var _bgs = { graphitexx: '#000000', 'cool-panda': '#1a1d23', minimal: '#fafafa' };
+        var _t = localStorage.getItem('matey-theme') || 'graphitexx';
+        var _bg = _bgs[_t] || _bgs.graphitexx;
+        document.documentElement.style.setProperty('--app-bg', _bg);
+        document.documentElement.style.backgroundColor = _bg;
+      } catch (e) {}
+    </script>
     <meta name="description" content="Matey — your on-device personal AI assistant with BYOK AI providers, offline Whisper STT, encrypted journal, and syntax-driven note vault." />
     <link rel="icon" href="./images/matey-logo.png" type="image/png" />
     <meta name="theme-color" content="#000000" />
@@ -17,6 +29,9 @@
     <link rel="stylesheet" href="./matey-preview.css?v=100" />
     <script src="./matey-boot.js?v=100"></script>
     <script src="./matey-sentry.js?v=100"></script>
+    <script src="./matey-vector-search.js?v=100"></script>
+    <script src="./matey-shell-guard.js?v=100"></script>
+    <script src="./matey-native-shell.js?v=100"></script>
   </head>
   <body>
      <div class="app-shell">
@@ -33,9 +48,9 @@
           <button type="button" id="agent-ide-toggle" class="ide-toggle-btn" aria-label="Toggle IDE Mode">
             <span class="ide-toggle-text">IDE</span>
           </button>
-          <div class="header-actions">
-            <svg class="usage-ring" viewBox="0 0 36 36" id="usage-ring" aria-hidden="true"><circle class="usage-ring-track" cx="18" cy="18" r="15"></circle><g id="usage-ring-segments"><circle class="usage-ring-segment s1" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(0 18 18)"></circle><circle class="usage-ring-segment s2" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(90 18 18)"></circle><circle class="usage-ring-segment s3" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(180 18 18)"></circle><circle class="usage-ring-segment s4" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(270 18 18)"></circle></g><text x="18" y="21" text-anchor="middle" id="usage-ring-text">65</text></svg>
-            <button class="incognito-trigger" type="button" aria-label="Incognito" title="Incognito">
+           <div class="header-actions">
+             <svg class="usage-ring" viewBox="0 0 36 36" id="usage-ring" aria-hidden="true"><circle class="usage-ring-track" cx="18" cy="18" r="15"></circle><g id="usage-ring-segments"><circle class="usage-ring-segment s1" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(0 18 18)"></circle><circle class="usage-ring-segment s2" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(90 18 18)"></circle><circle class="usage-ring-segment s3" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(180 18 18)"></circle><circle class="usage-ring-segment s4" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(270 18 18)"></circle></g></svg>
+             <button class="incognito-trigger" type="button" aria-label="Incognito" title="Incognito">
               <svg class="incognito-ghost" viewBox="0 0 100 120" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path class="ghost-body" d="M 50 4 C 20 4 5 28 5 52 L 5 92 C 5 105 15 105 20 98 C 25 105 35 105 40 98 C 45 105 55 105 60 98 C 65 105 75 105 80 98 C 85 105 95 105 95 92 L 95 52 C 95 28 80 4 50 4 Z"/>
                 <ellipse class="ghost-eye" cx="35" cy="50" rx="10" ry="15"/>
@@ -48,12 +63,12 @@
                 <path class="ghost-teeth" d="M 40 80 L 43 85 L 46 80 L 49 85 L 52 80 L 55 85 L 58 80 L 60 82"/>
               </svg>
             </button>
-            <button class="icon-btn settings-trigger" type="button" aria-label="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <line x1="3" y1="12" x2="21" y2="12"/>
-                <line x1="3" y1="18" x2="21" y2="18"/>
-              </svg></button>
-          </div>
+             <button class="icon-btn settings-trigger" type="button" aria-label="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                 <line x1="3" y1="6" x2="21" y2="6"/>
+                 <line x1="3" y1="12" x2="21" y2="12"/>
+                 <line x1="3" y1="18" x2="21" y2="18"/>
+               </svg></button>
+           </div>
         </div>
       </header>
 
@@ -90,7 +105,7 @@
             <button type="button" data-key=")">)</button>
           </div>
           <div class="md-compose-box">
-            <input type="file" id="md-attach-input" accept="image/*,.pdf,.doc,.docx" multiple style="display:none" />
+            <input type="file" id="md-attach-input" accept="*" multiple style="display:none" />
             <button class="md-attach-btn" id="md-attach" type="button" aria-label="Attach file">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             </button>
@@ -118,6 +133,7 @@
     <script src="./matey-ai.js?v=100"></script>
     <script src="./matey-tabs.js?v=100"></script>
     <script src="./matey-byok.js?v=100"></script>
+    <script src="./matey-provider-presets.js?v=100"></script>
      <script src="./matey-saf.js?v=100"></script>
      <script type="module" src="./matey-agent-bundle.js?v=100"></script>
      <script src="./matey-agent-init.js?v=100"></script>
@@ -439,6 +455,33 @@
               }).then(function (result) {
                 resp.innerHTML = renderMarkdown(result || 'Agent completed.');
                 convHistory.push({ role: 'assistant', content: result || '' });
+                var tid = window.mateyAgent._currentTaskId;
+                if (tid && window.MateyWorkspaceManager && window.MateyWorkspaceManager.getTaskSnapshot && window.MateyWorkspaceManager.getTaskSnapshot(tid)) {
+                  var undoBtn = document.createElement('button');
+                  undoBtn.className = 'agent-undo-btn';
+                  undoBtn.textContent = 'Undo Task Changes';
+                  undoBtn.style.cssText = 'margin-top:8px;padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--fg);font-size:12px;cursor:pointer;opacity:0.8;';
+                  undoBtn.addEventListener('click', function () {
+                    if (!window.MateyWorkspaceManager || !window.MateyWorkspaceManager.rollbackTask) return;
+                    var tid = window.mateyAgent ? window.mateyAgent._currentTaskId : null;
+                    if (!tid) return;
+                    window.MateyWorkspaceManager.rollbackTask(tid).then(function (ok) {
+                      if (ok) {
+                        undoBtn.textContent = 'Changes Reverted';
+                        undoBtn.disabled = true;
+                        undoBtn.style.opacity = '0.4';
+                        if (window.AgentToast) { AgentToast.show('Workspace restored to pre-task snapshot.', false); }
+                        else { alert('Workspace restored to pre-task snapshot.'); }
+                      } else {
+                        undoBtn.textContent = 'Nothing to Revert';
+                        undoBtn.disabled = true;
+                        undoBtn.style.opacity = '0.4';
+                      }
+                    });
+                  });
+                  resp.appendChild(document.createElement('br'));
+                  resp.appendChild(undoBtn);
+                }
                 scrollToBottom();
               }).catch(function (err) {
                 resp.innerHTML = renderMarkdown('Agent error: ' + (err.message || err));
