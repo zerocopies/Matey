@@ -1,4 +1,12 @@
 :root {
+  /* Default bg prevents white flash before JS sets the themed value */
+  --app-bg: #000000;
+  --app-fg: #ffffff;
+  --app-muted: #a3a3a3;
+  --app-border: #2A2A2A;
+  --app-accent: #4f46e5;
+  --app-surface: #080808;
+  --app-surface-raised: #1a1a1a;
   /* Grid & spacing — 4px base (blueprint) */
   --space-xs: 4px;
   --space-sm: 8px;
@@ -79,7 +87,7 @@
   --header-safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-html, body {
+ html, body {
   background-color: var(--app-bg);
   color: var(--app-fg);
 }
@@ -3361,6 +3369,21 @@ body {
 }
 .byok-btn-primary { background: var(--accent); color: var(--app-fg); }
 .byok-btn-secondary { background: var(--surface); color: var(--text); }
+.byok-detected { font-size: 11px; color: var(--accent); margin-top: 4px; min-height: 14px; }
+.byok-model-loading { font-size: 11px; color: var(--text-dim); margin-top: 4px; min-height: 14px; }
+.byok-status {
+  margin-top: 10px; padding: 10px 12px; border-radius: 10px;
+  font-size: 13px; line-height: 1.45; display: none;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+}
+.byok-status.visible { display: block; }
+.byok-status.ok { border-color: #22c55e55; background: #22c55e10; color: var(--text); }
+.byok-status.ok .byok-status-title { color: #22c55e; }
+.byok-status.fail { border-color: #f8717155; background: #f8717110; color: var(--text); }
+.byok-status.fail .byok-status-title { color: #f87171; }
+.byok-status-title { font-weight: 600; margin-bottom: 2px; }
+.byok-status-detail { font-size: 12px; color: var(--text-dim); }
+.byok-status-detail span { font-weight: 600; color: var(--text); }
 .byok-empty { font-size: 13px; color: var(--text-dim); font-style: italic; padding: 4px 0; }
 .byok-provider-item {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -4543,6 +4566,7 @@ body {
      min-height: 0;
      display: flex;
      flex-direction: row;
+     flex-wrap: wrap;
      align-items: center;
      background: var(--surface);
      border-radius: 16px;
@@ -4598,10 +4622,70 @@ body {
 .md-voice-btn:hover {
   opacity: 0.9;
 }
-.md-voice-btn.mic-active {
-  background: #ffffff;
-  color: #000000;
+
+/* ===== Agent tab — attached file pills in the input bar =====
+   Universal file attachments: any format (accept="*/*"). Pills show an
+   extension icon (or image thumbnail), file name, and a quick ✕ remove. */
+.md-attach-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 0 2px;
+  flex-basis: 100%;
+  align-items: center;
+}
+.md-attach-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 180px;
+  padding: 3px 8px 3px 6px;
+  background: var(--app-surface-raised, var(--app-surface));
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--app-fg);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.md-attach-pill-icon {
+  font-size: 13px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.md-attach-pill-thumb {
+  width: 18px;
+  height: 18px;
+  object-fit: cover;
   border-radius: 50%;
+  flex-shrink: 0;
+}
+.md-attach-pill-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+}
+.md-attach-pill-remove {
+  border: none;
+  background: transparent;
+  color: var(--app-muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.md-attach-pill-remove:hover {
+  color: var(--app-fg);
+  background: var(--app-surface);
+}
+.md-voice-btn.mic-active {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #ffffff;
+  border-radius: 9999px;
+  animation: matey-mic-pulse 1s ease-in-out infinite;
 }
 .md-voice-status {
   grid-column: 1 / -1;
@@ -4795,6 +4879,26 @@ body {
 /* Helper text — light gray, same style as .md-editor::placeholder */
 .vots-link-gate-desc { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
 
+/* ===== MY-VOTS landing hard purge — no floating white card/pill =====
+   Everything directly beneath the URL input + "Start Entry" button must sit
+   directly on the clean (dark) page background. Kill any raised surface,
+   border, radius or shadow that could paint a floating card overlapping the
+   helper subtitle. */
+#vots-link-gate,
+#vots-link-gate .vots-link-field,
+#vots-link-gate .vots-link-gate-desc,
+#vots-link-gate #vots-link-helper {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+}
+#vots-link-gate .vots-link-submit {
+  background: var(--accent);
+  border-radius: 12px;
+}
+
 /* ===== Card Surface Context — overrides text variables for content on raised card surfaces (--surface-raised) ===== */
 /* Derives muted/secondary/dim tints from --text-on-card so light themes get dark-on-light text */
 /* and dark themes get high-contrast light-on-dark text automatically. */
@@ -4807,10 +4911,11 @@ body {
 }
 
 /* Theme-aware card surfaces and file list cards */
+/* NOTE: .vots-card removed — dead selector from the old MY-VOTS "source card"
+   UI. The landing gate is plain/dark; no floating white card may render. */
 .card-surface,
 .surface-raised,
-.fs-item,
-.vots-card {
+.fs-item {
   background: var(--app-surface-raised, var(--app-surface));
 }
 
@@ -5859,14 +5964,15 @@ body {
   border-color: var(--accent);
 }
 .matey-mic-inline.mic-active {
-  background: var(--accent);
-  color: var(--bg);
-  animation: pulse 1.5s infinite;
-  border-color: var(--accent);
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #ffffff;
+  border-radius: 9999px;
+  animation: matey-mic-pulse 1s ease-in-out infinite;
 }
 .matey-mic-inline.mic-active:hover {
-  background: var(--accent);
-  color: var(--bg);
+  background: #22c55e;
+  color: #ffffff;
 }
 .matey-mic-inline:focus-visible {
   outline: 2px solid var(--accent);
@@ -5897,15 +6003,16 @@ body {
 }
 
 .md-mic-btn.mic-active {
-  background: var(--accent);
-  color: var(--bg);
-  animation: pulse 1.5s infinite;
-  border-color: var(--accent);
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #ffffff;
+  border-radius: 9999px;
+  animation: matey-mic-pulse 1s ease-in-out infinite;
 }
 
 .md-mic-btn.mic-active:hover {
-  background: var(--accent);
-  color: var(--bg);
+  background: #22c55e;
+  color: #ffffff;
 }
 .md-mic-btn:focus-visible {
   outline: 2px solid var(--accent);
@@ -6078,15 +6185,46 @@ body {
 
 .matey-mic-btn.listening,
 .matey-mic-btn.mic-active {
-  background: var(--accent-gold);
-  border-color: var(--accent-gold);
-  color: var(--app-fg);
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #ffffff;
+  border-radius: 9999px;
   animation: matey-mic-pulse 1s ease-in-out infinite;
 }
 
 @keyframes matey-mic-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.08); }
+}
+
+/* ===== Universal mic active visual — oval green container (ALL tabs) =====
+   AGENT, JOURNAL, MY-VOTS and EDITOR share one recording look: a green pill
+   (#22c55e / hover #16a34a), 9999px radius, white mic icon, subtle pulse. */
+.md-voice-btn.mic-active-oval,
+.md-mic-btn.mic-active-oval,
+.matey-mic-inline.mic-active-oval,
+.matey-mic-btn.mic-active-oval,
+.matey-mic-btn.listening.mic-active-oval {
+  background: #22c55e !important;
+  border-color: #22c55e !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+  animation: matey-mic-pulse 1s ease-in-out infinite !important;
+}
+.md-voice-btn.mic-active-oval:hover,
+.md-mic-btn.mic-active-oval:hover,
+.matey-mic-inline.mic-active-oval:hover,
+.matey-mic-btn.mic-active-oval:hover {
+  background: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #ffffff !important;
+}
+.matey-mic-btn.mic-active-oval svg,
+.md-voice-btn.mic-active-oval svg,
+.md-mic-btn.mic-active-oval svg,
+.matey-mic-inline.mic-active-oval svg {
+  stroke: #ffffff !important;
+  fill: none !important;
 }
 
 .matey-mic-btn:focus-visible {

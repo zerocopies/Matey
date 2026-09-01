@@ -7,6 +7,18 @@
       html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: #e8e8e8; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif; }
       .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; display: flex; flex-direction: column; }
     </style>
+    <script>
+      /* Instant matte background — set --app-bg before first paint so the
+         html { background-color: var(--app-bg) !important } rule resolves
+         to the themed color immediately. No white flash. */
+      try {
+        var _bgs = { graphitexx: '#000000', 'cool-panda': '#1a1d23', minimal: '#fafafa' };
+        var _t = localStorage.getItem('matey-theme') || 'graphitexx';
+        var _bg = _bgs[_t] || _bgs.graphitexx;
+        document.documentElement.style.setProperty('--app-bg', _bg);
+        document.documentElement.style.backgroundColor = _bg;
+      } catch (e) {}
+    </script>
     <meta name="description" content="Matey — your on-device personal AI assistant with BYOK AI providers, offline Whisper STT, encrypted journal, and syntax-driven note vault." />
     <link rel="icon" href="./images/matey-logo.png" type="image/png" />
     <meta name="theme-color" content="#000000" />
@@ -112,7 +124,7 @@
             <!-- Main content textarea (mirrors journal-content-input) -->
             <div class="journal-content-wrapper" id="vots-content-wrapper">
               <textarea class="journal-content-input" id="vots-content-input" placeholder="What's your response?" rows="8"></textarea>
-              <input type="file" id="vots-attach-input" accept="image/*" style="display:none" />
+              <input type="file" id="vots-attach-input" accept="*/*" style="display:none" />
               <div class="journal-attachments" id="vots-attachments"></div>
             </div>
 

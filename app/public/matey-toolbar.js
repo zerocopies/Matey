@@ -193,16 +193,20 @@
         window.MateyMic.onStateChange(function (state) {
           if (state.active) {
             micBtn.classList.add('listening');
+            micBtn.classList.add('mic-active-oval');
             micBtn.innerHTML = MIC_SVG_LISTENING;
-            micBtn.style.background = '#22ff22';
-            micBtn.style.borderColor = '#22ff22';
-            micBtn.style.color = '#000';
+            micBtn.style.background = '#22c55e';
+            micBtn.style.borderColor = '#22c55e';
+            micBtn.style.color = '#ffffff';
+            micBtn.style.borderRadius = '9999px';
           } else {
             micBtn.classList.remove('listening');
+            micBtn.classList.remove('mic-active-oval');
             micBtn.innerHTML = MIC_SVG_IDLE;
             micBtn.style.background = '';
             micBtn.style.borderColor = '';
             micBtn.style.color = '';
+            micBtn.style.borderRadius = '';
           }
         });
       }

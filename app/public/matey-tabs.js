@@ -1,13 +1,16 @@
-/* Matey Tabs — Draggable reorder with long-press + swipe navigation, localStorage persistence */
+/* Matey Tabs — Draggable reorder + smooth navigation with cached repeat views.
+ * First visit loads normally; return visits to a tab are instant (cached DOM swap). */
 (function () {
   'use strict';
-
   var TAB_ORDER = ['lifestyle', 'vots', 'editor', 'journal', 'agent'];
   var LONG_PRESS_MS = 800;
   var isDragging = false, dragTab = null, dragStartX = 0, dragStartY = 0;
   var longPressTimer = null, touchMoved = false, placeholder = null, tabsContainer = null;
   var mouseDownTab = null;
-  var navOverlay = null;
+
+  /* --- Navigation cache: id -> mainHtml --- */
+  var _navCache = {};
+  var _currentTab = null;
 
   function loadOrder() {
     try {
@@ -17,71 +20,89 @@
     return TAB_ORDER.slice();
   }
   var order = loadOrder();
-
   function saveOrder(o) { try { localStorage.setItem('matey-tab-order', JSON.stringify(o)); } catch (e) {} }
 
   function tabUrl(id) {
-    return ({ 'lifestyle': './lifestyle.html', 'vots': './vots.html', 'editor': './raw-editor.html', 'journal': './journal.html', 'agent': './preview.html#agent' })[id] || '#';
+    return ({ 'lifestyle': './lifestyle.html', 'vots': './vots.html', 'editor': './raw-editor.html', 'journal': './journal.html', 'agent': './preview.html' })[id] || '#';
   }
 
-  function ensureNavOverlay() {
-    if (!navOverlay) {
-      navOverlay = document.createElement('div');
-      navOverlay.className = 'matey-nav-overlay';
-      navOverlay.innerHTML = '<div class="matey-nav-spinner"></div>';
-      document.body.appendChild(navOverlay);
-      navOverlay.offsetHeight;
+  function tabLabel(id) {
+    return ({ 'lifestyle': 'Lifestyle', 'vots': 'My-VOTS', 'editor': '>edit', 'journal': 'Journal', 'agent': '>agent' })[id] || id;
+  }
+
+  function detectActive() {
+    var path = window.location.pathname.replace(/\/$/, ''), hash = window.location.hash || '';
+    if (path.indexOf('lifestyle') !== -1) return 'lifestyle';
+    if (path.indexOf('vots') !== -1) return 'vots';
+    if (path.indexOf('raw-editor') !== -1) return 'editor';
+    if (path.indexOf('journal') !== -1) return 'journal';
+    if (hash === '#agent' || path.indexOf('preview') !== -1 || path.indexOf('agent') !== -1) return 'agent';
+    return 'lifestyle';
+  }
+
+  /* Navigate to a tab. Cached = instant swap. Not cached = full load. */
+  function switchTab(id) {
+    if (id === _currentTab) return;
+
+    /* Cached: instant DOM swap, no page reload */
+    if (_navCache[id]) {
+      var mainEl = document.querySelector('main.content') || document.querySelector('main');
+      if (mainEl) {
+        _currentTab = id;
+        mainEl.innerHTML = _navCache[id];
+        if (tabsContainer) {
+          tabsContainer.querySelectorAll('.tab').forEach(function (t) {
+            t.classList.toggle('active', t.getAttribute('data-tab') === id);
+          });
+        }
+        /* Automatic incognito routing on instant (cached) tab switches —
+           MY-VOTS / JOURNAL force ON; others revert OFF unless manually locked. */
+        if (window.MateyIncognito && window.MateyIncognito.routeForTab) {
+          try { window.MateyIncognito.routeForTab(id); } catch (e) {}
+        }
+        if (window.history && window.history.replaceState) {
+          try { window.history.replaceState({ tab: id }, '', './' + id + (id === 'agent' ? '#agent' : '')); } catch (e) {}
+        }
+        return;
+      }
     }
-    return navOverlay;
+
+    /* Not cached: full page load (page will cache itself on load) */
+    window.location.href = tabUrl(id) + (id === 'agent' ? '#agent' : '');
   }
 
-  function showNavOverlay() {
-    var overlay = ensureNavOverlay();
-    overlay.classList.add('visible');
-  }
-
-  function hideNavOverlay() {
-    if (navOverlay) navOverlay.classList.remove('visible');
-  }
-
-  function tabUrl(id) {
-    return ({ 'lifestyle': './lifestyle.html', 'vots': './vots.html', 'editor': './raw-editor.html', 'journal': './journal.html', 'agent': './preview.html#agent' })[id] || '#';
+  /* Cache current page's main content on load */
+  function cacheCurrentPage() {
+    var id = detectActive();
+    _currentTab = id;
+    var mainEl = document.querySelector('main.content') || document.querySelector('main');
+    if (mainEl && !_navCache[id]) {
+      _navCache[id] = mainEl.innerHTML;
+    }
   }
 
   function renderTabs() {
     var c = document.querySelector('.tabs');
     if (!c) return;
     tabsContainer = c; c.innerHTML = '';
-    var path = window.location.pathname.replace(/\/$/, ''), hash = window.location.hash || '', active = '';
-    if (path.indexOf('lifestyle') !== -1) active = 'lifestyle';
-     else if (path.indexOf('vots') !== -1) active = 'vots';
-    else if (path.indexOf('raw-editor') !== -1) active = 'editor';
-    else if (path.indexOf('journal') !== -1) active = 'journal';
-    else if (hash === '#agent') active = 'agent';
-    else if (path.indexOf('preview') !== -1) active = 'agent';
-    else if (path.indexOf('editor') !== -1) active = 'editor';
-    else active = 'lifestyle';
-      var labels = { 'lifestyle': 'Lifestyle', 'vots': 'My-VOTS', 'editor': '>edit', 'journal': 'Journal', 'agent': '>agent' };
+    var active = detectActive();
+    _currentTab = active;
     order.forEach(function (id) {
       var a = document.createElement('a');
       a.className = 'tab' + (id === active ? ' active' : '');
       a.href = tabUrl(id); a.setAttribute('data-tab', id);
-      a.textContent = labels[id] || id;
+      a.textContent = tabLabel(id);
       c.appendChild(a);
     });
 
-    /* Intercept tab clicks to show navigation overlay */
     c.querySelectorAll('.tab').forEach(function (tab) {
       tab.addEventListener('click', function (e) {
-        var href = tab.getAttribute('href');
-        if (href && href !== '#' && !href.startsWith('#')) {
-          e.preventDefault();
-          showNavOverlay();
-          setTimeout(function () { window.location.href = href; }, 120);
-        }
+        e.preventDefault();
+        var id = tab.getAttribute('data-tab');
+        if (id) switchTab(id);
       });
-     });
-   }
+    });
+  }
 
   function mkPlaceholder() { var d = document.createElement('div'); d.className = 'tab drag-placeholder'; return d; }
 
@@ -167,10 +188,14 @@
   });
   document.addEventListener('mousemove', function (e) { if (isDragging) { e.preventDefault(); moveDrag(e); } });
   document.addEventListener('mouseup', function () { clearTimeout(longPressTimer); mouseDownTab = null; if (isDragging) endDrag(); });
-
   document.addEventListener('click', function (e) { if (isDragging) { e.preventDefault(); e.stopImmediatePropagation(); } isDragging = false; }, true);
 
-  /* init */
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderTabs);
-  else renderTabs();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { cacheCurrentPage(); renderTabs(); });
+  } else {
+    cacheCurrentPage();
+    renderTabs();
+  }
+
+  window.MateyTabs = { switchTab: switchTab, getCurrentTab: function() { return _currentTab; } };
 })();

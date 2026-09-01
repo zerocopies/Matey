@@ -27,7 +27,14 @@
      autoStopTimer: null,
      currentDomain: 'journal',
      currentContextPayload: {},
-     _error: null
+     _error: null,
+     /* Live speech recognition config — continuous session that never drops
+        sentences and always reports interim results while speaking. */
+     recognitionConfig: {
+       continuous: true,
+       interimResults: true,
+       maxAlternatives: 1
+     }
    };
 
   /* ---- Domain detection ---- */
@@ -131,13 +138,16 @@
      notifyStateChange();
 
         // Explicit permission request for Android WebView
+      // High-precision audio capture: enable echo cancellation, noise suppression
+      // and auto gain control so speech recognition gets a clean signal.
+      // Use ideal constraints (not exact) so the device can pick compatible settings.
       navigator.mediaDevices.getUserMedia({
         audio: {
-          channelCount: 1,
-          sampleRate: 16000,
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
+          channelCount: { ideal: 1 },
+          sampleRate: { ideal: 16000 },
+          echoCancellation: { ideal: true },
+          noiseSuppression: { ideal: true },
+          autoGainControl: { ideal: true }
         }
       }).then(function (stream) {
         console.log('[MateyMic] getUserMedia success, streamTracks:', stream.getAudioTracks().length);
@@ -208,45 +218,119 @@
             micState.mediaRecorder.stop();
           }
         }, 60000);
-     }).catch(function (err) {
-       console.error('[MateyMic] getUserMedia error:', err.name || err.message || err, JSON.stringify({
-         name: err.name,
-         message: err.message,
-         code: err.code,
-         constraint: err.constraint,
-         stack: err.stack
-       }));
-       micState.isRecording = false;
-       micState.active = false;
-       micState._error = err.message || err.name || 'Unknown error';
-       updateMicButtonVisual(micBtn, false);
-       notifyStateChange();
-       if (micState.statusText) micState.statusText.textContent = 'Mic error: ' + (err.message || err);
-     });
+      }).catch(function (err) {
+        console.error('[MateyMic] getUserMedia error:', err.name || err.message || err, JSON.stringify({
+          name: err.name,
+          message: err.message,
+          code: err.code,
+          constraint: err.constraint,
+          stack: err.stack
+        }));
+        // Retry with fully relaxed constraints if strict ones failed
+        if (err.name === 'NotReadableError' || err.name === 'OverconstrainedError' || err.name === 'NotFoundError') {
+          console.log('[MateyMic] Retrying with relaxed constraints...');
+          navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+            console.log('[MateyMic] getUserMedia retry success, streamTracks:', stream.getAudioTracks().length);
+            if (micState.statusText) micState.statusText.textContent = 'Listening… (speak now)';
+            var track = stream.getAudioTracks()[0];
+            var settings = track.getSettings();
+            console.log('[MateyMic] Audio track settings:', JSON.stringify({ sampleRate: settings.sampleRate, channelCount: settings.channelCount, label: track.label }));
+            micState.stream = stream;
+            micState.audioChunks = [];
+            micState._totalBytes = 0;
+            var mime = pickMicMimeType();
+            var mediaRecorder = null;
+            try {
+              mediaRecorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+            } catch (mrErr) {
+              try { mediaRecorder = new MediaRecorder(stream); } catch (mrErr2) {
+                micState.isRecording = false;
+                micState.active = false;
+                updateMicButtonVisual(micBtn, false);
+                notifyStateChange();
+                if (micState.statusText) micState.statusText.textContent = 'Recorder unsupported on this device';
+                if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
+                return;
+              }
+            }
+            micState.mediaRecorder = mediaRecorder;
+            mediaRecorder.ondataavailable = function (e) {
+              if (e.data && e.data.size > 0) {
+                micState.audioChunks.push(e.data);
+                micState._totalBytes = (micState._totalBytes || 0) + e.data.size;
+                if (micState.statusText) micState.statusText.textContent = 'Recording… ' + micState.audioChunks.length + ' chunks / ' + micState._totalBytes + ' bytes';
+              }
+            };
+            mediaRecorder.onstop = function () {
+              var blob = new Blob(micState.audioChunks, { type: mime });
+              micState.isRecording = false;
+              micState.active = false;
+              updateMicButtonVisual(micBtn, false);
+              notifyStateChange();
+              if (micState.statusText) micState.statusText.textContent = 'Recorded ' + blob.size + ' bytes — transcribing…';
+              var domain = micState.currentDomain || STT_DOMAINS_DEFAULT;
+              var contextPayload = micState.currentContextPayload || {};
+              processAudioBlob(blob, domain, contextPayload);
+            };
+            mediaRecorder.start(250);
+            micState.autoStopTimer = setTimeout(function () {
+              if (micState.mediaRecorder && micState.mediaRecorder.state === 'recording') {
+                micState.mediaRecorder.stop();
+              }
+            }, 60000);
+            return;
+          }).catch(function (err2) {
+            console.error('[MateyMic] getUserMedia retry also failed:', err2.message || err2);
+            micState.isRecording = false;
+            micState.active = false;
+            micState._error = err2.message || err2.name || 'Unknown error';
+            updateMicButtonVisual(micBtn, false);
+            notifyStateChange();
+            if (micState.statusText) micState.statusText.textContent = 'Mic error: ' + (err2.message || err2);
+          });
+          return;
+        }
+        micState.isRecording = false;
+        micState.active = false;
+        micState._error = err.message || err.name || 'Unknown error';
+        updateMicButtonVisual(micBtn, false);
+        notifyStateChange();
+        if (micState.statusText) micState.statusText.textContent = 'Mic error: ' + (err.message || err);
+      });
    }
 
     function updateMicButtonVisual(btn, isRecording) {
       if (!btn) return;
+      /* Universal mic active visual — oval green container across ALL tabs
+         (AGENT, JOURNAL, MY-VOTS, EDITOR). Matches .mic-active-oval CSS. */
       if (isRecording) {
         btn.classList.add('mic-active');
-        btn.style.background = '#ffffff';
-        btn.style.color = '#000000';
-        btn.style.borderRadius = '50%';
-        // Also update SVG fill
+        btn.classList.add('mic-active-oval');
+        btn.style.background = '#22c55e';
+        btn.style.borderColor = '#22c55e';
+        btn.style.color = '#ffffff';
+        btn.style.borderRadius = '9999px';
+        // White mic icon
         var svg = btn.querySelector('svg');
         if (svg) {
-          svg.setAttribute('fill', '#000000');
-          svg.style.fill = '#000000';
+          svg.setAttribute('fill', 'none');
+          svg.setAttribute('stroke', '#ffffff');
+          svg.style.fill = 'none';
+          svg.style.stroke = '#ffffff';
         }
       } else {
         btn.classList.remove('mic-active');
+        btn.classList.remove('mic-active-oval');
         btn.style.background = '';
+        btn.style.borderColor = '';
         btn.style.color = '';
         btn.style.borderRadius = '';
         var svg = btn.querySelector('svg');
         if (svg) {
           svg.setAttribute('fill', 'none');
-          svg.style.fill = '';
+          svg.setAttribute('stroke', 'currentColor');
+          svg.style.fill = 'none';
+          svg.style.stroke = '';
         }
       }
     }
@@ -594,6 +678,9 @@
     setDomain: function(domain, contextPayload) {
       micState.currentDomain = domain;
       micState.currentContextPayload = contextPayload || {};
+    },
+    getRecognitionConfig: function() {
+      return micState.recognitionConfig;
     },
     setDomainFromInput: function(inputEl) {
       micState.currentDomain = detectDomain(inputEl);

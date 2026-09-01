@@ -360,6 +360,14 @@
     this.isRecording = false;
     this.stream = null;
     this.listeners = [];
+    /* Speech recognizer tuning — continuous session with interim results so live
+       speech is captured fluently without dropping sentences or cutting off early.
+       Applied to any SpeechRecognition instance the engine drives. */
+    this.recognitionConfig = {
+      continuous: true,
+      interimResults: true,
+      maxAlternatives: 1
+    };
   }
 
   UniversalSpeechService.prototype.notifyChange = function () {
@@ -381,9 +389,9 @@
         audio: {
           channelCount: 1,
           sampleRate: 16000,
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
         }
       }).then(function (stream) {
         _this.stream = stream;
@@ -529,6 +537,10 @@
 
   UniversalSpeechService.prototype.getCatalog = function () {
     return STT_MODEL_CATALOG;
+  };
+
+  UniversalSpeechService.prototype.getRecognitionConfig = function () {
+    return this.recognitionConfig;
   };
 
   UniversalSpeechService.prototype.isModelDownloaded = function (modelId) {

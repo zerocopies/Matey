@@ -105,10 +105,11 @@
             <button type="button" data-key=")">)</button>
           </div>
           <div class="md-compose-box">
-            <input type="file" id="md-attach-input" accept="*" multiple style="display:none" />
+            <input type="file" id="md-attach-input" accept="*/*" multiple style="display:none" />
             <button class="md-attach-btn" id="md-attach" type="button" aria-label="Attach file">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             </button>
+            <div class="md-attach-pills" id="md-attach-pills" style="display:none"></div>
             <button class="md-voice-btn" id="md-voice" type="button" aria-label="Voice input">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
             </button>
@@ -147,6 +148,7 @@
       var sendBtn = document.getElementById('md-send');
       var attachBtn = document.getElementById('md-attach');
       var attachInput = document.getElementById('md-attach-input');
+      var pillsBar = document.getElementById('md-attach-pills');
       var pendingFiles = [];
       var convHistory = [];
       var pendingAttachmentText = null;
@@ -313,16 +315,171 @@
         return text;
       }
 
+      /* ===== Universal file attachment support (Agent tab) =====
+         The file input accepts ANY file type (accept all). Text/code documents
+         are read via FileReader.readAsText(); spreadsheets (.csv/.xlsx/.xls)
+         get raw tabular text/rows extracted into the context window; PDF/DOCX
+         keep their existing parsers; images preview inline. */
+      function fileKey(file) {
+        var parts = String(file.name || '').split('.');
+        var ext = parts.length > 1 ? parts.pop().toLowerCase() : '';
+        return { ext: ext, mime: String(file.type || '').toLowerCase() };
+      }
+
+      function readFileAsText(file) {
+        return new Promise(function (resolve) {
+          var reader = new FileReader();
+          reader.onload = function (e) { resolve(e.target.result); };
+          reader.onerror = function () { resolve('[Error reading file]'); };
+          reader.readAsText(file);
+        });
+      }
+
+      function readFileAsArrayBuffer(file) {
+        return new Promise(function (resolve) {
+          var reader = new FileReader();
+          reader.onload = function (e) { resolve(e.target.result); };
+          reader.onerror = function () { resolve(null); };
+          reader.readAsArrayBuffer(file);
+        });
+      }
+
+      function isTextLike(file) {
+        var k = fileKey(file);
+        if (k.mime.indexOf('text/') === 0 || k.mime.indexOf('javascript') !== -1 ||
+            k.mime.indexOf('json') !== -1 || k.mime.indexOf('xml') !== -1 ||
+            k.mime.indexOf('typescript') !== -1) return true;
+        return ['md', 'txt', 'json', 'js', 'mjs', 'cjs', 'ts', 'tsx', 'jsx', 'py',
+                'rb', 'go', 'rs', 'java', 'c', 'cpp', 'h', 'html', 'css', 'scss',
+                'xml', 'yml', 'yaml', 'sh', 'bash', 'zsh', 'conf', 'ini', 'log', 'svg'].indexOf(k.ext) !== -1;
+      }
+
+      function isSpreadsheet(file) {
+        var k = fileKey(file);
+        return k.ext === 'csv' || k.ext === 'xlsx' || k.ext === 'xls' ||
+               k.mime.indexOf('csv') !== -1 || k.mime.indexOf('spreadsheet') !== -1 || k.mime.indexOf('ms-excel') !== -1;
+      }
+
+      /* Convert raw CSV text into bounded ' | '-separated table rows for context. */
+      function extractCsvRows(text) {
+        var rows = String(text).split(/\r?\n/);
+        var out = [];
+        for (var i = 0; i < rows.length && out.length < 250; i++) {
+          var line = rows[i].replace(/\r/g, '').trim();
+          if (!line) continue;
+          // Split on commas outside double-quoted spans.
+          var cells = line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/);
+          out.push(cells.map(function (c) { return c.replace(/^"|"$/g, '').trim(); }).slice(0, 40).join(' | '));
+        }
+        return out.join('\n');
+      }
+
+      /* Minimal offline XLSX reader — inflates xl/sharedStrings.xml and
+         worksheet XML straight from the ZIP container with DecompressionStream
+         (no CDN, fully offline). Flattens cells into raw tabular rows. */
+      function sharedStringsToArray(xml) {
+        var arr = [], re = /<si>([\s\S]*?)<\/si>/gi, m;
+        while ((m = re.exec(xml))) {
+          var text = '', tr = /<t[^>]*>([\s\S]*?)<\/t>/g, t;
+          while ((t = tr.exec(m[1]))) text += t[1];
+          arr.push(text);
+        }
+        return arr;
+      }
+
+      function sheetXmlToRows(sheetXml, shared) {
+        var out = [], rows = sheetXml.split(/<\/row>/i);
+        for (var r = 0; r < rows.length && out.length < 250; r++) {
+          var cells = [], re = /<c([^>]*)>([\s\S]*?)<\/c>/gi, m, hasCell = false;
+          while ((m = re.exec(rows[r]))) {
+            hasCell = true;
+            var type = 'n', tm = /t="([^"]+)"/.exec(m[1]);
+            if (tm) type = tm[1];
+            var val = null, vr;
+            if (type === 's') {
+              vr = /<v>([\s\S]*?)<\/v>/.exec(m[2]);
+              if (vr) { var idx = parseInt(vr[1], 10); if (!isNaN(idx) && shared[idx] != null) val = shared[idx]; }
+            } else if (type === 'inlineStr') {
+              var it = /<t[^>]*>([\s\S]*?)<\/t>/.exec(m[2]);
+              if (it) val = it[1];
+            } else {
+              vr = /<v>([\s\S]*?)<\/v>/.exec(m[2]);
+              if (vr) val = vr[1];
+            }
+            if (val != null) { val = String(val).trim(); if (val) cells.push(val); }
+          }
+          if (hasCell && cells.length) out.push(cells.slice(0, 40).join(' | '));
+        }
+        return out.join('\n');
+      }
+
+      async function extractXlsxText(buffer) {
+        if (!window.DecompressionStream) return null;
+        try {
+          var dv = new DataView(buffer), entries = [], i = 0;
+          while (i + 30 <= dv.byteLength) {
+            if (dv.getUint32(i, true) !== 0x04034b50) { i++; continue; }
+            var compSize = dv.getUint32(i + 18, true);
+            var nameLen = dv.getUint16(i + 26, true);
+            var extraLen = dv.getUint16(i + 28, true);
+            var name = new TextDecoder().decode(new Uint8Array(buffer, i + 30, nameLen));
+            var dataStart = i + 30 + nameLen + extraLen;
+            if (/^(xl\/sharedStrings\.xml|xl\/worksheets\/sheet\d+\.xml)$/.test(name)) {
+              entries.push({ name: name, data: buffer.slice(dataStart, dataStart + compSize) });
+            }
+            i = dataStart + compSize;
+          }
+          if (!entries.length) return null;
+          var texts = { sheets: [] };
+          for (var j = 0; j < entries.length; j++) {
+            var ds = new DecompressionStream('deflate-raw');
+            var stream = new Blob([entries[j].data]).stream().pipeThrough(ds);
+            var inflated = new Uint8Array(await new Response(stream).arrayBuffer());
+            var xml = new TextDecoder().decode(inflated);
+            if (/sharedStrings/.test(entries[j].name)) texts.shared = sharedStringsToArray(xml);
+            else texts.sheets.push(xml);
+          }
+          if (!texts.sheets.length) return null;
+          var out = [];
+          texts.sheets.forEach(function (sheetXml, idx) {
+            var rows = sheetXmlToRows(sheetXml, texts.shared || []);
+            if (rows) out.push('Sheet ' + (idx + 1) + ':\n' + rows);
+          });
+          return out.join('\n---\n');
+        } catch (e) {
+          return null;
+        }
+      }
+
       async function extractFileText(file) {
+        var k = fileKey(file);
+
+        /* Spreadsheets — raw tabular text/rows into the context window */
+        if (isSpreadsheet(file)) {
+          if (k.ext === 'csv' || k.mime.indexOf('csv') !== -1) {
+            var csvText = await readFileAsText(file);
+            return 'CSV "' + file.name + '":\n' + extractCsvRows(csvText);
+          }
+          var buf = await readFileAsArrayBuffer(file);
+          if (!buf) return '[Could not read spreadsheet: ' + file.name + ']';
+          var xlsxText = /xlsx/i.test(k.ext) ? await extractXlsxText(buf) : null;
+          if (xlsxText) return 'Spreadsheet "' + file.name + '":\n' + xlsxText;
+          return '[Spreadsheet attached: ' + file.name + ' — binary spreadsheet container; parser could not extract rows. Convert to CSV for inline tables.]';
+        }
+
+        /* Text / code documents — straight FileReader.readAsText() */
+        if (isTextLike(file)) {
+          var txt = await readFileAsText(file);
+          return 'File "' + file.name + '":\n' + txt;
+        }
+
         var reader = new FileReader();
         return new Promise(function (resolve) {
           reader.onload = function (e) {
             var result = e.target.result;
             var lower = file.type.toLowerCase();
 
-            if (lower.indexOf('text/') !== -1 || lower.indexOf('json') !== -1) {
-              resolve(result);
-            } else if (lower.indexOf('image/') === 0) {
+            if (lower.indexOf('image/') === 0) {
               resolve('[Image attached: ' + file.name + ']');
             } else if (lower === 'application/pdf') {
               try {
@@ -399,6 +556,66 @@
         return { role: 'user', content: content };
       }
 
+      /* ===== Attached-file pills in the input bar (icon + quick ✕ remove) ===== */
+      function extIcon(ext) {
+        var map = {
+          pdf: '📕', doc: '📘', docx: '📘', md: '📝', txt: '📄', rtf: '📄',
+          csv: '📊', xlsx: '📊', xls: '📊', ods: '📊',
+          json: '🧾', xml: '🧾', yml: '🧾', yaml: '🧾',
+          js: '⚙️', mjs: '⚙️', cjs: '⚙️', ts: '⚙️', tsx: '⚙️', jsx: '⚙️',
+          py: '🐍', rb: '💎', go: '🐹', rs: '🦀', java: '☕',
+          html: '🌐', css: '🎨', scss: '🎨', svg: '🖼️', api: '🔌'
+        };
+        return map[String(ext).toLowerCase()] || '📎';
+      }
+
+      function renderFilePills() {
+        if (!pillsBar) return;
+        pillsBar.innerHTML = '';
+        pendingFiles.forEach(function (file, idx) {
+          var k = fileKey(file);
+          var pill = document.createElement('span');
+          pill.className = 'md-attach-pill';
+          if (k.mime.indexOf('image/') === 0) {
+            var img = document.createElement('img');
+            img.className = 'md-attach-pill-thumb';
+            img.src = URL.createObjectURL(file);
+            img.alt = file.name;
+            img.title = file.name;
+            pill.appendChild(img);
+          } else {
+            var ic = document.createElement('span');
+            ic.className = 'md-attach-pill-icon';
+            ic.textContent = extIcon(k.ext);
+            pill.appendChild(ic);
+          }
+          var name = document.createElement('span');
+          name.className = 'md-attach-pill-name';
+          name.textContent = file.name;
+          name.title = file.name;
+          pill.appendChild(name);
+          var rm = document.createElement('button');
+          rm.type = 'button';
+          rm.className = 'md-attach-pill-remove';
+          rm.setAttribute('aria-label', 'Remove ' + file.name);
+          rm.innerHTML = '&times;';
+          rm.addEventListener('click', (function (i) {
+            return function () {
+              pendingFiles.splice(i, 1);
+              renderFilePills();
+            };
+          })(idx));
+          pill.appendChild(rm);
+          pillsBar.appendChild(pill);
+        });
+        pillsBar.style.display = pendingFiles.length ? 'flex' : 'none';
+      }
+
+      function clearPendingFiles() {
+        pendingFiles = [];
+        if (pillsBar) { pillsBar.innerHTML = ''; pillsBar.style.display = 'none'; }
+      }
+
       function sendMessage() {
         var text = input ? input.value.trim() : '';
         if ((!text && pendingFiles.length === 0) || !chat) return;
@@ -424,7 +641,7 @@
           }
 
           clearInput();
-          pendingFiles = [];
+          clearPendingFiles();
 
           var resp = document.createElement('div');
           resp.className = 'agent-msg agent-reply';
@@ -512,26 +729,8 @@
           var files = Array.prototype.slice.call(this.files || []);
           files.forEach(function (file) {
             pendingFiles.push(file);
-            if (file.type.indexOf('image/') === 0) {
-              var url = URL.createObjectURL(file);
-              var msg = document.createElement('div');
-              msg.className = 'agent-msg agent-user';
-              msg.style.cssText = 'max-width:220px;';
-              var img = document.createElement('img');
-              img.src = url;
-              img.style.maxWidth = '200px';
-              img.style.borderRadius = '8px';
-              msg.appendChild(img);
-              chat.appendChild(msg);
-              scrollToBottom();
-            } else {
-              var msg2 = document.createElement('div');
-              msg2.className = 'agent-msg agent-user';
-              msg2.innerHTML = '<small style="opacity:0.7;">📎 ' + escapeHtml(file.name) + ' (' + formatFileSize(file.size) + ')</small>';
-              chat.appendChild(msg2);
-              scrollToBottom();
-            }
           });
+          renderFilePills();
           this.value = '';
         });
       }
