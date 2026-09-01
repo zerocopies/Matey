@@ -1,11 +1,45 @@
-/* Matey Lifestyle — Grooming, Wardrobe, Culinary, Lifestyle with AI learning */
+/* Matey Lifestyle — Grooming, Wardrobe, Culinary, Living, Beat (flat redesign)
+   Shared voice-input + like components defined once here and reused by every
+   Lifestyle screen; flagged as reusable for Journal / Agent chat later. */
 (function () {
   'use strict';
 
   var PERSONA = 'You are Matey, a warm and friendly AI companion who is the user\'s close friend. You are candid, gently witty, and grounded. Talk like a real friend with real rapport. Short, punchy sentences. Light humor. No fluff, no apology loops, no "as an AI" disclaimers. Always on the user\'s side. Respect regional context: the user lives in the UAE — public decency norms matter, it is very hot most of the year. Never restate or re-ask for information already provided. Ask questions ONLY when necessary — if you have enough context to give a good answer, just give it. You understand what you already know about the user from learning history and won\'t repeat questions across conversations.';
 
+  /* ---------- design tokens / accents ---------- */
+  var ACCENTS = {
+    grooming: '#EF9F27',
+    wardrobe: '#378ADD',
+    culinary: '#D85A30',
+    living: '#97C459',
+    livingDeep: '#639922',
+    beat: '#AFA9EC'
+  };
+
+  /* ---------- Tabler outline icons (bundled locally — no CDN) ---------- */
+  var ICON_PATHS = {
+    scissors: '<path d="M6 7m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M6 17m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M8.6 8.6l10.4 10.4"/><path d="M8.6 15.4l10.4 -10.4"/>',
+    shirt: '<path d="M15 4l6 2v5h-3v8a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1v-8h-3v-5l6 -2a3 3 0 0 0 6 0"/>',
+    kitchen: '<path d="M19 3v12h-5c-.023 -3.681 .184 -7.406 5 -12zm0 12v6h-1v-3m-10 -14v17m-3 -17v3a3 3 0 1 0 6 0v-3"/>',
+    home: '<path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/>',
+    activity: '<path d="M3 12h4l3 8l4 -16l3 8h4"/>',
+    mic: '<path d="M9 2m0 3a3 3 0 0 1 3 -3h0a3 3 0 0 1 3 3v5a3 3 0 0 1 -3 3h0a3 3 0 0 1 -3 -3z"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M8 21l8 0"/><path d="M12 17l0 4"/>',
+    heart: '<path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572"/>',
+    x: '<path d="M18 6l-12 12"/><path d="M6 6l12 12"/>',
+    plus: '<path d="M12 5l0 14"/><path d="M5 12l14 0"/>',
+    arrowRight: '<path d="M5 12l14 0"/><path d="M13 18l6 -6"/><path d="M13 6l6 6"/>',
+    camera: '<path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>',
+    chevronLeft: '<path d="M15 6l-6 6l6 6"/>',
+    chevronRight: '<path d="M9 6l6 6l-6 6"/>'
+  };
+
+  function IC(name, size) {
+    return '<svg width="' + (size || 20) + '" height="' + (size || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICON_PATHS[name] || '') + '</svg>';
+  }
+
+  /* ---------- helpers ---------- */
   function $(id) { return document.getElementById(id); }
-  function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   function dataUrlToBase64Block(dataUrl) {
     var m = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
@@ -22,25 +56,32 @@
   }
 
   function getStorage(key, fallback) {
-    try { var v = JSON.parse(localStorage.getItem(key)); return v || fallback; }
+    try { var v = JSON.parse(localStorage.getItem(key)); return (v === null || v === undefined) ? fallback : v; }
     catch (e) { return fallback; }
   }
 
   function setStorage(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
 
+  /* ---------- persistence (localStorage, same keys as before) ---------- */
   var store = {
     bodyProfile: function () { return getStorage('matey-body-profile', {}); },
-    saveBodyProfile: function (p) { setStorage('matey-body-profile', p); },
     groomingLikes: function () { return getStorage('matey-grooming-likes', []); },
     groomingDislikes: function () { return getStorage('matey-grooming-dislikes', []); },
     wardrobeItems: function () { return getStorage('matey-wardrobe-items', []); },
     saveWardrobeItems: function (v) { setStorage('matey-wardrobe-items', v); },
     wardrobeLikes: function () { return getStorage('matey-wardrobe-likes', []); },
-    wardrobeDislikes: function () { return getStorage('matey-wardrobe-dislikes', []); },
     culinaryPrefs: function () { return getStorage('matey-culinary-prefs', {}); },
     saveCulinaryPrefs: function (p) { setStorage('matey-culinary-prefs', p); },
     culinaryLikes: function () { return getStorage('matey-culinary-likes', []); },
-    culinaryDislikes: function () { return getStorage('matey-culinary-dislikes', []); }
+    likes: function (type) { return getStorage('matey-' + type + '-likes', []); },
+    setLikes: function (type, arr) { setStorage('matey-' + type + '-likes', arr); },
+    toggleLike: function (type, id) {
+      var arr = store.likes(type);
+      var idx = arr.indexOf(id);
+      if (idx === -1) { arr.push(id); } else { arr.splice(idx, 1); }
+      store.setLikes(type, arr);
+      return idx === -1;
+    }
   };
 
   function buildLearningContext() {
@@ -51,677 +92,657 @@
     if (bp.height) parts.push('User height: ' + bp.height);
     if (bp.weight) parts.push('User weight: ' + bp.weight);
     if (bp.bodyType) parts.push('User body type: ' + bp.bodyType);
-
     var gl = store.groomingLikes(), gd = store.groomingDislikes();
     if (gl.length) parts.push('Previously liked grooming: ' + gl.join('; '));
     if (gd.length) parts.push('Previously disliked grooming: ' + gd.join('; '));
-
-    var wl = store.wardrobeLikes(), wd = store.wardrobeDislikes();
+    var wl = store.wardrobeLikes(), wd = store.groomingDislikes();
     if (wl.length) parts.push('Previously liked outfits: ' + wl.join('; '));
     if (wd.length) parts.push('Previously disliked outfits: ' + wd.join('; '));
-
-    var cl = store.culinaryLikes(), cd = store.culinaryDislikes();
+    var cl = store.culinaryLikes();
     if (cl.length) parts.push('Previously liked recipes: ' + cl.join('; '));
-    if (cd.length) parts.push('Previously disliked recipes: ' + cd.join('; '));
-
     return parts.length ? '# User Learning Context\n' + parts.join('\n') : '';
   }
 
-  function createModal(id, title, bodyHtml) {
+  /* ---------- Beat usage tracking (local only) ---------- */
+  function weekKey(d) {
+    d = d || new Date();
+    var t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    var day = (t.getDay() + 6) % 7;
+    t.setDate(t.getDate() - day + 3);
+    var firstThu = new Date(t.getFullYear(), 0, 4);
+    var fday = (firstThu.getDay() + 6) % 7;
+    firstThu.setDate(firstThu.getDate() - fday + 3);
+    var wk = 1 + Math.round((t - firstThu) / (7 * 864e5));
+    return t.getFullYear() + '-W' + wk;
+  }
+  function monthKey(d) {
+    d = d || new Date();
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2);
+  }
+  function usageStore() { return getStorage('matey-lifestyle-usage', {}); }
+  function trackUsage(section) {
+    var u = usageStore();
+    if (!u[section]) u[section] = { weekly: {}, monthly: {} };
+    u[section].weekly[weekKey()] = (u[section].weekly[weekKey()] || 0) + 1;
+    u[section].monthly[monthKey()] = (u[section].monthly[monthKey()] || 0) + 1;
+    setStorage('matey-lifestyle-usage', u);
+    updateBeatBadge();
+  }
+  function usageCount(section, period) {
+    var u = usageStore();
+    if (!u[section]) return 0;
+    return period === 'monthly' ? (u[section].monthly[monthKey()] || 0) : (u[section].weekly[weekKey()] || 0);
+  }
+  function updateBeatBadge() {
+    var badge = $('lf-beat-badge');
+    if (!badge) return;
+    var total = 0;
+    ['grooming', 'wardrobe', 'culinary', 'living'].forEach(function (s) { total += usageCount(s, 'weekly'); });
+    badge.textContent = total + '/wk';
+  }
+
+  /* ---------- shared modal shell ---------- */
+  function stopMic(modal) {
+    if (modal._listeningField && window.MateySpeech && typeof MateySpeech.stopListening === 'function' && MateySpeech.isRecording) {
+      try { MateySpeech.stopListening().catch(function () {}); } catch (e) {}
+    }
+    modal._listeningField = null;
+  }
+
+  function createModal(id, title, subtitle, accent) {
     var existing = $(id);
-    if (existing) existing.remove();
+    if (existing) { stopMic(existing); existing.remove(); }
     var modal = document.createElement('div');
     modal.id = id;
     modal.className = 'lifestyle-modal';
+    modal.style.setProperty('--lf-accent', accent || '#8b8b90');
     modal.innerHTML = '<div class="lifestyle-backdrop"></div>' +
       '<div class="lifestyle-dialog">' +
-      '<div class="lifestyle-header"><button class="lifestyle-back" data-back="' + id + '" type="button" aria-label="Back">&#8249;</button><span class="lifestyle-title">' + esc(title) + '</span><button class="lifestyle-close" data-close="' + id + '" type="button" aria-label="Close">&times;</button></div>' +
-      '<div class="lifestyle-body">' + bodyHtml + '</div>' +
-      '</div>';
+      '<div class="lifestyle-header">' +
+      '<button class="lifestyle-back" type="button" aria-label="Back">' + IC('chevronLeft', 22) + '</button>' +
+      '<div class="lifestyle-head-text"><span class="lifestyle-title"></span><span class="lifestyle-subtitle"></span></div>' +
+      '</div><div class="lifestyle-body"></div></div>';
     document.body.appendChild(modal);
-    modal.querySelector('.lifestyle-backdrop').addEventListener('click', function () { modal.remove(); });
-    modal.querySelector('[data-close]').addEventListener('click', function () { modal.remove(); });
-    modal.querySelector('[data-back]').addEventListener('click', function () { modal.remove(); });
+    modal.setTitle = function (t) { modal.querySelector('.lifestyle-title').textContent = t; };
+    modal.setSubtitle = function (s) { modal.querySelector('.lifestyle-subtitle').textContent = s || ''; };
+    modal.setBody = function (html) { var b = modal.querySelector('.lifestyle-body'); b.innerHTML = html; b.scrollTop = 0; };
+    modal.close = function () { stopMic(modal); modal.remove(); };
+    modal.querySelector('.lifestyle-back').addEventListener('click', function () {
+      if (typeof modal._onBack === 'function') modal._onBack(); else modal.close();
+    });
+    modal.querySelector('.lifestyle-backdrop').addEventListener('click', function () { modal.close(); });
+    modal.setTitle(title);
+    modal.setSubtitle(subtitle);
     return modal;
   }
 
   function showLoading(container) {
     container.innerHTML = '<div class="lifestyle-loading"><img src="./images/matey-logo.png" class="ai-thinking-logo" alt="Thinking…" /><p>Analyzing…</p></div>';
   }
-
-  function showResult(container, text) {
-    var formatted = esc(text).replace(/\n/g, '<br>');
-    container.innerHTML = '<div class="lifestyle-result"><pre class="lifestyle-pre">' + formatted + '</pre></div>';
-  }
-
   function showError(container, msg) {
     container.innerHTML = '<div class="lifestyle-error">' + esc(msg) + '</div>';
   }
-
-  function likeDislikeBtns(itemId, type) {
-    return '<div class="lifestyle-actions"><button class="lifestyle-like" data-like="' + itemId + '" data-type="' + type + '">👍 Like</button><button class="lifestyle-dislike" data-like="' + itemId + '" data-type="' + type + '">👎 Dislike</button></div>';
+  function showResult(container, text) {
+    container.innerHTML = '<div class="lifestyle-result"><pre class="lifestyle-pre">' + esc(text).replace(/\n/g, '<br>') + '</pre></div>';
   }
 
-  function wireLikeDislike(container, type) {
-    container.querySelectorAll('.lifestyle-like').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var id = this.dataset.like;
-        var likes = store[type + 'Likes']();
-        if (likes.indexOf(id) === -1) likes.push(id);
-        setStorage('matey-' + type + '-likes', likes);
-        this.textContent = '✓ Liked';
-        this.disabled = true;
-        container.querySelectorAll('.lifestyle-dislike').forEach(function (d) { d.disabled = true; });
-      });
-    });
-    container.querySelectorAll('.lifestyle-dislike').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var id = this.dataset.like;
-        var dislikes = store[type + 'Dislikes']();
-        if (dislikes.indexOf(id) === -1) dislikes.push(id);
-        setStorage('matey-' + type + '-dislikes', dislikes);
-        this.textContent = '✓ Noted';
-        this.disabled = true;
-        container.querySelectorAll('.lifestyle-like').forEach(function (d) { d.disabled = true; });
+  /* ---------- shared: like/save heart ---------- */
+  function likeBtnHTML(type, id) {
+    var liked = store.likes(type).indexOf(id) !== -1;
+    return '<button type="button" class="lf-like' + (liked ? ' liked' : '') + '" data-lf-like="' + esc(id) + '" data-lf-type="' + type + '" aria-label="Save">' + IC('heart', 18) + '</button>';
+  }
+  function wireLikeButtons(root) {
+    root.querySelectorAll('.lf-like').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var liked = store.toggleLike(this.dataset.lfType, this.dataset.lfLike);
+        this.classList.toggle('liked', liked);
       });
     });
   }
 
-  /* ---------- Grooming ---------- */
-  function openGrooming() {
-    var body = '<div class="lifestyle-upload-area"><input type="file" accept="image/*" id="grooming-file" style="position:absolute;opacity:0;width:0;height:0;overflow:hidden" /><div class="lifestyle-upload-prompt" id="grooming-prompt"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7"/></svg><p>Upload a selfie for face shape &amp; skin tone analysis</p><button class="lifestyle-btn" id="grooming-choose">Choose Photo</button></div><div class="lifestyle-preview" id="grooming-preview" style="display:none"><img id="grooming-img" /><button class="lifestyle-btn lifestyle-btn-secondary" id="grooming-retake">Retake</button></div></div><button class="lifestyle-btn" id="grooming-validate" style="display:none;margin-top:12px;width:100%">Validate Photo</button><div id="grooming-result" class="lifestyle-result-container"></div>';
-    var modal = createModal('modal-grooming', 'Grooming Analysis', body);
-    var promptEl = modal.querySelector('#grooming-prompt');
-    var previewEl = modal.querySelector('#grooming-preview');
-    var fileInput = modal.querySelector('#grooming-file');
-    var imgEl = modal.querySelector('#grooming-img');
-    var validateBtn = modal.querySelector('#grooming-validate');
-    var resultEl = modal.querySelector('#grooming-result');
-    var dataUrl = null;
+  /* ---------- shared: voice text input ----------
+     46px field + 34px circular mic (15% accent fill, accent icon).
+     Mic toggles on-device Whisper listening via window.MateySpeech —
+     never the OS/keyboard mic. Submitted values become pill chips:
+     chipStyle 'accent' = filled with section accent (preference fields),
+     'neutral' = #1c1c20 chips with an x (inventory fields). */
+  function voiceFieldHTML(id, placeholder) {
+    return '<div class="lf-vinput" id="' + id + '-wrap">' +
+      '<input type="text" id="' + id + '" placeholder="' + esc(placeholder) + '" autocomplete="off" />' +
+      '<button type="button" class="lf-mic" id="' + id + '-mic" aria-label="Voice input">' + IC('mic', 17) + '</button>' +
+      '</div>' +
+      '<div class="lf-mic-caption" id="' + id + '-caption">Listening…</div>' +
+      '<div class="lf-chips" id="' + id + '-chips"></div>';
+  }
 
-    modal.querySelector('#grooming-choose').addEventListener('click', function () { fileInput.click(); });
-    modal.querySelector('#grooming-retake').addEventListener('click', function () { dataUrl = null; promptEl.style.display = ''; previewEl.style.display = 'none'; validateBtn.style.display = 'none'; resultEl.innerHTML = ''; });
+  function wireVoiceField(modal, id, opts) {
+    var input = modal.querySelector('#' + id);
+    var wrap = modal.querySelector('#' + id + '-wrap');
+    var caption = modal.querySelector('#' + id + '-caption');
+    var chipsEl = modal.querySelector('#' + id + '-chips');
+    var values = (opts.initial || []).slice();
 
-    fileInput.addEventListener('change', async function () {
-      var file = this.files[0];
-      if (!file) return;
-      dataUrl = await readFile(file);
-      imgEl.src = dataUrl;
-      promptEl.style.display = 'none';
-      previewEl.style.display = '';
-      validateBtn.style.display = '';
+    function renderChips() {
+      chipsEl.innerHTML = values.map(function (v, i) {
+        return '<span class="lf-chip' + (opts.chipStyle === 'accent' ? ' lf-chip-accent' : '') + '">' +
+          '<span class="lf-chip-text">' + esc(v) + '</span>' +
+          '<button type="button" class="lf-chip-x" data-lf-chip="' + i + '" aria-label="Remove">' + IC('x', 12) + '</button></span>';
+      }).join('');
+      chipsEl.querySelectorAll('.lf-chip-x').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          values.splice(parseInt(this.dataset.lfChip, 10), 1);
+          renderChips();
+          if (opts.onChange) opts.onChange(values.slice());
+        });
+      });
+    }
+
+    function addValue(v) {
+      v = (v || '').trim().replace(/\s+/g, ' ');
+      if (!v) return;
+      var parts = opts.chipSplit ? v.split(/,|\band\b/i).map(function (s) { return s.trim(); }).filter(Boolean) : [v];
+      parts.forEach(function (p) { if (values.indexOf(p) === -1) values.push(p); });
+      input.value = '';
+      renderChips();
+      if (opts.onChange) opts.onChange(values.slice());
+    }
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); addValue(input.value); }
     });
 
-    validateBtn.addEventListener('click', async function () {
-      if (!dataUrl) return;
-      showLoading(resultEl);
-      var block = dataUrlToBase64Block(dataUrl);
-      if (!block) { showError(resultEl, 'Invalid image'); return; }
+    function setListening(on) {
+      wrap.classList.toggle('listening', !!on);
+      caption.style.display = on ? 'block' : 'none';
+    }
 
-      var learning = buildLearningContext();
-      var validatePrompt = 'You are a photo quality validator for a grooming analysis app. Analyze this selfie and determine if it is SUFFICIENT for face shape and skin tone analysis. A sufficient photo must: 1) Show the user\'s face clearly, 2) Be front-facing or show both front and side profile if possible, 3) Have good lighting without harsh shadows, 4) Not be blurry or obscured. Return ONLY JSON: { "sufficient": true/false, "reason": "brief explanation" }';
-
-      var messages = [{ role: 'system', content: PERSONA }, { role: 'user', content: [block, { type: 'text', text: validatePrompt }] }];
-
-      try {
-        var validation = await MateyByok.chatVision(messages);
-        var parsed = (function () { try { return JSON.parse(validation); } catch (e) { return null; } })();
-        if (!parsed || parsed.sufficient === false) {
-          resultEl.innerHTML = '<div class="lifestyle-result"><p style="color:var(--text-secondary);margin-bottom:8px;">This photo needs improvement:</p><p style="font-weight:500;">' + esc(parsed && parsed.reason ? parsed.reason : 'Please upload a clearer front-facing selfie.') + '</p><p style="font-size:12px;color:var(--text-secondary);margin-top:8px;">Tips: Use natural light, face the camera directly, ensure your full face is visible.</p></div>';
+    micClick(modal.querySelector('#' + id + '-mic'));
+    function micClick(micBtn) {
+      micBtn.addEventListener('click', function () {
+        var S = window.MateySpeech;
+        if (!S || typeof S.startListening !== 'function' || typeof S.stopListening !== 'function') {
+          caption.textContent = 'Voice input unavailable';
+          caption.style.display = 'block';
+          setTimeout(function () { caption.style.display = 'none'; }, 2000);
           return;
         }
-
-        showLoading(resultEl);
-        var analysisPrompt = 'Analyze this selfie. Return ONLY JSON: { "face_shape": "oval|round|square|heart|oblong|diamond", "skin_tone": "warm-fair|cool-olive|neutral-tan|warm-deep|cool-porcelain|medium", "grooming_suggestions": ["short practical suggestion 1", "short practical suggestion 2"] } Keep suggestions specific and practical.';
-
-        var analysisMessages = [{ role: 'system', content: PERSONA + '\n\n' + learning }, { role: 'user', content: [block, { type: 'text', text: analysisPrompt }] }];
-        var analysis = await MateyByok.chatVision(analysisMessages);
-        var analysisParsed = (function () { try { return JSON.parse(analysis); } catch (e) { return null; } })();
-
-        if (analysisParsed) {
-          store.saveBodyProfile({ skinTone: analysisParsed.skin_tone, faceShape: analysisParsed.face_shape });
-          var html = '<div class="lifestyle-result"><div class="lifestyle-badges"><span class="lifestyle-badge">Face: ' + esc(analysisParsed.face_shape) + '</span><span class="lifestyle-badge">Skin: ' + esc(analysisParsed.skin_tone) + '</span></div>';
-          if (analysisParsed.grooming_suggestions && analysisParsed.grooming_suggestions.length) {
-            html += '<div class="lifestyle-suggestions-title">Grooming Suggestions</div>';
-            html += '<div class="lifestyle-suggestions">';
-            analysisParsed.grooming_suggestions.forEach(function (s, i) {
-              html += '<div class="lifestyle-suggestion" data-id="groom-' + i + '">' + esc(s) + likeDislikeBtns('groom-' + i, 'grooming') + '</div>';
-            });
-            html += '</div>';
-          }
-          html += '</div>';
-          resultEl.innerHTML = html;
-          wireLikeDislike(resultEl, 'grooming');
-        } else {
-          showResult(resultEl, analysis);
+        if (modal._listeningField === id) {
+          modal._listeningField = null;
+          setListening(false);
+          caption.textContent = 'Transcribing…';
+          caption.style.display = 'block';
+          S.stopListening(opts.domain || 'culinary', { field: id }).then(function (text) {
+            caption.style.display = 'none';
+            if (text) addValue(text);
+          }).catch(function () {
+            caption.style.display = 'none';
+          });
+          return;
         }
-      } catch (e) { showError(resultEl, e.message || 'Analysis failed'); }
-    });
+        if (modal._listeningField) {
+          /* another field on this modal is listening — stop it first */
+          var prevId = modal._listeningField;
+          modal._listeningField = null;
+          var prevWrap = modal.querySelector('#' + prevId + '-wrap');
+          var prevCap = modal.querySelector('#' + prevId + '-caption');
+          if (prevCap) prevCap.style.display = 'none';
+          S.stopListening(opts.domain || 'culinary', {}).then(function (text) {
+            if (text && prevId) {
+              var prevInput = modal.querySelector('#' + prevId);
+              if (prevInput) {
+                prevInput.value = text;
+                prevInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+              }
+            }
+          }).catch(function () {});
+        }
+        S.startListening().then(function () {
+          modal._listeningField = id;
+          setListening(true);
+        }).catch(function () {
+          caption.textContent = 'Microphone unavailable';
+          caption.style.display = 'block';
+          setTimeout(function () { caption.style.display = 'none'; }, 2000);
+        });
+      });
+    }
+
+    renderChips();
+    return { getValues: function () { return values.slice(); } };
   }
 
-  /* ---------- Wardrobe ---------- */
-  function openWardrobe() {
-    var body = '<div class="lifestyle-tabs"><button class="lifestyle-tab active" data-tab="wardrobe-digital">My Wardrobe</button><button class="lifestyle-tab" data-tab="wardrobe-outfits">Get Outfits</button></div>' +
-      '<div class="lifestyle-tab-body" id="wardrobe-digital">' +
-        '<input type="file" accept="image/*" id="wardrobe-item-file" style="position:absolute;opacity:0;width:0;height:0;overflow:hidden" />' +
-        '<button class="lifestyle-btn lifestyle-btn-secondary" id="wardrobe-item-choose" style="width:100%;margin-bottom:8px">📷 Add Photo</button>' +
-        '<div class="lifestyle-photo-preview" id="wardrobe-photo-preview" style="display:none;">' +
-          '<img id="wardrobe-item-preview" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;border:1px solid var(--border);display:block" />' +
-          '<div style="display:flex;gap:8px;margin-top:8px;">' +
-            '<button class="lifestyle-btn" id="wardrobe-confirm" style="flex:1">Confirm</button>' +
-            '<button class="lifestyle-btn lifestyle-btn-secondary" id="wardrobe-cancel" style="flex:1">Cancel</button>' +
-          '</div>' +
-          '<div class="lifestyle-form" id="wardrobe-edit-form" style="display:none;margin-top:12px;">' +
-            '<div class="lifestyle-field">' +
-              '<label class="lifestyle-label">Detected item</label>' +
-              '<input type="text" class="lifestyle-input" id="wardrobe-detected" readonly style="background:var(--surface);border:1px solid var(--border);" />' +
-            '</div>' +
-            '<div class="lifestyle-row" style="display:flex;gap:8px;">' +
-              '<div class="lifestyle-field" style="flex:1;">' +
-                '<label class="lifestyle-label">Color</label>' +
-                '<input type="text" class="lifestyle-input" id="wardrobe-color" placeholder="e.g. Navy" />' +
-              '</div>' +
-              '<div class="lifestyle-field" style="flex:1;">' +
-                '<label class="lifestyle-label">Pattern</label>' +
-                '<input type="text" class="lifestyle-input" id="wardrobe-pattern" placeholder="e.g. Solid" />' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="lifestyle-wardrobe-grid" id="wardrobe-grid"></div>' +
-      '</div>' +
-      '<div class="lifestyle-tab-body" id="wardrobe-outfits" style="display:none">' +
-        '<div class="lifestyle-form">' +
-          '<div class="lifestyle-field">' +
-            '<label class="lifestyle-label">Occasion</label>' +
-            '<select class="lifestyle-input" id="outfit-occasion">' +
-              '<option value="casual">Casual</option>' +
-              '<option value="work">Work</option>' +
-              '<option value="evening">Evening</option>' +
-              '<option value="workout">Workout</option>' +
-            '</select>' +
-          '</div>' +
-          '<button class="lifestyle-btn" id="outfit-generate" style="width:100%;margin-top:12px;">Generate Outfits</button>' +
-        '</div>' +
-        '<div id="wardrobe-outfit-result" class="lifestyle-result-container"></div>' +
-      '</div>';
+  /* ============================================================
+     CULINARY — input screen (voice fields) + results (recipe cards)
+     ============================================================ */
+  function openCulinary() {
+    var accent = ACCENTS.culinary;
+    var modal = createModal('modal-culinary', 'Culinary', 'Tell us what to cook with', accent);
+    var cuisineField = null, ingredientsField = null;
 
-    var modal = createModal('modal-wardrobe', 'Wardrobe', body);
-    var items = store.wardrobeItems();
-    var fileInput = modal.querySelector('#wardrobe-item-file');
-    var preview = modal.querySelector('#wardrobe-item-preview');
-    var photoPreview = modal.querySelector('#wardrobe-photo-preview');
-    var confirmBtn = modal.querySelector('#wardrobe-confirm');
-    var cancelBtn = modal.querySelector('#wardrobe-cancel');
-    var detectedInput = modal.querySelector('#wardrobe-detected');
-    var colorInput = modal.querySelector('#wardrobe-color');
-    var patternInput = modal.querySelector('#wardrobe-pattern');
-    var editForm = modal.querySelector('#wardrobe-edit-form');
-    var dataUrl = null;
-    var detectedData = null;
+    function savePrefs() {
+      var prefs = store.culinaryPrefs();
+      prefs.cuisinesList = cuisineField ? cuisineField.getValues() : (prefs.cuisinesList || []);
+      prefs.ingredientsList = ingredientsField ? ingredientsField.getValues() : (prefs.ingredientsList || []);
+      store.saveCulinaryPrefs(prefs);
+    }
+
+    function renderInput() {
+      modal._onBack = null;
+      modal.setTitle('Culinary');
+      modal.setSubtitle('Tell us what to cook with');
+      var prefs = store.culinaryPrefs();
+      modal.setBody(
+        '<div class="lf-field"><label class="lf-label">What do you like to eat?</label>' +
+        voiceFieldHTML('lf-cuisine', 'e.g. South Indian, or any cuisine') + '</div>' +
+        '<div class="lf-field"><label class="lf-label">What\'s in your kitchen?</label>' +
+        voiceFieldHTML('lf-ingredients', 'e.g. tomatoes, chilies, rice') + '</div>' +
+        '<button type="button" class="lf-btn-primary" id="lf-find-recipes">Find recipes ' + IC('arrowRight', 18) + '</button>' +
+        '<div id="lf-culinary-inline" class="lifestyle-result-container"></div>'
+      );
+      cuisineField = wireVoiceField(modal, 'lf-cuisine', {
+        accent: accent, chipStyle: 'accent', domain: 'culinary', chipSplit: false,
+        initial: prefs.cuisinesList || [], onChange: savePrefs
+      });
+      ingredientsField = wireVoiceField(modal, 'lf-ingredients', {
+        accent: accent, chipStyle: 'neutral', domain: 'culinary', chipSplit: true,
+        initial: prefs.ingredientsList || [], onChange: savePrefs
+      });
+      modal.querySelector('#lf-find-recipes').addEventListener('click', findRecipes);
+    }
+
+    function findRecipes() {
+      var cuisines = cuisineField.getValues();
+      var ingredients = ingredientsField.getValues();
+      var inlineEl = modal.querySelector('#lf-culinary-inline');
+      if (!cuisines.length && !ingredients.length) {
+        showError(inlineEl, 'Add a cuisine or a few ingredients first.');
+        return;
+      }
+      trackUsage('culinary');
+      modal._onBack = renderInput;
+      modal.setTitle('Your recipes');
+      modal.setSubtitle(
+        (cuisines.length ? cuisines.join(', ') : 'any cuisine') + ' · ' +
+        (ingredients.length ? ingredients.length + ' ingredient' + (ingredients.length > 1 ? 's' : '') : 'pantry')
+      );
+      modal.setBody('<div id="lf-culinary-result" class="lifestyle-result-container"></div>');
+      var resultEl = modal.querySelector('#lf-culinary-result');
+      showLoading(resultEl);
+
+      var learning = buildLearningContext();
+      var prompt = '# Request\nSuggest 3 to 5 recipes I can cook.' +
+        (cuisines.length ? '\nPreferred cuisines: ' + cuisines.join(', ') : '') +
+        (ingredients.length ? '\nIngredients available: ' + ingredients.join(', ') : '') +
+        '\nWork with what I have — don\'t block on missing items.' +
+        '\nReturn ONLY a JSON array (no markdown), each object: { "name": string, "time": string (e.g. "30 min"), "difficulty": string (Easy/Medium/Hard), "cuisine": string }';
+      var messages = [{ role: 'system', content: PERSONA + (learning ? '\n\n' + learning : '') }, { role: 'user', content: [{ type: 'text', text: prompt }] }];
+
+      MateyByok.chat(messages).then(function (text) {
+        var recipes = (function () { try { var p = JSON.parse(text); return Array.isArray(p) ? p : null; } catch (e) { return null; } })();
+        if (!recipes) { showResult(resultEl, text); return; }
+        var html = recipes.slice(0, 5).map(function (r, i) {
+          var name = r.name || 'Recipe ' + (i + 1);
+          return '<div class="lf-recipe-card">' +
+            '<div class="lf-recipe-img">' + IC('kitchen', 30) + '</div>' +
+            likeBtnHTML('culinary', name) +
+            '<div class="lf-card-title">' + esc(name) + '</div>' +
+            '<div class="lf-card-meta">' + esc(r.time || '—') + ' · ' + esc(r.difficulty || '—') + ' · ' + esc(r.cuisine || '—') + '</div>' +
+            '</div>';
+        }).join('');
+        resultEl.innerHTML = html;
+        wireLikeButtons(resultEl);
+      }).catch(function (e) {
+        showError(resultEl, e.message || 'Recipe search failed — check your AI key under Settings → Custom.');
+      });
+    }
+
+    renderInput();
+  }
+
+  /* ============================================================
+     GROOMING — photo capture + three pick cards
+     ============================================================ */
+  function openGrooming() {
+    var accent = ACCENTS.grooming;
+    var modal = createModal('modal-grooming', 'Grooming', 'Let\'s find your look', accent);
+    var photoDataUrl = null;
+
+    function renderInput() {
+      modal._onBack = null;
+      modal.setTitle('Grooming');
+      modal.setSubtitle('Let\'s find your look');
+      modal.setBody(
+        '<input type="file" accept="image/*" id="lf-groom-file" style="display:none" />' +
+        '<div class="lf-photo-area" id="lf-groom-photo">' + IC('camera', 34) +
+        '<span>Add a clear front-facing photo</span></div>' +
+        '<ul class="lf-tips">' +
+        '<li>Use good, even lighting — avoid harsh shadows</li>' +
+        '<li>Keep your face centered and fully visible</li>' +
+        '<li>No sunglasses or hats</li>' +
+        '</ul>' +
+        '<button type="button" class="lf-btn-primary" id="lf-groom-analyse">Analyse my look</button>' +
+        '<div id="lf-groom-result" class="lifestyle-result-container"></div>'
+      );
+      var photoEl = modal.querySelector('#lf-groom-photo');
+      var fileEl = modal.querySelector('#lf-groom-file');
+      photoDataUrl = null;
+      photoEl.addEventListener('click', function () { fileEl.click(); });
+      fileEl.addEventListener('change', function () {
+        var file = this.files[0];
+        if (!file) return;
+        readFile(file).then(function (dataUrl) {
+          photoDataUrl = dataUrl;
+          photoEl.innerHTML = '<img src="' + dataUrl + '" alt="Selfie preview" />';
+          photoEl.classList.add('filled');
+        });
+      });
+      modal.querySelector('#lf-groom-analyse').addEventListener('click', analyse);
+    }
+
+    function analyse() {
+      var resultEl = modal.querySelector('#lf-groom-result');
+      if (!photoDataUrl) { showError(resultEl, 'Add a clear front-facing photo first.'); return; }
+      trackUsage('grooming');
+      modal._onBack = renderInput;
+      modal.setTitle('Your picks');
+      modal.setSubtitle('Based on your photo');
+      modal.setBody('<div id="lf-groom-result-body" class="lifestyle-result-container"></div>');
+      var body = modal.querySelector('#lf-groom-result-body');
+      showLoading(body);
+
+      var block = dataUrlToBase64Block(photoDataUrl);
+      var learning = buildLearningContext();
+      var prompt = 'Analyse this selfie. Identify the user\'s face shape, then suggest one flattering hairstyle, one beard style and one moustache style. For each, give a short one-line reason it suits the face shape. Return ONLY JSON: { "face_shape": string, "hairstyle": { "name": string, "reason": string }, "beard_style": { "name": string, "reason": string }, "moustache": { "name": string, "reason": string } }';
+      var messages = [{ role: 'system', content: PERSONA + (learning ? '\n\n' + learning : '') }, { role: 'user', content: [block, { type: 'text', text: prompt }] }];
+
+      MateyByok.chatVision(messages).then(function (text) {
+        var parsed = (function () { try { return JSON.parse(text); } catch (e) { return null; } })();
+        if (!parsed || !parsed.hairstyle) { showResult(body, typeof text === 'string' ? text : 'Analysis failed'); return; }
+        var items = [
+          { label: 'Hairstyle', data: parsed.hairstyle },
+          { label: 'Beard style', data: parsed.beard_style },
+          { label: 'Moustache style', data: parsed.moustache }
+        ];
+        body.innerHTML = items.filter(function (i) { return i.data; }).map(function (i) {
+          return '<div class="lf-groom-card">' +
+            '<div class="lf-groom-icon">' + IC('scissors', 20) + '</div>' +
+            '<div class="lf-groom-text"><div class="lf-card-title" style="padding:0">' + esc(i.data.name || i.label) + '</div>' +
+            '<div class="lf-card-meta" style="padding:2px 0 0">' + esc(i.data.reason || i.label) + '</div></div>' +
+            likeBtnHTML('grooming', i.data.name || i.label) +
+            '</div>';
+        }).join('');
+        wireLikeButtons(body);
+      }).catch(function (e) {
+        showError(body, e.message || 'Analysis failed — check your AI key under Settings → Custom.');
+      });
+    }
+
+    renderInput();
+  }
+
+  /* ============================================================
+     WARDROBE — closet grid + outfit of the day
+     ============================================================ */
+  var WARDROBE_CATEGORIES = [
+    { label: 'Shirt', type: 'top' }, { label: 'T-shirt', type: 'top' },
+    { label: 'Trousers', type: 'bottom' }, { label: 'Shorts', type: 'bottom' },
+    { label: 'Jacket', type: 'outer' }, { label: 'Shoes', type: 'shoes' },
+    { label: 'Other', type: 'other' }
+  ];
+
+  function openWardrobe() {
+    var accent = ACCENTS.wardrobe;
+    var modal = createModal('modal-wardrobe', 'Wardrobe', 'Your digital closet', accent);
+
+    function render() {
+      modal._onBack = null;
+      modal.setTitle('Wardrobe');
+      modal.setSubtitle('Your digital closet');
+      modal.setBody(
+        '<input type="file" accept="image/*" id="lf-ward-file" style="display:none" />' +
+        '<div class="lf-add-row" id="lf-ward-add">' + IC('plus', 20) + '<span>Add a clothing photo</span></div>' +
+        '<div id="lf-ward-editor"></div>' +
+        '<div class="lf-wgrid" id="lf-ward-grid"></div>' +
+        '<button type="button" class="lf-btn-primary" id="lf-ward-outfit" style="margin-top:18px">Create an outfit</button>' +
+        '<div id="lf-ward-result" class="lifestyle-result-container"></div>'
+      );
+      var fileEl = modal.querySelector('#lf-ward-file');
+      modal.querySelector('#lf-ward-add').addEventListener('click', function () { fileEl.click(); });
+      fileEl.addEventListener('change', function () {
+        var file = this.files[0];
+        if (!file) return;
+        readFile(file).then(function (dataUrl) { showEditor(dataUrl); });
+        this.value = '';
+      });
+      modal.querySelector('#lf-ward-outfit').addEventListener('click', createOutfit);
+      renderGrid();
+    }
+
+    function showEditor(dataUrl) {
+      var editor = modal.querySelector('#lf-ward-editor');
+      editor.innerHTML = '<div class="lf-inline-editor">' +
+        '<img src="' + dataUrl + '" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;display:block;margin-bottom:10px" />' +
+        '<label class="lf-label">Category</label>' +
+        '<select class="lf-vinput" id="lf-ward-cat" style="height:46px;background:#141418;border:1px solid #29292e;border-radius:12px;color:#f0f0f0;font-size:14px;padding:0 14px;width:100%">' +
+        WARDROBE_CATEGORIES.map(function (c) { return '<option value="' + c.label + '">' + c.label + '</option>'; }).join('') +
+        '</select>' +
+        '<div style="display:flex;gap:10px;margin-top:12px">' +
+        '<button type="button" class="lf-btn-primary" id="lf-ward-save" style="height:42px;font-size:14px">Save item</button>' +
+        '<button type="button" class="lf-btn-primary" id="lf-ward-cancel" style="height:42px;font-size:14px;background:#29292e">Cancel</button>' +
+        '</div></div>';
+      editor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      modal.querySelector('#lf-ward-cancel').addEventListener('click', function () {
+        editor.innerHTML = '';
+      });
+      modal.querySelector('#lf-ward-save').addEventListener('click', function () {
+        var catLabel = modal.querySelector('#lf-ward-cat').value;
+        var cat = WARDROBE_CATEGORIES.find(function (c) { return c.label === catLabel; }) || WARDROBE_CATEGORIES[0];
+        var items = store.wardrobeItems();
+        items.push({ id: Date.now(), type: cat.type, name: cat.label, image: dataUrl, color: '', pattern: '', tags: [] });
+        store.saveWardrobeItems(items);
+        editor.innerHTML = '';
+        renderGrid();
+      });
+    }
 
     function renderGrid() {
-      var grid = modal.querySelector('#wardrobe-grid');
-      if (!grid) return;
-      var tops = items.filter(function (x) { return x.type === 'top'; });
-      var bottoms = items.filter(function (x) { return x.type === 'bottom'; });
-      if (!tops.length && !bottoms.length) {
-        grid.innerHTML = '<p style="color:var(--text-secondary);font-size:13px;text-align:center;padding:16px;">No items yet. Add your first clothing item with a photo.</p>';
+      var grid = modal.querySelector('#lf-ward-grid');
+      var items = store.wardrobeItems();
+      if (!items.length) {
+        grid.innerHTML = '<div class="lf-wempty">Your closet is empty — add your first item above.</div>';
         return;
       }
-      var html = '';
-      if (tops.length) {
-        html += '<div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Tops</div>' +
-          '<div class="lifestyle-wardrobe-row">' +
-          tops.map(function (t) {
-            return '<div class="lifestyle-wardrobe-item"><img src="' + esc(t.image) + '" /><div class="lifestyle-wardrobe-name">' + esc(t.name || t.color || 'Item') + '</div></div>';
-          }).join('') +
-          '</div>';
-      }
-      if (bottoms.length) {
-        html += '<div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.1em;margin:12px 0 8px;">Bottoms</div>' +
-          '<div class="lifestyle-wardrobe-row">' +
-          bottoms.map(function (b) {
-            return '<div class="lifestyle-wardrobe-item"><img src="' + esc(b.image) + '" /><div class="lifestyle-wardrobe-name">' + esc(b.name || b.color || 'Item') + '</div></div>';
-          }).join('') +
-          '</div>';
-      }
-      grid.innerHTML = html;
+      grid.innerHTML = items.map(function (it) {
+        return '<div class="lf-wthumb">' +
+          (it.image ? '<img src="' + it.image + '" alt="' + esc(it.name) + '" />' : '') +
+          '<span class="lf-wlabel">' + esc(it.name || it.type || 'Item') + '</span></div>';
+      }).join('');
     }
 
-    modal.querySelector('#wardrobe-item-choose').addEventListener('click', function () { fileInput.click(); });
-
-    fileInput.addEventListener('change', async function () {
-      var file = this.files[0];
-      if (!file) return;
-      dataUrl = await readFile(file);
-      preview.src = dataUrl;
-      photoPreview.style.display = '';
-      detectedInput.value = 'Identifying…';
-      colorInput.value = '';
-      patternInput.value = '';
-      editForm.style.display = 'none';
-      confirmBtn.textContent = 'Identifying…';
-      confirmBtn.disabled = true;
-      detectedData = null;
-
-      var block = dataUrlToBase64Block(dataUrl);
-      if (!block) {
-        detectedInput.value = 'Unable to read image';
-        confirmBtn.textContent = 'Save';
-        confirmBtn.disabled = false;
-        return;
-      }
-
-      var messages = [{
-        role: 'user',
-        content: [
-          block,
-          { type: 'text', text: 'Identify the clothing item in this photo. Return ONLY JSON: { "type": "top|bottom", "name": "auto-generated label like Navy Solid T-Shirt", "color": "Primary color", "pattern": "Pattern type like Solid, Striped, etc" }' }
-        ]
-      }];
-
-      try {
-        var text = await MateyByok.chatVision(messages);
-        var parsed = (function () { try { return JSON.parse(text); } catch (e) { return null; } })();
-        if (parsed) {
-          detectedData = parsed;
-          detectedInput.value = parsed.name || parsed.type || 'Item';
-          colorInput.value = parsed.color || '';
-          patternInput.value = parsed.pattern || '';
-          editForm.style.display = '';
-          confirmBtn.textContent = 'Save Item';
-          confirmBtn.disabled = false;
-        } else {
-          detectedInput.value = 'Could not identify — edit manually';
-          editForm.style.display = '';
-          confirmBtn.textContent = 'Save Item';
-          confirmBtn.disabled = false;
-        }
-      } catch (e) {
-        detectedInput.value = 'AI identification failed — edit manually';
-        editForm.style.display = '';
-        confirmBtn.textContent = 'Save Item';
-        confirmBtn.disabled = false;
-      }
-    });
-
-    cancelBtn.addEventListener('click', function () {
-      dataUrl = null;
-      detectedData = null;
-      photoPreview.style.display = 'none';
-      preview.src = '';
-      fileInput.value = '';
-      detectedInput.value = '';
-      colorInput.value = '';
-      patternInput.value = '';
-      editForm.style.display = 'none';
-      confirmBtn.textContent = 'Save Item';
-      confirmBtn.disabled = false;
-    });
-
-    confirmBtn.addEventListener('click', function () {
-      if (!dataUrl) return;
-      var itemType = (detectedData && detectedData.type) || (detectedInput.value ? 'top' : 'top');
-      var itemName = detectedInput.value.trim() || 'Item';
-      var itemColor = colorInput.value.trim() || '';
-      var itemPattern = patternInput.value.trim() || '';
-      items.push({
-        id: Date.now(),
-        type: itemType,
-        name: itemName,
-        image: dataUrl,
-        color: itemColor,
-        pattern: itemPattern,
-        tags: []
-      });
-      store.saveWardrobeItems(items);
-      dataUrl = null;
-      detectedData = null;
-      photoPreview.style.display = 'none';
-      preview.src = '';
-      fileInput.value = '';
-      detectedInput.value = '';
-      colorInput.value = '';
-      patternInput.value = '';
-      editForm.style.display = 'none';
-      confirmBtn.textContent = 'Save Item';
-      confirmBtn.disabled = false;
-      renderGrid();
-    });
-
-    modal.querySelectorAll('.lifestyle-tab').forEach(function (tab) {
-      tab.addEventListener('click', function () {
-        modal.querySelectorAll('.lifestyle-tab').forEach(function (t) { t.classList.remove('active'); });
-        tab.classList.add('active');
-        var target = tab.dataset.tab;
-        modal.querySelectorAll('.lifestyle-tab-body').forEach(function (b) { b.style.display = 'none'; });
-        modal.querySelector('#' + target).style.display = '';
-      });
-    });
-
-    modal.querySelector('#outfit-generate').addEventListener('click', async function () {
-      var occasion = modal.querySelector('#outfit-occasion').value;
-      var resultEl = modal.querySelector('#wardrobe-outfit-result');
-      if (items.length < 2) { showError(resultEl, 'Add at least 2 items (tops and bottoms) to generate outfits.'); return; }
+    function createOutfit() {
+      var resultEl = modal.querySelector('#lf-ward-result');
+      var items = store.wardrobeItems();
+      if (items.length < 2) { showError(resultEl, 'Add at least 2 items to create an outfit.'); return; }
+      trackUsage('wardrobe');
       showLoading(resultEl);
       var bp = store.bodyProfile();
-      var tops = items.filter(function (x) { return x.type === 'top'; });
-      var bottoms = items.filter(function (x) { return x.type === 'bottom'; });
-      var wardrobeDesc = tops.map(function (t) { return t.name + ' (' + t.color + ', ' + t.pattern + ')'; }).join('\n') + '\n' + bottoms.map(function (b) { return b.name + ' (' + b.color + ', ' + b.pattern + ')'; }).join('\n');
-      var context = buildLearningContext() + '\n\n# User Body Profile\n- Skin tone: ' + (bp.skinTone || 'unknown') + '\n- Face shape: ' + (bp.faceShape || 'unknown') + '\n- Height: ' + (bp.height || 'unknown') + '\n- Weight: ' + (bp.weight || 'unknown') + '\n- Body type: ' + (bp.bodyType || 'unknown') + '\n\n# Available Wardrobe\n' + wardrobeDesc + '\n\n# Occasion\n' + occasion + '\n\n# Rules\nSuggest 3-5 complete outfit combinations (one top + one bottom). Work with what is actually in the wardrobe — suggest good combinations from existing items, don\'t block on having "enough" items. Return ONLY JSON array with objects: { "name": string, "top": string, "bottom": string, "why": string }';
-      var messages = [{ role: 'system', content: PERSONA }, { role: 'user', content: [{ type: 'text', text: context }] }];
-      try {
-        var text = await MateyByok.chat(messages);
-        var outfits = (function () { try { return JSON.parse(text); } catch (e) { return null; } })();
-        if (outfits && Array.isArray(outfits)) {
-          var html = '<div class="lifestyle-suggestions">';
-          outfits.forEach(function (o, i) {
-            html += '<div class="lifestyle-suggestion" data-id="outfit-' + i + '"><strong>' + esc(o.name || 'Outfit ' + (i + 1)) + '</strong><div class="lifestyle-sub">' + esc(o.top) + ' + ' + esc(o.bottom) + '</div><div class="lifestyle-body">' + esc(o.why) + '</div>' + likeDislikeBtns('outfit-' + i, 'wardrobe') + '</div>';
-          });
-          html += '</div>';
-          resultEl.innerHTML = html;
-          wireLikeDislike(resultEl, 'wardrobe');
-        } else {
-          showResult(resultEl, text);
-        }
-      } catch (e) { showError(resultEl, e.message || 'Outfit generation failed'); }
-    });
+      var wardrobeDesc = items.map(function (it) { return '- ' + it.name + ' (' + it.type + ')' + (it.color ? ' — ' + it.color : ''); }).join('\n');
+      var prompt = '# Request\nPick the best outfit of the day from my wardrobe. Match colours to my skin tone and keep it practical for hot weather.\n\n# Wardrobe\n' + wardrobeDesc + '\n# Body profile\nSkin tone: ' + (bp.skinTone || 'unknown') + '\n\nReturn ONLY JSON: { "top": string, "bottom": string, "extra": string (optional third item), "why": string (one or two sentences of colour-match reasoning) }';
+      var messages = [{ role: 'system', content: PERSONA }, { role: 'user', content: [{ type: 'text', text: prompt }] }];
 
-    renderGrid();
-  }
-
-  /* ---------- Culinary ---------- */
-  function openCulinary() {
-    var body = '<div class="lifestyle-tab-body" id="culinary-recipe"><div class="lifestyle-form"><div class="lifestyle-field"><label class="lifestyle-label">Cuisines you like</label><input type="text" class="lifestyle-input" id="cuisine-prefs" placeholder="e.g. Lebanese, Indian, Italian" /></div><textarea class="lifestyle-input" id="recipe-ingredients" placeholder="List your ingredients, e.g. chicken, rice, tomatoes, labneh…" rows="4"></textarea><button class="lifestyle-btn" id="recipe-generate" style="margin-top:16px;width:100%">Get Recipes</button></div></div>' +
-      '<div id="culinary-result" class="lifestyle-result-container"></div>';
-    var modal = createModal('modal-culinary', 'Culinary', body);
-    var resultEl = modal.querySelector('#culinary-result');
-    var prefs = store.culinaryPrefs();
-
-    /* No mic button on Culinary inputs — user preference */
-    modal.querySelector('#cuisine-prefs').value = prefs.cuisines || '';
-
-    modal.querySelectorAll('.lifestyle-tab').forEach(function (tab) {
-      tab.addEventListener('click', function () {
-        modal.querySelectorAll('.lifestyle-tab').forEach(function (t) { t.classList.remove('active'); });
-        tab.classList.add('active');
-        var target = tab.dataset.tab;
-        modal.querySelectorAll('.lifestyle-tab-body').forEach(function (b) { b.style.display = 'none'; });
-        modal.querySelector('#' + target).style.display = '';
-        resultEl.innerHTML = '';
+      MateyByok.chat(messages).then(function (text) {
+        var outfit = (function () { try { return JSON.parse(text); } catch (e) { return null; } })();
+        if (!outfit || !outfit.top) { showResult(resultEl, text); return; }
+        var wanted = [outfit.top, outfit.bottom, outfit.extra].filter(Boolean).slice(0, 3);
+        var thumbs = wanted.map(function (w) {
+          var match = items.find(function (it) { return (it.name || '').toLowerCase() === String(w).toLowerCase(); });
+          return match && match.image ? '<img src="' + match.image + '" alt="' + esc(w) + '" />' : '';
+        }).join('');
+        resultEl.innerHTML = '<div class="lf-outfit-card">' +
+          '<div class="lf-card-title" style="padding:0">Outfit of the day</div>' +
+          '<div class="lf-outfit-thumbs">' + thumbs + '</div>' +
+          '<div class="lf-outfit-note">' + esc(outfit.why || '') + '</div>' +
+          likeBtnHTML('wardrobe', 'outfit-' + (outfit.top || '') + '-' + (outfit.bottom || '')) +
+          '</div>';
+        wireLikeButtons(resultEl);
+      }).catch(function (e) {
+        showError(resultEl, e.message || 'Outfit creation failed — check your AI key under Settings → Custom.');
       });
-    });
-
-    modal.querySelector('#recipe-generate').addEventListener('click', async function () {
-      var ingredients = modal.querySelector('#recipe-ingredients').value.trim();
-      var cuisines = modal.querySelector('#cuisine-prefs').value.trim();
-      if (window.mateyCoach) mateyCoach.evaluate(ingredients); // app-wide prompt coaching
-      if (!ingredients) { showError(resultEl, 'Please enter some ingredients'); return; }
-      store.saveCulinaryPrefs({ cuisines: cuisines });
-      showLoading(resultEl);
-      var learning = buildLearningContext();
-      var context = 'Ingredients: ' + ingredients;
-      if (cuisines) context += '\nPreferred cuisines: ' + cuisines;
-      var messages = [{ role: 'system', content: PERSONA + '\n\n' + learning }, { role: 'user', content: [{ type: 'text', text: context + '\n\nSuggest recipes organized by cuisine blocks. For each cuisine, provide 3-5 complete recipes. Each recipe must include: name, description, ingredients_used (from the provided ingredients), and step-by-step cooking instructions.\n\nReturn ONLY a JSON object with this structure:\n{\n  "cuisines": [\n    {\n      "cuisine_name": "Italian",\n      "recipes": [\n        { "name": "Recipe Name", "description": "Brief description", "ingredients_used": ["ingredient1", "ingredient2"], "steps": ["Step 1", "Step 2", "Step 3"] }\n      ]\n    }\n  ]\n}\n\nProvide 3-5 cuisine blocks, each with 3-5 fully defined recipes.' }] }];
-      try {
-        var text = await MateyByok.chat(messages);
-        var data = (function () { try { return JSON.parse(text); } catch (e) { return null; } })();
-        if (data && data.cuisines && Array.isArray(data.cuisines)) {
-          var html = '<div class="lifestyle-suggestions">';
-          data.cuisines.forEach(function (cuisine) {
-            var cuisineName = esc(cuisine.cuisine_name || 'Cuisine');
-            html += '<div class="lifestyle-cuisine-block" style="margin-bottom:24px;border:1px solid var(--app-border,#2A2A2A);border-radius:12px;padding:16px;background:rgba(255,255,255,0.02);">';
-            html += '<h4 style="margin:0 0 12px 0;font-size:16px;color:var(--app-accent,#B583FC);">🍽 ' + cuisineName + '</h4>';
-            if (cuisine.recipes && cuisine.recipes.length) {
-              cuisine.recipes.forEach(function (r, i) {
-                var stepsHtml = '';
-                if (r.steps && r.steps.length) {
-                  stepsHtml = '<div class="lifestyle-steps"><strong>Steps</strong><ol>' +
-                    r.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') +
-                  '</ol></div>';
-                }
-                html += '<div class="lifestyle-suggestion" data-id="recipe-' + i + '" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.05);"><strong>' + esc(r.name || 'Recipe ' + (i + 1)) + '</strong><div class="lifestyle-sub">' + esc(r.description || '') + '</div><div class="lifestyle-body"><strong>Uses:</strong> ' + esc((r.ingredients_used || []).join(', ')) + '</div>' + stepsHtml + likeDislikeBtns('recipe-' + i, 'culinary') + '</div>';
-              });
-            }
-            html += '</div>';
-          });
-          html += '</div>';
-          resultEl.innerHTML = html;
-          wireLikeDislike(resultEl, 'culinary');
-        } else if (data && Array.isArray(data)) {
-          // Fallback for old flat format
-          var html = '<div class="lifestyle-suggestions">';
-          data.forEach(function (r, i) {
-            var stepsHtml = '';
-            if (r.steps && r.steps.length) {
-              stepsHtml = '<div class="lifestyle-steps"><strong>Steps</strong><ol>' +
-                r.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') +
-              '</ol></div>';
-            }
-            html += '<div class="lifestyle-suggestion" data-id="recipe-' + i + '"><strong>' + esc(r.name || 'Recipe ' + (i + 1)) + '</strong><div class="lifestyle-sub">' + esc(r.description || '') + '</div><div class="lifestyle-body"><strong>Uses:</strong> ' + esc((r.ingredients_used || []).join(', ')) + '</div>' + stepsHtml + likeDislikeBtns('recipe-' + i, 'culinary') + '</div>';
-          });
-          html += '</div>';
-          resultEl.innerHTML = html;
-          wireLikeDislike(resultEl, 'culinary');
-        } else {
-          showResult(resultEl, text);
-        }
-      } catch (e) { showError(resultEl, e.message || 'Recipe generation failed'); }
-    });
-  }
-
-  /* ---------- Living (Spatial Living Restyler) ---------- */
-  function openLiving() {
-    var body = '<div class="lifestyle-form">' +
-      '<div class="lifestyle-field">' +
-        '<label class="lifestyle-label">Room Type</label>' +
-        '<select class="lifestyle-input" id="living-type">' +
-          '<option value="living-room">Living Room</option>' +
-          '<option value="bedroom">Bedroom</option>' +
-          '<option value="office">Home Office</option>' +
-          '<option value="kitchen">Kitchen</option>' +
-          '<option value="bathroom">Bathroom</option>' +
-          '<option value="open">Open Plan</option>' +
-        '</select>' +
-      '</div>' +
-      '<div class="lifestyle-field">' +
-        '<label class="lifestyle-label">Room Dimensions (L x W)</label>' +
-        '<input type="text" class="lifestyle-input" id="living-dims" placeholder="e.g. 12 x 10 ft" />' +
-      '</div>' +
-      '<div class="lifestyle-field">' +
-        '<label class="lifestyle-label">Notable Features</label>' +
-        '<input type="text" class="lifestyle-input" id="living-features" placeholder="e.g. large east window, fireplace, two doors" />' +
-      '</div>' +
-      '<div class="lifestyle-field">' +
-        '<label class="lifestyle-label">Primary Activities</label>' +
-        '<input type="text" class="lifestyle-input" id="living-activities" placeholder="e.g. work from home, watch TV, read" />' +
-      '</div>' +
-      '<div class="lifestyle-field">' +
-        '<label class="lifestyle-label">Photo (optional)</label>' +
-        '<input type="file" accept="image/*" id="living-file" style="display:none" />' +
-        '<button class="lifestyle-btn lifestyle-btn-secondary" id="living-choose" style="width:100%;margin-bottom:8px">Choose Photo</button>' +
-        '<img id="living-img" style="display:none;width:100%;max-height:180px;object-fit:cover;border-radius:12px;border:1px solid var(--border);margin-bottom:12px" />' +
-      '</div>' +
-      '<button class="lifestyle-btn" id="living-analyze" style="margin-top:12px;width:100%">Generate Layout Options</button>' +
-      '</div>' +
-      '<div id="living-result" class="lifestyle-result-container"></div>';
-
-    var modal = createModal('modal-living', 'Spatial Living Restyler', body);
-    var resultEl = modal.querySelector('#living-result');
-    var dataUrl = null;
-    var fileInput = modal.querySelector('#living-file');
-    var imgEl = modal.querySelector('#living-img');
-
-    modal.querySelector('#living-choose').addEventListener('click', function () { fileInput.click(); });
-
-    fileInput.addEventListener('change', async function () {
-      var file = this.files[0];
-      if (!file) return;
-      dataUrl = await readFile(file);
-      imgEl.src = dataUrl;
-      imgEl.style.display = '';
-    });
-
-    modal.querySelector('#living-analyze').addEventListener('click', async function () {
-      var roomType = modal.querySelector('#living-type').value;
-      var dims = modal.querySelector('#living-dims').value.trim();
-      var features = modal.querySelector('#living-features').value.trim();
-      var activities = modal.querySelector('#living-activities').value.trim();
-
-      if (!roomType) { showError(resultEl, 'Please specify a room type.'); return; }
-
-      showLoading(resultEl);
-
-      var context = '# Spatial Living Analysis Request\n' +
-        '- Room type: ' + roomType + '\n' +
-        (dims ? '- Dimensions: ' + dims + '\n' : '') +
-        (features ? '- Notable features: ' + features + '\n' : '') +
-        (activities ? '- Primary activities: ' + activities + '\n' : '');
-
-      var prompt = 'You are a spatial design restyler. Given a room description, provide THE SINGLE BEST furniture layout recommendation with 3-5 specific, actionable move instructions and a brief rationale. Consider traffic flow, natural light, and practical use.';
-
-      if (dataUrl) {
-        var block = dataUrlToBase64Block(dataUrl);
-        if (block) {
-          try {
-            var messages = [{ type: 'text', text: context + '\n' + prompt }, block];
-            if (window.MateyByok && typeof MateyByok.chatVision === 'function') {
-              var analysis = await MateyByok.chatVision([{ role: 'user', content: messages }]);
-              showResult(resultEl, analysis);
-            } else {
-              showError(resultEl, 'AI provider not configured.');
-            }
-          } catch (e) { showError(resultEl, e.message || 'Analysis failed'); }
-        } else {
-          showError(resultEl, 'Invalid image.');
-        }
-      } else {
-        try {
-          var messages2 = [{ role: 'system', content: PERSONA }, { role: 'user', content: [{ type: 'text', text: context + '\n' + prompt }] }];
-          if (window.MateyByok && typeof MateyByok.chat === 'function') {
-            var analysis2 = await MateyByok.chat(messages2);
-            showResult(resultEl, analysis2);
-          } else {
-            /* Fallback: basic layout suggestion */
-            showResult(resultEl, generateBasicLayout(roomType, dims, features, activities));
-          }
-        } catch (e) { showError(resultEl, e.message || 'Analysis failed'); }
-      }
-    });
-
-    function generateBasicLayout(type, dims, features, activities) {
-      var layouts = {
-        'living-room': 'Open-concept layout: Place sofa facing the largest window for natural light. Add a coffee table 18" from seating. Floating TV stand on the longest wall. Keep 36" clearance around all paths.',
-        'bedroom': 'Focal-point layout: Bed centered on the longest wall, nightstands on each side. Dresser opposite the bed. Keep 30" clearance around. Add a reading chair near any window.',
-        'office': 'Workstation-first: Desk facing the door or window. Chair with 24" depth clearance. Floating shelves above for storage. Add a small lounge chair for breaks.',
-        'kitchen': 'Work-triangle: Prioritize sink-stove-refrigerator triangle. Ensure 42" between counters. Add rolling cart for extra prep space. Task lighting over each zone.',
-        'bathroom': 'Vertical flow: Toilet, sink, shower, bath in sequence. Maximize vertical storage. Non-slip mat near shower. Keep 30" clearance for doors.',
-        'open': 'Zone-based: Define areas with furniture rugs. Living zone around TV, dining zone central, kitchen workflow separate. Maintain 42" traffic lanes.'
-      };
-      var output = '# Spatial Living Layout — ' + type.replace(/-/g, ' ').toUpperCase() + '\n\n';
-      output += (dims ? '**Dimensions:** ' + dims + '\n\n' : '');
-      if (features) output += '**Features:** ' + features + '\n\n';
-      if (activities) output += '**Activities:** ' + activities + '\n\n';
-      output += '**Recommended Layout:**\n' + (layouts[type] || layouts['living-room']);
-      if (features) output += '\n\n**Feature Integration:** Position furniture to take advantage of ' + features + '.';
-      if (activities) output += '\n\n**Activity Zones:** Organize space to support: ' + activities + '.';
-      return output;
     }
+
+    render();
   }
 
-  /* ---------- Lifestyle Beat ---------- */
+  /* ============================================================
+     LIVING — four photo slots + numbered suggestions
+     Open question (noted for revisit): requires at least ONE photo,
+     not all four — simplest to implement first.
+     ============================================================ */
+  var LIVING_ANGLES = ['Entrance', 'Left', 'Right', 'Opposite'];
+
   function openLiving() {
-    var body = '<div class="lifestyle-upload-area"><input type="file" accept="image/*" id="living-file" style="position:absolute;opacity:0;width:0;height:0;overflow:hidden" /><div class="lifestyle-upload-prompt" id="living-prompt"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l6-6 4 4 8-8"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/></svg><p>Upload a photo of your space — entrance, far-end, left side, right side (4 views)</p><button class="lifestyle-btn" id="living-choose">Choose Photo</button></div><div class="lifestyle-preview" id="living-preview" style="display:none"><img id="living-img" /><button class="lifestyle-btn lifestyle-btn-secondary" id="living-retake">Retake</button></div></div><button class="lifestyle-btn" id="living-analyze" style="display:none;margin-top:12px;width:100%">Analyze Space</button><div id="living-result" class="lifestyle-result-container"></div>';
-    var modal = createModal('modal-living', 'Spatial Room Restyler', body);
-    var resultEl = modal.querySelector('#living-result');
-    var dataUrl = null;
+    var accent = ACCENTS.living;
+    var modal = createModal('modal-living', 'Living', 'Rearrange what you already have', accent);
+    var photos = {};
 
-    modal.querySelector('#living-choose').addEventListener('click', function () { document.getElementById('living-file').click(); });
-    modal.querySelector('#living-retake').addEventListener('click', function () { dataUrl = null; document.getElementById('living-prompt').style.display = ''; document.getElementById('living-preview').style.display = 'none'; document.getElementById('living-analyze').style.display = 'none'; resultEl.innerHTML = ''; });
+    function render() {
+      modal._onBack = null;
+      modal.setTitle('Living');
+      modal.setSubtitle('Rearrange what you already have');
+      modal.setBody(
+        '<div class="lf-lgrid">' +
+        LIVING_ANGLES.map(function (angle, i) {
+          return '<div class="lf-lslot" data-angle="' + angle + '" id="lf-lslot-' + i + '">' +
+            '<input type="file" accept="image/*" id="lf-lfile-' + i + '" style="display:none" />' +
+            '<span class="lf-lslot-label">' + angle + '</span></div>';
+        }).join('') +
+        '</div>' +
+        '<button type="button" class="lf-btn-primary" id="lf-living-go" style="background:' + ACCENTS.livingDeep + '">Get suggestions</button>' +
+        '<div id="lf-living-result" class="lifestyle-result-container"></div>'
+      );
+      photos = {};
+      LIVING_ANGLES.forEach(function (angle, i) {
+        var slot = modal.querySelector('#lf-lslot-' + i);
+        var fileEl = modal.querySelector('#lf-lfile-' + i);
+        slot.addEventListener('click', function () { fileEl.click(); });
+        fileEl.addEventListener('change', function () {
+          var file = this.files[0];
+          if (!file) return;
+          readFile(file).then(function (dataUrl) {
+            photos[angle] = dataUrl;
+            slot.innerHTML = '<img src="' + dataUrl + '" alt="' + esc(angle) + ' view" />' +
+              '<span class="lf-lslot-label">' + angle + '</span>';
+            slot.classList.add('filled');
+          });
+        });
+      });
+      modal.querySelector('#lf-living-go').addEventListener('click', suggest);
+    }
 
-    document.getElementById('living-file').addEventListener('change', function (e) {
-      var file = e.target.files[0];
-      if (!file) return;
-      var reader = new FileReader();
-      reader.onload = function (ev) {
-        dataUrl = ev.target.result;
-        document.getElementById('living-img').src = dataUrl;
-        document.getElementById('living-prompt').style.display = 'none';
-        document.getElementById('living-preview').style.display = '';
-        document.getElementById('living-analyze').style.display = '';
-      };
-      reader.readAsDataURL(file);
-    });
+    function suggest() {
+      var resultEl = modal.querySelector('#lf-living-result');
+      var angles = Object.keys(photos);
+      if (!angles.length) { showError(resultEl, 'Add at least one photo of your space (all four is best).'); return; }
+      trackUsage('living');
+      showLoading(resultEl);
+      var blocks = angles.map(function (a) {
+        return { block: dataUrlToBase64Block(photos[a]), angle: a };
+      }).filter(function (x) { return x.block; });
+      var content = [{ type: 'text', text: 'These are photos of my room from these angles: ' + blocks.map(function (b) { return b.angle; }).join(', ') + '. Suggest 4 to 6 specific, numbered rearrangement moves (e.g. "Move the sofa to face the window"). Consider light, traffic flow and what I already own. Return ONLY JSON: { "suggestions": [string, …] }' }];
+      blocks.forEach(function (b) { content.push(b.block); });
+      var messages = [{ role: 'system', content: PERSONA }, { role: 'user', content: content }];
 
-    modal.querySelector('#living-analyze').addEventListener('click', async function () {
-      if (!dataUrl) return;
-      if (window.MateyBeat && MateyBeat.analyze) {
-        showLoading(resultEl);
-        try {
-          var result = await MateyBeat.analyze([dataUrl]);
-          if (typeof result === 'string') {
-            resultEl.innerHTML = '<div class="lifestyle-result"><pre class="lifestyle-pre">' + esc(result).replace(/\n/g, '<br>') + '</pre></div>';
-          } else {
-            var html = '<div class="lifestyle-result"><div class="lifestyle-badges"><span class="lifestyle-badge">Type: ' + esc(result.living_type || 'Detected') + '</span></div>';
-            if (result.moves && result.moves.length) {
-              html += '<div class="lifestyle-suggestions-title">Layout Moves</div><div class="lifestyle-suggestions">' + result.moves.map(function (m) { return '<div class="lifestyle-suggestion">' + esc(m) + '</div>'; }).join('') + '</div>';
-            }
-            if (result.why) html += '<div style="font-size:13px;color:var(--text-secondary);margin-top:8px;">' + esc(result.why) + '</div>';
-            html += '</div>';
-            resultEl.innerHTML = html;
-          }
-        } catch (e) { showError(resultEl, e.message || 'Analysis failed'); }
-      } else {
-        showLoading(resultEl);
-        setTimeout(function () {
-          showResult(resultEl, 'Living analysis needs your AI key set up under Settings → Custom.');
-        }, 500);
-      }
-    });
+      MateyByok.chatVision(messages).then(function (text) {
+        var parsed = (function () { try { return JSON.parse(text); } catch (e) { return null; } })();
+        var suggestions = parsed && parsed.suggestions;
+        if (!suggestions || !suggestions.length) { showResult(resultEl, typeof text === 'string' ? text : 'No suggestions returned'); return; }
+        resultEl.innerHTML = '<div class="lf-lsug-list">' + suggestions.slice(0, 6).map(function (s, i) {
+          return '<div class="lf-lsug"><div class="lf-lnum">' + (i + 1) + '</div><div class="lf-lsug-text">' + esc(s) + '</div></div>';
+        }).join('') + '</div>';
+      }).catch(function (e) {
+        showError(resultEl, e.message || 'Suggestions failed — check your AI key under Settings → Custom.');
+      });
+    }
+
+    render();
   }
 
-  /* ---------- Lifestyle Beat ---------- */
-  function openLifestyle() {
-    var body = '<div class="lifestyle-form"><div class="lifestyle-field"><label class="lifestyle-label">Period</label><select class="lifestyle-input" id="beat-period"><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div><div class="lifestyle-row"><div class="lifestyle-field"><label class="lifestyle-label">Meals Cooked</label><input type="number" class="lifestyle-input" id="beat-meals" value="0" /></div><div class="lifestyle-field"><label class="lifestyle-label">Outfits Worn</label><input type="number" class="lifestyle-input" id="beat-outfits" value="0" /></div></div><div class="lifestyle-row"><div class="lifestyle-field"><label class="lifestyle-label">Discoveries</label><input type="number" class="lifestyle-input" id="beat-discoveries" value="0" /></div><div class="lifestyle-field"><label class="lifestyle-label">Kitchen Events</label><input type="number" class="lifestyle-input" id="beat-kitchen" value="0" /></div></div><div class="lifestyle-field"><label class="lifestyle-label">Weather</label><input type="text" class="lifestyle-input" id="beat-weather" placeholder="e.g., Hot, 38C, sunny" /></div><button class="lifestyle-btn" id="beat-generate" style="margin-top:12px;width:100%">Generate Beat</button></div><div id="lifestyle-result" class="lifestyle-result-container"></div>';
-    var modal = createModal('modal-lifestyle', 'Lifestyle Beat', body);
-    var resultEl = modal.querySelector('#lifestyle-result');
+  /* ============================================================
+     BEAT — stats-only screen (weekly/monthly segmented toggle)
+     ============================================================ */
+  function openBeat() {
+    var accent = ACCENTS.beat;
+    var modal = createModal('modal-beat', 'Beat', 'Your usage rhythm', accent);
+    var period = 'weekly';
+    var sections = [
+      { id: 'grooming', label: 'Grooming', icon: 'scissors', accent: ACCENTS.grooming },
+      { id: 'wardrobe', label: 'Wardrobe', icon: 'shirt', accent: ACCENTS.wardrobe },
+      { id: 'culinary', label: 'Culinary', icon: 'kitchen', accent: ACCENTS.culinary },
+      { id: 'living', label: 'Living', icon: 'home', accent: ACCENTS.living }
+    ];
 
-    modal.querySelector('#beat-generate').addEventListener('click', async function () {
-      var period = modal.querySelector('#beat-period').value;
-      var meals = parseInt(modal.querySelector('#beat-meals').value) || 0;
-      var outfits = parseInt(modal.querySelector('#beat-outfits').value) || 0;
-      var discoveries = parseInt(modal.querySelector('#beat-discoveries').value) || 0;
-      var kitchen = parseInt(modal.querySelector('#beat-kitchen').value) || 0;
-      var weather = modal.querySelector('#beat-weather').value.trim();
-      showLoading(resultEl);
-      var learning = buildLearningContext();
-      var context = 'Period: ' + period + '\n- Stats: meals cooked=' + meals + ', outfits worn=' + outfits + ', discoveries=' + discoveries + ', kitchen events=' + kitchen + (weather ? '\n- Weather: ' + weather : '');
-      var messages = [{ role: 'system', content: PERSONA + '\n\n' + learning }, { role: 'user', content: [{ type: 'text', text: 'Write my ' + period + ' Beat now.\n\n' + context }] }];
-      try {
-        var text = await MateyByok.chat(messages);
-        showResult(resultEl, text);
-      } catch (e) { showError(resultEl, e.message || 'Beat generation failed'); }
-    });
+    function render() {
+      var counts = sections.map(function (s) { return usageCount(s.id, period); });
+      var max = Math.max.apply(null, counts.concat([1]));
+      modal.setBody(
+        '<div class="lf-seg" id="lf-beat-seg">' +
+        '<button type="button" data-period="weekly" class="' + (period === 'weekly' ? 'active' : '') + '">Weekly</button>' +
+        '<button type="button" data-period="monthly" class="' + (period === 'monthly' ? 'active' : '') + '">Monthly</button>' +
+        '</div>' +
+        sections.map(function (s, i) {
+          var c = counts[i];
+          var pct = max > 0 ? Math.round((c / max) * 100) : 0;
+          return '<div class="lf-stat-row">' +
+            '<div class="lf-row-icon" style="background:' + hexToRgba(s.accent, 0.15) + ';color:' + s.accent + '">' + IC(s.icon, 20) + '</div>' +
+            '<div class="lf-row-text"><div class="lf-row-title">' + s.label + '</div>' +
+            '<div class="lf-stat-bar"><div class="lf-stat-fill" style="width:' + (c > 0 ? Math.max(pct, 6) : 0) + '%"></div></div></div>' +
+            '<div class="lf-stat-count">' + c + ' ' + (c === 1 ? 'time' : 'times') + '</div>' +
+            '</div>';
+        }).join('')
+      );
+      modal.querySelectorAll('#lf-beat-seg button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          period = this.dataset.period;
+          modal.querySelectorAll('#lf-beat-seg button').forEach(function (b) { b.classList.remove('active'); });
+          this.classList.add('active');
+          render();
+        });
+      });
+    }
+
+    render();
+  }
+
+  function hexToRgba(hex, alpha) {
+    var m = hex.replace('#', '');
+    var r = parseInt(m.substring(0, 2), 16), g = parseInt(m.substring(2, 4), 16), b = parseInt(m.substring(4, 6), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
   }
 
   /* ---------- wiring ---------- */
   function wire() {
     document.addEventListener('click', function (e) {
-      var item = e.target.closest('.category-item');
-      if (!item) return;
-      var name = item.querySelector('.category-name');
-      if (!name) return;
-      var cat = name.textContent.trim();
-      if (cat === 'Grooming') openGrooming();
-      else if (cat === 'Wardrobe') openWardrobe();
-      else if (cat === 'Culinary') openCulinary();
-      else if (cat === 'Living') openLiving();
-      else if (cat === 'Lifestyle') openLifestyle();
+      var row = e.target.closest('[data-cat]');
+      if (!row || row.closest('.lifestyle-modal')) return;
+      var cat = row.dataset.cat;
+      if (cat === 'grooming') openGrooming();
+      else if (cat === 'wardrobe') openWardrobe();
+      else if (cat === 'culinary') openCulinary();
+      else if (cat === 'living') openLiving();
+      else if (cat === 'beat') openBeat();
     });
+    updateBeatBadge();
   }
 
-  window.MateyLifestyle = { wire: wire };
+  window.MateyLifestyle = {
+    wire: wire,
+    voiceFieldHTML: voiceFieldHTML,
+    wireVoiceField: wireVoiceField,
+    likeBtnHTML: likeBtnHTML,
+    wireLikeButtons: wireLikeButtons,
+    trackUsage: trackUsage
+  };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();
 })();

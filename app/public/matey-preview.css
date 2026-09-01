@@ -6681,3 +6681,362 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ============================================================
+   Lifestyle 2.0 — flat redesign (Grooming/Wardrobe/Culinary/Living/Beat)
+   Tokens: bg #0b0b0d · card #17171b · input #141418/#29292e ·
+   text #f0f0f0–#f5f5f5 · muted #8b8b90 · r12 cards/inputs · r16 screen ·
+   r20 pills · weights 400/500 only · flat fills, no gradients/shadows.
+   Per-section accent injected via --lf-accent (and --lf-accent-deep). */
+
+/* ---------- Home screen ---------- */
+.lf-home { padding-bottom: 24px; }
+.lf-home-title { font-size: 22px; font-weight: 500; color: #f5f5f5; margin: 8px 0 4px; }
+.lf-home-sub { font-size: 13px; font-weight: 400; color: #8b8b90; margin: 0 0 20px; }
+.lf-rows { display: flex; flex-direction: column; gap: 10px; }
+.lf-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #17171b;
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.lf-row:active { opacity: 0.75; }
+.lf-row-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lf-row-text { flex: 1; min-width: 0; }
+.lf-row-title { font-size: 15px; font-weight: 500; color: #f0f0f0; }
+.lf-row-desc { font-size: 12px; font-weight: 400; color: #8b8b90; margin-top: 2px; }
+.lf-row-chevron { color: #8b8b90; display: flex; align-items: center; flex-shrink: 0; }
+.lf-row-badge {
+  background: rgba(175,169,236,0.15);
+  color: #AFA9EC;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* ---------- Shared modal shell (restyle of lifestyle-dialog) ---------- */
+.lifestyle-modal .lifestyle-dialog {
+  background: #0b0b0d;
+  border-radius: 16px 16px 0 0;
+  box-shadow: none;
+  max-height: 96vh;
+}
+.lifestyle-modal .lifestyle-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 20px 12px;
+  border-bottom: none;
+}
+.lifestyle-modal .lifestyle-back {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: -2px 0 0 -8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.lifestyle-head-text { display: flex; flex-direction: column; min-width: 0; }
+.lifestyle-modal .lifestyle-title {
+  font-size: 17px;
+  font-weight: 500;
+  color: #f5f5f5;
+  text-align: left;
+  flex: none;
+}
+.lifestyle-subtitle { font-size: 12px; font-weight: 400; color: #8b8b90; margin-top: 2px; }
+.lifestyle-modal .lifestyle-body { background: #0b0b0d; }
+
+/* ---------- Shared: fields, voice input, chips, primary button ---------- */
+.lf-field { margin-bottom: 18px; }
+.lf-label { display: block; font-size: 13px; font-weight: 500; color: #f0f0f0; margin-bottom: 8px; }
+.lf-vinput { position: relative; display: flex; align-items: center; }
+.lf-vinput input {
+  width: 100%;
+  height: 46px;
+  background: #141418;
+  border: 1px solid #29292e;
+  border-radius: 12px;
+  color: #f0f0f0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  padding: 0 52px 0 14px;
+  outline: none;
+}
+.lf-vinput input:focus { border-color: var(--lf-accent); }
+.lf-mic {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: var(--lf-accent);
+  color: #fff;
+  opacity: 0.9;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.lf-vinput.listening .lf-mic { opacity: 1; animation: lf-pulse 1.2s ease-in-out infinite; }
+@keyframes lf-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+.lf-mic-caption { display: none; font-size: 12px; font-weight: 400; color: var(--lf-accent); margin-top: 6px; }
+.lf-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.lf-chips:empty { display: none; }
+.lf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 400;
+  background: #1c1c20;
+  color: #f0f0f0;
+  max-width: 100%;
+}
+.lf-chip-accent { background: var(--lf-accent); color: #ffffff; }
+.lf-chip span.lf-chip-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lf-chip-x {
+  background: none;
+  border: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.8;
+}
+.lf-btn-primary {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 12px;
+  background: var(--lf-accent, #8b8b90);
+  color: #ffffff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.lf-btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+
+/* ---------- Shared: like button ---------- */
+.lf-like {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(11,11,13,0.55);
+  color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.lf-like.liked { color: var(--lf-accent); }
+.lf-like.liked svg { fill: var(--lf-accent); }
+
+/* ---------- Culinary results ---------- */
+.lf-recipe-card {
+  position: relative;
+  background: #17171b;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.lf-recipe-img {
+  height: 110px;
+  background: rgba(216,90,48,0.15);
+  color: #D85A30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lf-card-title { font-size: 15px; font-weight: 500; color: #f0f0f0; padding: 12px 14px 0; }
+.lf-card-meta { font-size: 12px; font-weight: 400; color: #8b8b90; padding: 2px 14px 14px; }
+
+/* ---------- Grooming ---------- */
+.lf-photo-area {
+  height: 200px;
+  border-radius: 12px;
+  background: #17171b;
+  border: 1.5px dashed #29292e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #8b8b90;
+  font-size: 13px;
+  text-align: center;
+  padding: 0 24px;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+.lf-photo-area img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.lf-photo-area.filled { border-color: transparent; }
+.lf-tips { margin: 14px 0 18px; padding: 0 0 0 18px; }
+.lf-tips li { font-size: 12px; font-weight: 400; color: #8b8b90; line-height: 1.7; }
+.lf-groom-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #17171b;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.lf-groom-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(239,159,39,0.15);
+  color: #EF9F27;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lf-groom-text { flex: 1; min-width: 0; padding-right: 36px; }
+
+/* ---------- Wardrobe ---------- */
+.lf-add-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #17171b;
+  border-radius: 12px;
+  padding: 13px 16px;
+  margin-bottom: 14px;
+  cursor: pointer;
+  color: #378ADD;
+  font-size: 14px;
+  font-weight: 500;
+  -webkit-tap-highlight-color: transparent;
+}
+.lf-add-row:active { opacity: 0.75; }
+.lf-wgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.lf-wthumb {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #17171b;
+}
+.lf-wthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lf-wlabel {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  background: rgba(11,11,13,0.65);
+  color: #f0f0f0;
+  font-size: 11px;
+  font-weight: 400;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+.lf-wempty { font-size: 13px; color: #8b8b90; text-align: center; padding: 20px 0; grid-column: 1 / -1; }
+.lf-outfit-card { background: #17171b; border-radius: 12px; padding: 14px; margin-top: 16px; position: relative; }
+.lf-outfit-thumbs { display: flex; gap: 8px; margin: 12px 0 10px; }
+.lf-outfit-thumbs img { width: 72px; height: 72px; object-fit: cover; border-radius: 12px; }
+.lf-outfit-note { font-size: 12px; font-weight: 400; color: #8b8b90; line-height: 1.5; padding-right: 36px; }
+.lf-inline-editor { background: #17171b; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+
+/* ---------- Living ---------- */
+.lf-lgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.lf-lslot {
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  background: #17171b;
+  border: 1.5px dashed #29292e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #8b8b90;
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+.lf-lslot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.lf-lslot .lf-lslot-label { position: absolute; left: 8px; bottom: 8px; background: rgba(11,11,13,0.65); color: #f0f0f0; padding: 2px 8px; border-radius: 20px; z-index: 1; }
+.lf-lslot.filled { border-color: transparent; }
+.lf-lsug { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #17171b; }
+.lf-lsug:last-child { border-bottom: none; }
+.lf-lnum {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(151,196,89,0.15);
+  color: #97C459;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lf-lsug-text { font-size: 13px; font-weight: 400; color: #f0f0f0; line-height: 1.5; padding-top: 4px; }
+
+/* ---------- Beat ---------- */
+.lf-seg { display: flex; background: #17171b; border-radius: 20px; padding: 4px; margin-bottom: 18px; }
+.lf-seg button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #8b8b90;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 0;
+  border-radius: 20px;
+  cursor: pointer;
+}
+.lf-seg button.active { background: #AFA9EC; color: #0b0b0d; }
+.lf-stat-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; }
+.lf-stat-bar { flex: 1; height: 8px; border-radius: 20px; background: #1c1c20; overflow: hidden; }
+.lf-stat-fill { height: 100%; background: #AFA9EC; border-radius: 20px; min-width: 0; }
+.lf-stat-count { font-size: 12px; font-weight: 400; color: #8b8b90; min-width: 62px; text-align: right; }
