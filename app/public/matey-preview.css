@@ -4894,6 +4894,21 @@ body {
   border-radius: 0 !important;
   backdrop-filter: none !important;
 }
+/* Hard-hide any menu/button elements inside the My-VOTS landing gate */
+#vots-header-menu-btn,
+.vots-link-gate button.journal-header-menu-btn,
+#vots-link-gate button:not(.vots-link-submit) {
+  display: none !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
 #vots-link-gate .vots-link-submit {
   background: var(--accent);
   border-radius: 12px;

@@ -474,26 +474,6 @@
       }
     }
 
-    /* Landing menu (⋮) — settings */
-    var headerMenuBtn = document.getElementById('vots-header-menu-btn');
-    var threeDotMenu = document.getElementById('vots-three-dot-menu');
-    if (headerMenuBtn && threeDotMenu) {
-      headerMenuBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        threeDotMenu.style.display = threeDotMenu.style.display === 'block' ? 'none' : 'block';
-      });
-      var settingsItem = document.createElement('button');
-      settingsItem.className = 'journal-menu-item';
-      settingsItem.type = 'button';
-      settingsItem.textContent = '⚙️ Settings';
-      settingsItem.addEventListener('click', function () {
-        threeDotMenu.style.display = 'none';
-        var overlay = document.getElementById('vots-settings-overlay');
-        if (overlay) overlay.style.display = 'flex';
-      });
-      threeDotMenu.appendChild(settingsItem);
-    }
-
     /* Close menus on outside click */
     document.addEventListener('click', function () {
       if (entryMenu) entryMenu.style.display = 'none';
