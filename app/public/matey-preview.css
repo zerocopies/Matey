@@ -6739,10 +6739,12 @@ body {
 .lifestyle-modal .lifestyle-header {
   display: flex;
   align-items: flex-start;
+  justify-content: flex-start; /* override base space-between — title sits next to the chevron */
   gap: 10px;
   padding: 16px 20px 12px;
   border-bottom: none;
 }
+.lifestyle-modal .lifestyle-head-text { text-align: left; margin-right: auto; }
 .lifestyle-modal .lifestyle-back {
   width: 32px;
   height: 32px;
@@ -6798,13 +6800,17 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  background: var(--lf-accent);
-  color: #fff;
-  opacity: 0.9;
+  background: color-mix(in srgb, var(--lf-accent) 15%, transparent);
+  color: var(--lf-accent);
   padding: 0;
   -webkit-tap-highlight-color: transparent;
 }
-.lf-vinput.listening .lf-mic { opacity: 1; animation: lf-pulse 1.2s ease-in-out infinite; }
+.lf-vinput.listening .lf-mic {
+  opacity: 1;
+  background: var(--lf-accent);
+  color: #fff;
+  animation: lf-pulse 1.2s ease-in-out infinite;
+}
 @keyframes lf-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 .lf-mic-caption { display: none; font-size: 12px; font-weight: 400; color: var(--lf-accent); margin-top: 6px; }
 .lf-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
