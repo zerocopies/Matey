@@ -8,9 +8,6 @@
       .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; display: flex; flex-direction: column; }
     </style>
     <script>
-      /* Instant matte background — set --app-bg before first paint so the
-         html { background-color: var(--app-bg) !important } rule resolves
-         to the themed color immediately. No white flash. */
       try {
         var _bgs = { graphitexx: '#000000', 'cool-panda': '#1a1d23', minimal: '#fafafa' };
         var _t = localStorage.getItem('matey-theme') || 'graphitexx';
@@ -19,7 +16,7 @@
         document.documentElement.style.backgroundColor = _bg;
       } catch (e) {}
     </script>
-    <meta name="description" content="Matey — your on-device personal AI assistant with BYOK AI providers, offline Whisper STT, encrypted journal, and syntax-driven note vault." />
+    <meta name="description" content="Matey — My-VOTS private link journaling." />
     <link rel="icon" href="./images/matey-logo.png" type="image/png" />
     <meta name="theme-color" content="#000000" />
     <title>Matey - My-VOTS</title>
@@ -35,7 +32,6 @@
     <script src="./matey-sentry.js?v=101"></script>
   </head>
   <body>
-
     <div class="app-shell">
       <header class="header">
         <div class="header-top">
@@ -82,133 +78,127 @@
       </nav>
       <div class="tab-border" style="height:1px;background:var(--border-card);width:100%"></div>
 
-      <!-- Landing screen: simple, no card/box, plain background -->
-      <main class="vots-page" id="vots-page">
-        <!-- Link gate (landing screen) -->
-        <div class="vots-link-gate" id="vots-link-gate">
+      <!-- ==================== LOCK SCREEN ==================== -->
+      <main class="vts-lock" id="vts-lock" style="display:none">
+        <div class="vts-lock-content">
+          <div class="vts-lock-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h2 class="vts-lock-title">My-VOTS Locked</h2>
+          <p class="vts-lock-desc">Enter your PIN or draw your pattern to unlock</p>
 
-          <!-- Link input + Start Entry button directly on background (no card) -->
-          <div class="vots-link-field">
-            <input type="url" id="vots-link-input" class="vots-link-input" placeholder="https://twitter.com/user/status/12345 or https://youtube.com/watch?v=..." autocomplete="off" />
-            <button class="vots-link-submit" id="vots-link-submit" type="button">Start Entry</button>
+          <!-- PIN mode -->
+          <div class="vts-lock-mode" id="vts-lock-mode-pin" style="display:none">
+            <input type="password" class="vts-lock-input" id="vts-pin-input" inputmode="numeric" pattern="[0-9]*" placeholder="••••••" maxlength="6" />
+            <button class="vts-btn vts-btn-primary" id="vts-unlock-btn" type="button">Unlock</button>
+            <button class="vts-btn vts-btn-secondary" id="vts-setup-lock-btn" type="button" style="display:none">Set Up PIN</button>
+            <p class="vts-lock-error" id="vts-pin-error" style="display:none">Incorrect PIN</p>
           </div>
 
-          <!-- Light gray instructional helper text -->
-          <div class="vots-link-gate-desc" id="vots-link-helper">
-            My-VOTS is for responding to something public — paste a link and write your own take on it.
-          </div>
-        </div>
-
-        <!-- Three-dot menu dropdown (screen-level, same as Journal) -->
-        <div class="journal-three-dot-menu" id="vots-three-dot-menu" style="display:none">
-          <button class="journal-menu-item" id="vots-delete-entry" type="button">🗑️ Delete</button>
-        </div>
-
-        <!-- Entry screen (mirrors Journal entry form structure) -->
-        <div class="vots-editor-section" id="vots-editor-section" style="display:none">
-          <div class="journal-entry-form" id="vots-entry-form" style="display:none">
-            <!-- Title row: title input (flex-grow) + Save button + ⋮ menu -->
-            <div class="journal-title-row" id="vots-title-row">
-              <input type="text" class="journal-title-input" id="vots-title-input" placeholder="What's this about?" />
-              <button class="journal-btn journal-btn-sm journal-save-btn" id="vots-save-entry-btn" type="button" title="Save entry">Save</button>
-              <button class="journal-btn journal-btn-sm journal-header-menu-btn" id="vots-entry-menu-btn" type="button" title="More">⋮</button>
-            </div>
-
-            <!-- Auto-generated date/time (not editable) -->
-            <div class="journal-datetime" id="vots-datetime"></div>
-
-            <!-- Quiet link attachment (hidden, stored in background) -->
-            <input type="hidden" id="vots-link-ref-input" />
-
-            <!-- Main content textarea (mirrors journal-content-input) -->
-            <div class="journal-content-wrapper" id="vots-content-wrapper">
-              <textarea class="journal-content-input" id="vots-content-input" placeholder="What's your response?" rows="8"></textarea>
-              <input type="file" id="vots-attach-input" accept="*/*" style="display:none" />
-              <div class="journal-attachments" id="vots-attachments"></div>
-            </div>
-
-            <!-- Attachment dropdown menu (reuses Journal classes) -->
-            <div class="journal-attach-menu" id="vots-attach-menu" style="display:none">
-              <button class="journal-menu-item" id="vots-add-image" type="button">📷 Photo</button>
-              <button class="journal-menu-item" id="vots-add-file" type="button">📄 File</button>
-              <button class="journal-menu-item" id="vots-add-location" type="button">📍 Location</button>
-            </div>
+          <!-- Pattern mode -->
+          <div class="vts-lock-mode" id="vts-lock-mode-pattern" style="display:none">
+            <div id="vts-pattern-unlock-container"></div>
+            <button class="vts-btn vts-btn-secondary" id="vts-unlock-pattern-btn" type="button">Draw Pattern</button>
           </div>
 
-          <!-- Three-dot menu dropdown (entry-level, same as Journal) -->
-          <div class="journal-three-dot-menu" id="vots-entry-three-dot-menu" style="display:none">
-            <button class="journal-menu-item" id="vots-save-as-btn" type="button">💾 Save as</button>
-            <button class="journal-menu-item" id="vots-delete-entry-btn" type="button">🗑️ Delete</button>
+          <!-- Setup mode (no lock configured) -->
+          <div class="vts-lock-mode" id="vts-lock-mode-setup" style="display:none">
+            <input type="password" class="vts-lock-input" id="vts-pin-input" inputmode="numeric" pattern="[0-9]*" placeholder="6-digit PIN" maxlength="6" />
+            <button class="vts-btn vts-btn-primary" id="vts-setup-pin-btn" type="button">Set PIN</button>
+            <button class="vts-btn vts-btn-secondary" id="vts-setup-pattern-btn" type="button">Use Pattern Lock</button>
+            <div id="vts-pattern-setup-container" style="margin-top:12px"></div>
           </div>
-        </div>
-
-        <!-- History section -->
-        <div class="vots-history-section" id="vots-history-section">
-          <div class="vots-history" id="vots-history"></div>
-          <div class="vots-history-empty-centered" id="vots-history-empty">No entries yet. Create one above.</div>
         </div>
       </main>
 
-      <!-- Shared edit/symbol/mic toolbar (injected by matey-toolbar.js) -->
-      <div class="md-composer md-composer-symbols-only vots-toolbar matey-toolbar-container" id="vots-composer"></div>
-    </div>
-
-    <!-- PIN Lock Screen -->
-    <div class="journal-lock-screen" id="vots-lock-screen" style="display:none">
-      <div class="journal-lock-content">
-        <div class="journal-lock-icon">🔒</div>
-        <div class="journal-lock-title">My-VOTS Locked</div>
-        <div class="journal-lock-desc">Enter your PIN to unlock your entries.</div>
-        <input type="password" id="vots-pin-input" autocomplete="off" inputmode="numeric" pattern="[0-9]*" />
-        <button class="journal-btn journal-btn-primary" id="vots-pin-submit" type="button">Unlock</button>
-        <button class="journal-btn journal-btn-secondary" id="vots-setup-lock-btn" type="button" style="display:none">Set Up My-VOTS PIN</button>
-      </div>
-    </div>
-
-    <!-- Settings Modal (PIN lock) -->
-    <div class="journal-settings-overlay" id="vots-settings-overlay" style="display:none">
-      <div class="journal-settings-modal">
-        <div class="journal-settings-header">
-          <h3>My-VOTS Settings</h3>
-          <button class="journal-settings-close" id="vots-settings-close" type="button">×</button>
+      <!-- ==================== LANDING / LINK GATE ==================== -->
+      <main class="vts-landing" id="vts-landing" style="display:none">
+        <div class="vts-link-gate" id="vts-link-gate">
+          <div class="vts-link-field">
+            <input type="url" class="vts-link-input" id="vts-link-input" placeholder="https://x.com/user/status/12345 or https://youtube.com/watch?v=..." autocomplete="off" />
+            <button class="vts-link-submit" id="vts-link-submit" type="button">Start Entry</button>
+          </div>
+          <div class="vts-link-gate-desc" id="vts-link-helper">Paste a public link to respond to</div>
         </div>
-        <div class="journal-settings-body">
-          <div class="journal-settings-section">
-            <h4>Security</h4>
-            <div class="journal-setting-row">
-              <label>PIN Lock</label>
-              <button class="journal-setting-btn" id="vots-pin-toggle" type="button">Enable</button>
+
+        <!-- Entry History -->
+        <div class="vts-history-section" id="vts-history-section">
+          <div class="vts-history-header">
+            <h2 class="vts-history-title">Your Responses</h2>
+            <button class="vts-icon-btn" id="vts-settings-btn" type="button" aria-label="Settings">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+          </div>
+          <div class="vts-history-list" id="vts-history-list"></div>
+          <div class="vts-history-empty" id="vts-history-empty">No entries yet. Paste a link above to get started.</div>
+        </div>
+      </main>
+
+      <!-- ==================== EDITOR ==================== -->
+      <main class="vts-editor" id="vts-editor" style="display:none">
+        <div class="vts-editor-header">
+          <button class="vts-icon-btn" id="vts-back-to-landing" type="button" aria-label="Back">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button class="vts-btn vts-btn-primary" id="vts-save-entry-btn" type="button">Save</button>
+          <button class="vts-icon-btn" id="vts-settings-btn" type="button" aria-label="Settings">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51 1z"/></svg>
+          </button>
+        </div>
+
+        <div class="vts-editor-scroll">
+          <!-- Link Card Preview -->
+          <div class="vts-link-card" id="vts-link-card" style="display:none"></div>
+
+          <!-- Headline Mini-Form -->
+          <div class="vts-headline-form">
+            <div class="vts-headline-field">
+              <label class="vts-headline-label">Who / Source</label>
+              <input type="text" class="vts-headline-input" id="vts-headline-who" placeholder="e.g. Elon Musk, The Verge..." />
+            </div>
+            <div class="vts-headline-field">
+              <label class="vts-headline-label">Action Verb</label>
+              <div class="vts-verb-chips" id="vts-verb-chips"></div>
+            </div>
+            <div class="vts-headline-field">
+              <label class="vts-headline-label">About What</label>
+              <input type="text" class="vts-headline-input" id="vts-headline-about" placeholder="e.g. the new AI model..." />
             </div>
           </div>
-          <div class="journal-settings-section">
-            <h4>Entries</h4>
-            <div class="journal-setting-row">
-              <label>Export all entries</label>
-              <button class="journal-setting-btn" id="vots-export-btn" type="button">Export</button>
-            </div>
-          </div>
-          <div class="journal-settings-section">
-            <h4>Privacy</h4>
-            <div class="journal-setting-row">
-              <label>Privacy Policy</label>
-              <a href="./privacy.html" class="journal-setting-btn" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-align:center">View</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Confirm dialog -->
-    <div class="vots-confirm-overlay" id="vots-confirm-overlay">
-      <div class="vots-confirm-dialog">
-        <div class="vots-confirm-icon">⚠️</div>
-        <div class="vots-confirm-title" id="vots-confirm-title"></div>
-        <div class="vots-confirm-desc" id="vots-confirm-desc"></div>
-        <div class="vots-confirm-actions">
-          <button class="vots-btn-secondary" id="vots-confirm-cancel">Cancel</button>
-          <button class="vots-btn-danger" id="vots-confirm-proceed">Proceed</button>
+          <!-- Content Textarea -->
+          <textarea class="vts-entry-content" id="vts-entry-content" placeholder="Your response..." rows="6"></textarea>
+        </div>
+      </main>
+
+      <!-- ==================== SETTINGS OVERLAY ==================== -->
+      <div class="vts-overlay" id="vts-settings-overlay" style="display:none">
+        <div class="vts-sheet">
+          <h3 class="vts-sheet-title">My-VOTS Settings</h3>
+          <button class="vts-sheet-item" id="vts-settings-change-pin" type="button">Change PIN</button>
+          <button class="vts-sheet-item" id="vts-settings-delete" type="button" style="color:var(--danger)">Delete All Data</button>
+          <button class="vts-sheet-item" id="vts-settings-close" type="button">Close</button>
         </div>
       </div>
+
+      <!-- ==================== CONFIRM DIALOG ==================== -->
+      <div class="vts-confirm-overlay" id="vts-confirm" style="display:none">
+        <div class="vts-confirm-box">
+          <div class="vts-confirm-icon">⚠️</div>
+          <div class="vts-confirm-title" id="vts-confirm-title">Confirm</div>
+          <div class="vts-confirm-desc" id="vts-confirm-desc"></div>
+          <div class="vts-confirm-actions">
+            <button class="vts-btn vts-btn-secondary" id="vts-confirm-cancel" type="button">Cancel</button>
+            <button class="vts-btn vts-btn-danger" id="vts-confirm-ok" type="button">Confirm</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TOAST ==================== -->
+      <div class="vts-toast" id="vts-toast" style="display:none">
+        <span id="vts-toast-text"></span>
+      </div>
+
     </div>
 
     <script src="./matey-themes.js?v=101"></script>
@@ -216,30 +206,33 @@
     <script src="./matey-profile.js?v=101"></script>
     <script src="./matey-greet.js?v=101"></script>
     <script src="./matey-feed.js?v=101"></script>
-    <script src="./matey-settings.js?v=101"></script>
-    <script src="./matey-fs.js?v=101"></script>
-    <script src="./matey-keyboard.js?v=101"></script>
-    <script src="./matey-whisper.js?v=101"></script>
-    <script src="./matey-stt.js?v=101"></script>
-    <script src="./matey-mic.js?v=101"></script>
-    <script src="./matey-toolbar.js?v=101"></script>
-    <script src="./matey-init.js?v=101"></script>
-    <script src="./matey-recall.js?v=101"></script>
-    <script src="./matey-rss.js?v=101"></script>
-    <script src="./matey-license.js?v=101"></script>
-    <script src="./matey-adaptive.js?v=101"></script>
-    <script src="./matey-behavior.js?v=101"></script>
-    <script type="module">import { mateyCoach } from './matey-coach.js'; window.mateyCoach = mateyCoach;</script>
     <script src="./matey-ai.js?v=101"></script>
-    <script src="./matey-hooks-manager.js?v=101"></script>
-    <script src="./matey-vots.js?v=101"></script>
-    <script src="./matey-tabs.js?v=101"></script>
+    <script src="./matey-md.js?v=101"></script>
     <script src="./matey-byok.js?v=101"></script>
+    <script src="./matey-agent-harness.js?v=101"></script>
     <script src="./matey-beat.js?v=101"></script>
     <script src="./matey-lifestyle.js?v=101"></script>
-    <script src="./matey-md.js?v=101"></script>
     <script src="./matey-syntax.js?v=101"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.2/mammoth.min.js"></script>
+    <script src="./matey-whisper.js?v=101"></script>
+    <script src="./matey-stt.js?v=101"></script>
+    <script src="./matey-models.js?v=101"></script>
+    <script src="./matey-rss.js?v=101"></script>
+    <script src="./matey-license.js?v=101"></script>
+    <script src="./matey-settings.js?v=101"></script>
+    <script src="./matey-recall.js?v=101"></script>
+    <script src="./matey-behavior.js?v=101"></script>
+    <script type="module">import { mateyCoach } from './matey-coach.js'; window.mateyCoach = mateyCoach;</script>
+    <script src="./matey-adaptive.js?v=101"></script>
+    <script src="./matey-init.js?v=101"></script>
+    <script src="./matey-tabs.js?v=101"></script>
+    <script src="./matey-keyboard.js?v=101"></script>
+    <script src="./matey-mic.js?v=101"></script>
+    <script src="./matey-toolbar.js?v=101"></script>
+    <script src="./matey-fs.js?v=101"></script>
+    <script type="module" src="./matey-shadow-twin.js"></script>
+    <script src="./matey-hooks-manager.js?v=101"></script>
+    <script src="./matey-lock.js?v=101"></script>
+    <script src="./matey-vots.js?v=101"></script>
+    <script src="./vots-ui.js?v=101"></script>
   </body>
 </html>

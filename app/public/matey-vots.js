@@ -1,997 +1,385 @@
-/* Matey VOTS — My-VOTS: link-gated private journaling with media embedding, incognito mode
- * 
- * Shares encryption/lock/search/tags infrastructure with Journal module.
- * Storage key prefixed with 'matey-vots' to keep data separate from Journal.
+/* Matey VOTS — My-VOTS: link-gated private journaling with media embedding
+ *
+ * Storage: IndexedDB (matey-vots) with entries, media, settings stores
+ * Lock: uses MateyLock namespace 'vots'
+ * Privacy: 100% local — zero network calls, zero cloud sync
+ *
+ * Legacy migration: reads localStorage['matey-vots-encrypted'] and
+ * localStorage['matey-vots-lock'], converts plaintext PIN to SHA-256 hash,
+ * writes entries to IndexedDB, then purges legacy keys.
  */
 (function () {
   'use strict';
 
-  var STORAGE_KEY = 'matey-vots-encrypted';
-  var LOCK_KEY = 'matey-vots-lock';
-  var LINK_DRAFT_KEY = 'matey-vots-link-draft';
-  var TITLE_DRAFT_KEY = 'matey-vots-title-draft';
-  var TEXT_DRAFT_KEY = 'matey-vots-text-draft';
-  var VIEWS_KEY = 'matey-vots-view';
+  var DB_NAME = 'matey-vots';
+  var DB_VERSION = 1;
+  var STORE_ENTRIES = 'entries';
+  var STORE_MEDIA = 'media';
+  var STORE_SETTINGS = 'settings';
+  var LEGACY_DATA_KEY = 'matey-vots-encrypted';
+  var LEGACY_LOCK_KEY = 'matey-vots-lock';
+  var NAMESPACE = 'vots';
 
-  var currentLink = null;
-  var currentLinkType = null;
-  var currentAttachments = [];
-  var currentTags = [];
-  var currentEncryptionKey = null;
-  var isUnlocked = false;
-  var currentView = 'list';
+  var _db = null;
+  var _listeners = [];
+  var _migrationDone = false;
 
-  /* ==================== Encryption (mirrors Journal) ==================== */
-  var _enc = new TextEncoder();
-  var _dec = new TextDecoder();
-
-  function strToBytes(str) { return _enc.encode(str); }
-  function bytesToStr(bytes) { return _dec.decode(bytes); }
-
-  function hexToBytes(hex) {
-    var bytes = new Uint8Array(hex.length / 2);
-    for (var i = 0; i < hex.length; i += 2) {
-      bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
-    }
-    return bytes;
-  }
-
-  function bytesToHex(bytes) {
-    var hex = '';
-    for (var i = 0; i < bytes.length; i++) {
-      hex += bytes[i].toString(16).padStart(2, '0');
-    }
-    return hex;
-  }
-
-  async function deriveKey(pin, salt) {
-    var keyMaterial = await crypto.subtle.importKey(
-      'raw', _enc.encode(pin), { name: 'PBKDF2' }, false, ['deriveKey']
-    );
-    return crypto.subtle.deriveKey(
-      { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
-      keyMaterial, { name: 'AES-GCM', length: 256 }, false,
-      ['encrypt', 'decrypt']
-    );
-  }
-
-  async function encryptData(data, pin) {
-    var salt = crypto.getRandomValues(new Uint8Array(16));
-    var key = await deriveKey(pin, salt);
-    var iv = crypto.getRandomValues(new Uint8Array(12));
-    var encrypted = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv: iv },
-      key,
-      strToBytes(JSON.stringify(data))
-    );
-    return {
-      salt: bytesToHex(salt),
-      iv: bytesToHex(iv),
-      data: bytesToHex(new Uint8Array(encrypted))
-    };
-  }
-
-  async function decryptData(encObj, pin) {
-    var key = await deriveKey(pin, hexToBytes(encObj.salt));
-    var decrypted = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: hexToBytes(encObj.iv) },
-      key,
-      hexToBytes(encObj.data)
-    );
-    return JSON.parse(bytesToStr(new Uint8Array(decrypted)));
-  }
-
-  /* ==================== Lock State (mirrors Journal) ==================== */
-  function getLockConfig() {
-    try { return JSON.parse(localStorage.getItem(LOCK_KEY) || 'null'); }
-    catch (e) { return null; }
-  }
-
-  function setLockConfig(config) {
-    localStorage.setItem(LOCK_KEY, JSON.stringify(config));
-  }
-
-  function isLockEnabled() {
-    var cfg = getLockConfig();
-    return cfg && cfg.enabled && cfg.pin;
-  }
-
-  async function verifyPin(pin) {
-    var cfg = getLockConfig();
-    if (!cfg || !cfg.enabled) return true;
-    return pin === cfg.pin;
-  }
-
-  async function unlock(pin) {
-    var ok = await verifyPin(pin);
-    if (!ok) return false;
-    isUnlocked = true;
-    currentEncryptionKey = pin;
-    return true;
-  }
-
-  function lock() {
-    isUnlocked = false;
-    currentEncryptionKey = null;
-  }
-
-  function isLocked() {
-    return isLockEnabled() && !isUnlocked;
-  }
-
-  async function setLock(pin) {
-    setLockConfig({ enabled: true, pin: pin, createdAt: Date.now() });
-  }
-
-  function removeLock() {
-    localStorage.removeItem(LOCK_KEY);
-  }
-
-  /* ==================== Encrypted Data Storage ==================== */
-  async function saveData(data) {
-    if (currentEncryptionKey) {
-      try {
-        var enc = await encryptData(data, currentEncryptionKey);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(enc));
-      } catch (e) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      }
-    } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
-  }
-
-  async function getData() {
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { entries: [], tags: {} };
-      var parsed = JSON.parse(raw);
-      if (parsed && parsed.salt && parsed.iv && parsed.data && currentEncryptionKey) {
-        return await decryptData(parsed, currentEncryptionKey);
-      }
-      return parsed;
-    } catch (e) {
-      return { entries: [], tags: {} };
-    }
-  }
-
-  function saveData(data) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {}
-  }
-
-  function activateIncognito() {
-    var body = document.body;
-    body.classList.add('incognito-active');
-    body.classList.add('vots-mode');
-    try {
-      sessionStorage.setItem('matey-vots-incognito', 'true');
-      window.__votsIncognito = true;
-    } catch (e) {}
-    var incBtn = document.querySelector('.incognito-trigger');
-    if (incBtn) {
-      incBtn.classList.add('active');
-      incBtn.setAttribute('title', 'Incognito mode is ON');
-    }
-  }
-
-   function isValidUrl(str) {
-     try {
-       var url = new URL(str);
-       return url.protocol === 'http:' || url.protocol === 'https:';
-     } catch (e) { return false; }
-   }
-
-   function getDomain(url) {
-     try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return url; }
-   }
-
-   /* ---- Rule-based link-type detection ---- */
-   function detectLinkType(url) {
-     var lower = url.toLowerCase();
-     if (lower.indexOf('twitter.com/') !== -1 || lower.indexOf('x.com/') !== -1) {
-       if (lower.indexOf('/status/') !== -1) return { type: 'tweet', label: 'Tweet', icon: '🐦' };
-       return { type: 'tweet', label: 'Tweet', icon: '🐦' };
-     }
-     if (lower.indexOf('youtube.com/watch') !== -1 || lower.indexOf('youtu.be/') !== -1) {
-       return { type: 'video', label: 'Video', icon: '🎥' };
-     }
-     if (lower.indexOf('instagram.com/p/') !== -1 || lower.indexOf('instagram.com/reel/') !== -1) {
-       return { type: 'instagram', label: 'Instagram Post', icon: '📷' };
-     }
-     return { type: 'article', label: 'Article/Website', icon: '📄' };
-   }
-
-   function isSocialPost(linkType) {
-     return linkType === 'tweet' || linkType === 'instagram';
-   }
-
-  function formatTimestamp(ts) {
-    return new Date(ts).toLocaleString(navigator.language || 'en-US', {
-      dateStyle: 'medium', timeStyle: 'short'
+  /* ==================== UUID ==================== */
+  function uuid() {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = crypto.getRandomValues(new Uint8Array(1))[0] % 16;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
     });
   }
 
-  function formatRelativeTime(ts) {
-    var diff = Date.now() - ts;
-    var mins = Math.floor(diff / 60000);
-    var hours = Math.floor(mins / 60);
-    var days = Math.floor(hours / 24);
-    if (days > 0) return days + 'd ago';
-    if (hours > 0) return hours + 'h ago';
-    if (mins > 0) return mins + 'm ago';
-    return 'just now';
-  }
-
-  function formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  }
-
-  function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
-
-  function showMessage(text) {
-    var existing = document.querySelector('.vots-toast');
-    if (existing) existing.remove();
-    var toast = document.createElement('div');
-    toast.className = 'vots-toast';
-    toast.textContent = text;
-    document.body.appendChild(toast);
-    setTimeout(function () { toast.classList.add('show'); }, 10);
-    setTimeout(function () {
-      toast.classList.remove('show');
-      setTimeout(function () { toast.remove(); }, 200);
-    }, 2000);
-  }
-
-  function showConfirm(title, desc, onProceed) {
-    var overlay = document.getElementById('vots-confirm-overlay');
-    var titleEl = document.getElementById('vots-confirm-title');
-    var descEl = document.getElementById('vots-confirm-desc');
-    if (!overlay) return onProceed();
-    if (titleEl) titleEl.textContent = title;
-    if (descEl) descEl.textContent = desc;
-    overlay.classList.add('show');
-    var onCancel = function () { cleanup(); };
-    var onDone = function () { cleanup(); onProceed(); };
-    function cleanup() {
-      overlay.classList.remove('show');
-      var c = document.getElementById('vots-confirm-cancel');
-      var p = document.getElementById('vots-confirm-proceed');
-      if (c) c.removeEventListener('click', onCancel);
-      if (p) p.removeEventListener('click', onDone);
-    }
-    var cancelBtn = document.getElementById('vots-confirm-cancel');
-    var proceedBtn = document.getElementById('vots-confirm-proceed');
-    if (cancelBtn) cancelBtn.addEventListener('click', onCancel, { once: true });
-    if (proceedBtn) proceedBtn.addEventListener('click', onDone, { once: true });
-  }
-
-  function extractMediaUrl(url) {
-    if (url.indexOf('youtube.com/watch') !== -1 || url.indexOf('youtu.be/') !== -1) {
-      var id = '';
-      var m = url.match(/[?&]v=([^&]+)/) || url.match(/youtu\.be\/([^?&]+)/);
-      if (m) id = m[1];
-      if (id) return { type: 'youtube', id: id, url: 'https://www.youtube.com/embed/' + id };
-    }
-    if (url.indexOf('twitter.com/') !== -1 || url.indexOf('x.com/') !== -1) {
-      var tw = url.match(/\/status\/(\d+)/);
-      if (tw) return { type: 'twitter', url: 'https://twitter.com/i/web/status/' + tw[1] };
-      return { type: 'twitter', url: url };
-    }
-    return { type: 'article', url: url };
-  }
-
-  function renderMediaPreview(media) {
-    var wrap = document.createElement('div');
-    wrap.className = 'vots-media-preview';
-    wrap.dataset.mediaUrl = media.url;
-    if (media.type === 'youtube') {
-      wrap.innerHTML = '<iframe width="100%" height="180" src="' + media.url + '" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-injection" allowfullscreen></iframe>';
-    } else if (media.type === 'twitter') {
-      wrap.innerHTML = '<blockquote class="twitter-tweet"><a href="' + media.url + '">View on X/Twitter</a></blockquote>';
-    } else {
-      var link = document.createElement('a');
-      link.href = media.url;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = media.url;
-      link.className = 'vots-media-link';
-      wrap.appendChild(link);
-    }
-    return wrap;
-  }
-
-  /* ---- Link Gate ---- */
-  function initLinkGate() {
-    var gate = document.getElementById('vots-link-gate');
-    var input = document.getElementById('vots-link-input');
-    var btn = document.getElementById('vots-link-submit');
-    var editorSection = document.getElementById('vots-editor-section');
-
-    if (!gate || !input || !btn || !editorSection) return;
-
-    var draft = '';
-    try { draft = localStorage.getItem(LINK_DRAFT_KEY) || ''; } catch (e) {}
-    input.value = draft;
-
-    input.addEventListener('input', function () {
-      try { localStorage.setItem(LINK_DRAFT_KEY, input.value); } catch (e) {}
-    });
-
-    var submitHandler = function () {
-      var url = input.value.trim();
-      if (!url) {
-        showMessage('My-VOTS is for responding to something public — paste that link to get started.');
-        return;
-      }
-      if (!isValidUrl(url)) {
-        showMessage('Please enter a valid URL (e.g. https://twitter.com/...)');
-        return;
-      }
-      currentLink = url;
-      currentLinkType = detectLinkType(url);
-      try { localStorage.removeItem(LINK_DRAFT_KEY); } catch (e) {}
-
-      /* Store the link quietly — no visible source card */
-      var linkRefInput = document.getElementById('vots-link-ref-input');
-      if (linkRefInput) linkRefInput.value = currentLink;
-
-      /* Show the entry form */
-      var entryForm = document.getElementById('vots-entry-form');
-      if (entryForm) entryForm.style.display = 'block';
-
-      /* Hide the link gate, show the editor section */
-      if (editorSection) editorSection.style.display = 'block';
-
-      /* Update the datetime */
-      var dt = document.getElementById('vots-datetime');
-      if (dt) dt.textContent = formatTimestamp(Date.now());
-
-      /* Focus the title input */
-      var titleInput = document.getElementById('vots-title-input');
-      if (titleInput) {
-        setTimeout(function() { titleInput.focus(); }, 100);
-      }
-    };
-
-    btn.addEventListener('click', submitHandler);
-    input.addEventListener('keypress', function (e) {
-      if (e.key === 'Enter') { e.preventDefault(); submitHandler(); }
-    });
-  }
-
-  /* ---- Back to landing ---- */
-  function initBackToLanding() {
-    var gate = document.getElementById('vots-link-gate');
-    var editorSection = document.getElementById('vots-editor-section');
-    var entryForm = document.getElementById('vots-entry-form');
-    if (!gate || !editorSection || !entryForm) return;
-
-    function goToLanding() {
-      currentLink = null;
-      currentLinkType = null;
-      currentAttachments = [];
-      var linkRefInput = document.getElementById('vots-link-ref-input');
-      if (linkRefInput) linkRefInput.value = '';
-      gate.style.display = 'block';
-      editorSection.style.display = 'none';
-      entryForm.style.display = 'none';
-      var titleInput = document.getElementById('vots-title-input');
-      var contentInput = document.getElementById('vots-content-input');
-      if (titleInput) titleInput.value = '';
-      if (contentInput) contentInput.value = '';
-    }
-
-    /* Cancel button — discard and go back */
-    var cancelBtn = document.getElementById('vots-cancel-btn');
-    if (cancelBtn) {
-      cancelBtn.addEventListener('click', function () {
-        showConfirm(
-          'Discard entry?',
-          'Your current entry will be discarded. You haven\'t saved yet.',
-          goToLanding
-        );
-      });
-    }
-
-    /* Entry menu (⋮) — save as + delete */
-    var entryMenuBtn = document.getElementById('vots-entry-menu-btn');
-    var entryMenu = document.getElementById('vots-entry-three-dot-menu');
-    if (entryMenuBtn && entryMenu) {
-      entryMenuBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        entryMenu.style.display = entryMenu.style.display === 'block' ? 'none' : 'block';
-      });
-
-      var saveAsBtn = document.getElementById('vots-save-as-btn');
-      if (saveAsBtn) {
-        saveAsBtn.addEventListener('click', async function () {
-          entryMenu.style.display = 'none';
-          var titleInput = document.getElementById('vots-title-input');
-          var contentInput = document.getElementById('vots-content-input');
-          if (!titleInput || !contentInput) return;
-
-          var title = titleInput.value.trim() || 'vots-entry';
-          var safeName = title.replace(/[^a-zA-Z0-9\-_ ]/g, '').trim().replace(/\s+/g, '-');
-          if (!safeName) safeName = 'vots-entry';
-          var defaultName = safeName + '.md';
-
-          if (typeof prompt !== 'function') return;
-          var filename = prompt('Enter filename:', defaultName);
-          if (!filename) return;
-          if (!filename.toLowerCase().endsWith('.md')) filename += '.md';
-
-          var content = (titleInput.value.trim() + '\n\n' + contentInput.value).trim();
-
-          try {
-            if (window.MateyFS && MateyFS.supports()) {
-              await MateyFS.writeFile(filename, content);
-              showMessage('Saved as ' + filename);
-            } else if (window.MateyFSAdapter && MateyFSAdapter.saveAsFile) {
-              var result = await MateyFSAdapter.saveAsFile(content, {
-                filename: filename,
-                mimeType: 'text/plain'
-              });
-              if (result && result.ok) {
-                showMessage('Saved as ' + filename);
-              } else {
-                showMessage('Save failed: ' + (result.error || 'unknown error'));
-              }
-            } else {
-              var a = document.createElement('a');
-              a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
-              a.download = filename;
-              a.style.display = 'none';
-              document.body.appendChild(a);
-              a.click();
-              setTimeout(function () { document.body.removeChild(a); }, 100);
-              showMessage('Downloaded ' + filename);
-            }
-          } catch (e) {
-            if (e && e.name === 'AbortError') return;
-            showMessage('Save failed: ' + (e.message || String(e)));
-          }
-        });
-      }
-
-      var deleteEntryBtn = document.getElementById('vots-delete-entry-btn');
-      if (deleteEntryBtn) {
-        deleteEntryBtn.addEventListener('click', function () {
-          entryMenu.style.display = 'none';
-          showConfirm(
-            'Discard entry?',
-            'Your current entry will be discarded. You haven\'t saved yet.',
-            goToLanding
-          );
-        });
-      }
-    }
-
-    /* Close menus on outside click */
-    document.addEventListener('click', function () {
-      if (entryMenu) entryMenu.style.display = 'none';
-      if (threeDotMenu) threeDotMenu.style.display = 'none';
-    });
-  }
-
-  function initAttachments() {
-    var menuBtn = document.getElementById('vots-add-image');
-    var fileBtn = document.getElementById('vots-add-file');
-    var attachInput = document.getElementById('vots-attach-input');
-    var attachMenu = document.getElementById('vots-attach-menu');
-    if (!attachInput) return;
-
-    var handleFiles = function (files) {
-      files.forEach(function (file) {
-        var item = {
-          name: file.name,
-          size: file.size,
-          type: file.type || 'application/octet-stream',
-          id: Date.now().toString() + '_' + Math.random().toString(36).slice(2)
-        };
-        currentAttachments.push(item);
-        try {
-          var reader = new FileReader();
-          reader.onload = function () {
-            item.preview = reader.result;
-            renderAttachment(item);
-          };
-          if (file.type.startsWith('image/')) {
-            reader.readAsDataURL(file);
-          } else {
-            item.preview = null;
-            renderAttachment(item);
-          }
-        } catch (e2) { renderAttachment(item); }
-      });
-    };
-
-    if (menuBtn) {
-      menuBtn.addEventListener('click', function () {
-        attachInput.accept = 'image/*';
-        attachInput.click();
-        if (attachMenu) attachMenu.style.display = 'none';
-      });
-    }
-
-    if (fileBtn) {
-      fileBtn.addEventListener('click', function () {
-        attachInput.accept = '*/*';
-        attachInput.click();
-        if (attachMenu) attachMenu.style.display = 'none';
-      });
-    }
-
-    attachInput.addEventListener('change', function (e) {
-      var files = Array.from(e.target.files || []);
-      if (!files.length) return;
-      handleFiles(files);
-      attachInput.value = '';
-    });
-  }
-
-  function renderAttachment(item) {
-    var list = document.getElementById('vots-attachments');
-    if (!list) return;
-    var div = document.createElement('div');
-    div.className = 'journal-attachment';
-    div.setAttribute('data-id', item.id);
-    if (item.preview) {
-      div.innerHTML = '<img src="' + item.preview + '" class="journal-attachment-thumb" alt="' + escapeHtml(item.name) + '">';
-    } else {
-      var icon = getFileTypeIcon(item.type);
-      div.innerHTML = '<div class="journal-attachment-icon">' + icon + '</div>';
-    }
-    var info = document.createElement('div');
-    info.className = 'journal-attachment-info';
-    info.innerHTML = '<div class="journal-attachment-name">' + escapeHtml(item.name) + '</div>' +
-      '<div class="journal-attachment-size">' + formatFileSize(item.size) + '</div>';
-    div.appendChild(info);
-    var removeBtn = document.createElement('button');
-    removeBtn.className = 'journal-attachment-remove';
-    removeBtn.type = 'button';
-    removeBtn.innerHTML = '&times;';
-    removeBtn.title = 'Remove';
-    removeBtn.addEventListener('click', function () {
-      currentAttachments = currentAttachments.filter(function (a) { return a.id !== item.id; });
-      div.remove();
-    });
-    div.appendChild(removeBtn);
-    list.appendChild(div);
-  }
-
-  function getFileTypeIcon(type) {
-    if (type && type.startsWith('image/')) return '🖼️';
-    if (type && type.includes('pdf')) return '📄';
-    if (type && type.startsWith('text/')) return '📝';
-    if (type && type.startsWith('video/')) return '🎥';
-    if (type && type.startsWith('audio/')) return '🔊';
-    return '📎';
-  }
-
-  /* ---- Save Entry ---- */
-  async function initSaveEntry() {
-    var btn = document.getElementById('vots-save-entry-btn');
-    if (!btn) return;
-
-    btn.addEventListener('click', async function () {
-      var titleInput = document.getElementById('vots-title-input');
-      var contentInput = document.getElementById('vots-content-input');
-      if (!titleInput || !contentInput) return;
-
-      var title = titleInput.value.trim();
-      if (!title) { showMessage('Title is required'); titleInput.focus(); return; }
-      if (!currentLink) { showMessage('A source link is required'); return; }
-
-      var content = contentInput.value;
-
-      if (window.mateyCoach && (title || content)) mateyCoach.evaluate(content || title); // app-wide prompt coaching
-
-      var entry = {
-        id: Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
-        link: currentLink,
-        domain: getDomain(currentLink),
-        linkType: currentLinkType ? currentLinkType.type : 'article',
-        title: title,
-        content: content,
-        tags: currentTags,
-        attachments: currentAttachments.map(function (a) {
-          return { name: a.name, size: a.size, type: a.type, id: a.id };
-        }),
-        timestamp: Date.now(),
-        updatedAt: Date.now()
+  /* ==================== IndexedDB ==================== */
+  function openDB() {
+    if (_db) return Promise.resolve(_db);
+    return new Promise(function (resolve, reject) {
+      var req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = function (e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE_ENTRIES)) {
+          var es = db.createObjectStore(STORE_ENTRIES, { keyPath: 'id' });
+          es.createIndex('linkType', 'linkType', { unique: false });
+          es.createIndex('timestamp', 'timestamp', { unique: false });
+        }
+        if (!db.objectStoreNames.contains(STORE_MEDIA)) {
+          db.createObjectStore(STORE_MEDIA, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
+          db.createObjectStore(STORE_SETTINGS, { keyPath: 'key' });
+        }
       };
-
-      var data = await getData();
-      data.entries.unshift(entry);
-      if (!data.tags) data.tags = {};
-      currentTags.forEach(function (t) { data.tags[t] = true; });
-      await saveData(data);
-
-      try { localStorage.removeItem(TITLE_DRAFT_KEY); } catch (e) {}
-      try { localStorage.removeItem(TEXT_DRAFT_KEY); } catch (e) {}
-      currentLink = null;
-      currentLinkType = null;
-      currentAttachments = [];
-      currentTags = [];
-
-      var gate = document.getElementById('vots-link-gate');
-      var editorSection = document.getElementById('vots-editor-section');
-      var entryForm = document.getElementById('vots-entry-form');
-      if (gate) gate.style.display = 'block';
-      if (editorSection) editorSection.style.display = 'none';
-      if (entryForm) entryForm.style.display = 'none';
-      if (titleInput) titleInput.value = '';
-      if (contentInput) contentInput.value = '';
-      var list = document.getElementById('vots-attachments');
-      if (list) list.innerHTML = '';
-
-      await renderEntryHistory();
-      showMessage('Entry saved');
+      req.onsuccess = function (e) { _db = e.target.result; resolve(_db); };
+      req.onerror = function (e) { reject(e.target.error); };
     });
   }
 
-  /* ---- Entry History ---- */
-  async function renderEntryHistory(searchQuery, tagFilter) {
-    var container = document.getElementById('vots-history');
-    if (!container) return;
-    var data = await getData();
-    if (!data.entries.length) {
-      container.innerHTML = '<div class="vots-history-empty">No entries yet. Create one above.</div>';
-      return;
-    }
+  function tx(store, mode) {
+    return openDB().then(function (db) {
+      return db.transaction(store, mode).objectStore(store);
+    });
+  }
 
-    var entries = data.entries;
-    if (searchQuery) {
-      var q = searchQuery.toLowerCase().trim();
-      entries = entries.filter(function (e) {
+  function reqToPromise(req) {
+    return new Promise(function (resolve, reject) {
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+
+  function txDone(transaction) {
+    return new Promise(function (resolve, reject) {
+      transaction.oncomplete = function () { resolve(); };
+      transaction.onerror = function () { reject(transaction.error); };
+      transaction.onabort = function () { reject(transaction.error || new Error('tx aborted')); };
+    });
+  }
+
+  /* ==================== Legacy Migration ==================== */
+  function migrateLegacyLocalStorage() {
+    if (_migrationDone) return Promise.resolve(false);
+    return new Promise(function (resolve) {
+      try {
+        var legacyData = localStorage.getItem(LEGACY_DATA_KEY);
+        var legacyLock = localStorage.getItem(LEGACY_LOCK_KEY);
+        if (!legacyData && !legacyLock) {
+          resolve(false);
+          return;
+        }
+
+        var lockConfig = null;
+        try { lockConfig = JSON.parse(legacyLock || 'null'); } catch (e) { lockConfig = null; }
+
+        // If there's a plaintext PIN, hash it and store in IndexedDB
+        if (lockConfig && lockConfig.pin) {
+          var salt = generateSalt();
+          hashPin(lockConfig.pin, salt).then(function (pinHash) {
+            return setSetting('pinHash', pinHash).then(function () {
+              return setSetting('pinSalt', salt);
+            });
+          }).then(function () {
+            return finishMigration(legacyData);
+          }).then(function (migrated) {
+            resolve(migrated);
+          }).catch(function () {
+            resolve(false);
+          });
+        } else {
+          finishMigration(legacyData).then(function (migrated) {
+            resolve(migrated);
+          }).catch(function () {
+            resolve(false);
+          });
+        }
+      } catch (e) {
+        resolve(false);
+      }
+    });
+  }
+
+  function finishMigration(legacyData) {
+    return new Promise(function (resolve) {
+      try {
+        var data = JSON.parse(legacyData || '{"entries":[]}');
+        var entries = data.entries || [];
+        if (!entries.length) {
+          purgeLegacy();
+          _migrationDone = true;
+          resolve(false);
+          return;
+        }
+
+        var t = openDB().then(function (db) {
+          var tx = db.transaction([STORE_ENTRIES, STORE_SETTINGS], 'readwrite');
+          var entryStore = tx.objectStore(STORE_ENTRIES);
+          entries.forEach(function (entry) {
+            entryStore.put(entry);
+          });
+          return txDone(tx);
+        }).then(function () {
+          purgeLegacy();
+          _migrationDone = true;
+          notifyListeners('migrated');
+          resolve(true);
+        }).catch(function () {
+          resolve(false);
+        });
+      } catch (e) {
+        resolve(false);
+      }
+    });
+  }
+
+  function purgeLegacy() {
+    try { localStorage.removeItem(LEGACY_DATA_KEY); } catch (e) {}
+    try { localStorage.removeItem(LEGACY_LOCK_KEY); } catch (e) {}
+    try { localStorage.removeItem('matey-vots-link-draft'); } catch (e) {}
+    try { localStorage.removeItem('matey-vots-title-draft'); } catch (e) {}
+    try { localStorage.removeItem('matey-vots-text-draft'); } catch (e) {}
+    try { localStorage.removeItem('matey-vots-view'); } catch (e) {}
+    try { localStorage.removeItem('matey-vots-incognito'); } catch (e) {}
+    try { localStorage.removeItem('matey-vots-temp'); } catch (e) {}
+  }
+
+  /* ==================== PIN Hashing ==================== */
+  function hashPin(pin, salt) {
+    var enc = new TextEncoder();
+    var data = enc.encode(pin + salt);
+    return crypto.subtle.digest('SHA-256', data).then(function (buf) {
+      return Array.from(new Uint8Array(buf)).map(function (b) {
+        return b.toString(16).padStart(2, '0');
+      }).join('');
+    });
+  }
+
+  function generateSalt() {
+    var arr = new Uint8Array(16);
+    crypto.getRandomValues(arr);
+    return Array.from(arr).map(function (b) {
+      return b.toString(16).padStart(2, '0');
+    }).join('');
+  }
+
+  /* ==================== Settings ==================== */
+  function getSetting(key, fallback) {
+    var fullKey = NAMESPACE + ':' + key;
+    return tx(STORE_SETTINGS, 'readonly').then(function (store) {
+      return reqToPromise(store.get(fullKey)).then(function (r) { return r ? r.value : fallback; });
+    });
+  }
+
+  function setSetting(key, value) {
+    var fullKey = NAMESPACE + ':' + key;
+    return tx(STORE_SETTINGS, 'readwrite').then(function (store) {
+      return reqToPromise(store.put({ key: fullKey, value: value }));
+    });
+  }
+
+  /* ==================== Entry CRUD ==================== */
+  function createEntry(data) {
+    var entry = {
+      id: uuid(),
+      link: data.link || '',
+      domain: data.domain || '',
+      linkType: data.linkType || 'article',
+      headline: data.headline || '',
+      title: data.title || '',
+      content: data.content || '',
+      tags: data.tags || [],
+      attachments: data.attachments || [],
+      timestamp: Date.now(),
+      updatedAt: Date.now()
+    };
+    return tx(STORE_ENTRIES, 'readwrite').then(function (store) {
+      return reqToPromise(store.put(entry));
+    }).then(function () {
+      notifyListeners('entriesChanged');
+      return entry;
+    });
+  }
+
+  function getEntry(id) {
+    return tx(STORE_ENTRIES, 'readonly').then(function (store) {
+      return reqToPromise(store.get(id));
+    });
+  }
+
+  function getAllEntries() {
+    return tx(STORE_ENTRIES, 'readonly').then(function (store) {
+      return reqToPromise(store.getAll());
+    }).then(function (entries) {
+      entries.sort(function (a, b) { return b.timestamp - a.timestamp; });
+      return entries;
+    });
+  }
+
+  function updateEntry(id, updates) {
+    return getEntry(id).then(function (entry) {
+      if (!entry) return null;
+      Object.keys(updates).forEach(function (k) { entry[k] = updates[k]; });
+      entry.updatedAt = Date.now();
+      return tx(STORE_ENTRIES, 'readwrite').then(function (store) {
+        return reqToPromise(store.put(entry));
+      }).then(function () {
+        notifyListeners('entriesChanged');
+        return entry;
+      });
+    });
+  }
+
+  function deleteEntry(id) {
+    return getEntry(id).then(function (entry) {
+      if (!entry) return;
+      return openDB().then(function (db) {
+        var t = db.transaction([STORE_ENTRIES, STORE_MEDIA], 'readwrite');
+        t.objectStore(STORE_ENTRIES).delete(id);
+        if (entry.attachments) {
+          entry.attachments.forEach(function (a) {
+            if (a.mediaId) t.objectStore(STORE_MEDIA).delete(a.mediaId);
+          });
+        }
+        return txDone(t);
+      }).then(function () {
+        notifyListeners('entriesChanged');
+      });
+    });
+  }
+
+  function deleteAllEntries() {
+    return getAllEntries().then(function (entries) {
+      var t = openDB().then(function (db) {
+        var tx = db.transaction([STORE_ENTRIES, STORE_MEDIA], 'readwrite');
+        var entryStore = tx.objectStore(STORE_ENTRIES);
+        var mediaStore = tx.objectStore(STORE_MEDIA);
+        entries.forEach(function (entry) {
+          entryStore.delete(entry.id);
+          if (entry.attachments) {
+            entry.attachments.forEach(function (a) {
+              if (a.mediaId) mediaStore.delete(a.mediaId);
+            });
+          }
+        });
+        return txDone(tx);
+      }).then(function () {
+        notifyListeners('entriesChanged');
+      });
+    });
+  }
+
+  /* ==================== Search ==================== */
+  function searchEntries(query) {
+    var q = (query || '').toLowerCase().trim();
+    if (!q) return getAllEntries();
+    return getAllEntries().then(function (entries) {
+      return entries.filter(function (e) {
         return (e.title && e.title.toLowerCase().indexOf(q) !== -1) ||
                (e.content && e.content.toLowerCase().indexOf(q) !== -1) ||
+               (e.headline && e.headline.toLowerCase().indexOf(q) !== -1) ||
                (e.tags && e.tags.some(function (t) { return t.toLowerCase().indexOf(q) !== -1; })) ||
                (e.domain && e.domain.toLowerCase().indexOf(q) !== -1);
       });
-    }
-    if (tagFilter) {
-      entries = entries.filter(function (e) {
-        return e.tags && e.tags.indexOf(tagFilter) !== -1;
-      });
-    }
-
-    var view = currentView;
-    var isGrid = view === 'grid';
-    var itemClass = isGrid ? 'journal-entry-card grid-card' : 'vots-history-item';
-
-    container.innerHTML = entries.map(function (entry) {
-      var tagsHtml = '';
-      if (entry.tags && entry.tags.length) {
-        tagsHtml = '<div class="journal-entry-tags">' +
-          entry.tags.map(function (t) { return '<span class="journal-entry-tag">' + escapeHtml(t) + '</span>'; }).join('') +
-          '</div>';
-      }
-      var lt = entry.linkType || 'article';
-      var ltInfo = detectLinkType(entry.link || '');
-      var badgeHtml = '<span class="vots-type-badge vots-badge-' + lt + '">' + (ltInfo.icon || '📄') + ' ' + (ltInfo.label || 'Article/Website') + '</span>';
-      return '<div class="' + itemClass + '" data-id="' + entry.id + '">' +
-        '<div class="vots-history-time">' + formatRelativeTime(entry.timestamp) + ' ' + badgeHtml + '</div>' +
-        '<div class="vots-history-link"><a href="' + escapeHtml(entry.link) + '" target="_blank" rel="noopener">' + escapeHtml(entry.domain) + '</a></div>' +
-        '<div class="vots-history-title">' + escapeHtml(entry.title) + '</div>' +
-        '<div class="vots-history-preview">' + escapeHtml(entry.content.substring(0, 120)) + (entry.content.length > 120 ? '…' : '') + '</div>' +
-        tagsHtml +
-        (entry.attachments && entry.attachments.length ? '<div class="vots-history-attachments">' + entry.attachments.length + ' attachment' + (entry.attachments.length > 1 ? 's' : '') + '</div>' : '') +
-        '</div>';
-    }).join('');
-
-    container.className = isGrid ? 'vots-history vots-history-grid' : 'vots-history';
+    });
   }
 
-  /* ---- Google Drive Backup ---- */
-  async function backupEntryToDrive(entry) {
-    showMessage('Backing up...');
-    var content = '# ' + entry.title + '\n\n';
-    content += '**Source:** [' + entry.domain + '](' + entry.link + ')\n\n';
-    content += '**Date:** ' + formatTimestamp(entry.timestamp) + '\n\n';
-    content += entry.content;
-    if (entry.attachments && entry.attachments.length) {
-      content += '\n\n**Attachments:**';
-      entry.attachments.forEach(function (a) {
-        content += '\n- ' + a.name + ' (' + formatFileSize(a.size) + ')';
+  /* ==================== Tags ==================== */
+  function getAllTags() {
+    return getAllEntries().then(function (entries) {
+      var tagSet = {};
+      entries.forEach(function (e) {
+        if (e.tags) e.tags.forEach(function (t) { tagSet[t] = true; });
       });
-    }
-    var fileName = 'Story_' + formatTimestamp(entry.timestamp).replace(/[ ,]/g, '_') + '.md';
+      return Object.keys(tagSet).sort();
+    });
+  }
 
+  /* ==================== Link Type Detection (100% local) ==================== */
+  var TWITTER_HOSTS = ['twitter.com', 'x.com', 'mobile.twitter.com', 'm.twitter.com'];
+  var YOUTUBE_HOSTS = ['youtube.com', 'youtu.be', 'm.youtube.com', 'www.youtube.com'];
+
+  function detectLinkType(url) {
     try {
-      if (window.gapi && gapi.client && gapi.client.drive) {
-        var folderId = await getOrCreateDriveFolder();
-        showMessage('Saved to Google Drive');
-        entry.backedUp = true;
-        entry.backupAt = Date.now();
-        saveData(await getData());
-      } else {
-        if (window.MateyFS && MateyFS.supports() && MateyFS.getCurrentWorkspace()) {
-          await MateyFS.writeFile('story/' + fileName, content, { force: true });
-          MateyFS.logActivity('backup', 'story/' + fileName, 'Manual backup');
-        }
-        showMessage('Backed up');
-      }
+      var hostname = new URL(url).hostname.replace(/^www\./, '');
     } catch (e) {
-      showMessage('Backup failed: ' + (e.message || String(e)));
+      return { type: 'article', label: 'Article/Website', icon: 'article' };
     }
+    if (TWITTER_HOSTS.indexOf(hostname) !== -1) {
+      return { type: 'twitter', label: 'Tweet / X Post', icon: 'twitter' };
+    }
+    if (YOUTUBE_HOSTS.indexOf(hostname) !== -1) {
+      return { type: 'youtube', label: 'YouTube Video', icon: 'youtube' };
+    }
+    return { type: 'article', label: 'Article / Website', icon: 'article' };
   }
 
-  async function backupAllToDrive() {
-    var data = await getData();
-    if (!data.entries.length) {
-      showMessage('No entries to back up');
-      return;
-    }
-    showConfirm(
-      'Back up all entries?',
-      'Back up ' + data.entries.length + ' entries.',
-      async function () {
-        var ok = 0;
-        for (var i = 0; i < data.entries.length; i++) {
-          try { await backupEntryToDrive(data.entries[i]); ok++; } catch (e) {}
-        }
-        saveData(data);
-        showMessage('Backed up ' + ok + ' / ' + data.entries.length + ' entries');
-      }
-    );
+  function getDomain(url) {
+    try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return url; }
   }
 
-  function getOrCreateDriveFolder() {
-    return new Promise(function (resolve, reject) {
-      if (typeof gapi === 'undefined' || !gapi.client || !gapi.client.drive) {
-        resolve(null);
-        return;
-      }
-      gapi.client.drive.files.list({
-        q: "mimeType='application/vnd.google-apps.folder' and trashed=false and name='Matey Stories'",
-        fields: 'files(id,name)'
-      }).then(function (response) {
-        var folders = response.result.files;
-        if (folders && folders.length > 0) {
-          resolve(folders[0].id);
-        } else {
-          gapi.client.drive.files.create({
-            resource: { name: 'Matey Stories', mimeType: 'application/vnd.google-apps.folder' },
-            fields: 'id'
-          }).then(function (createResp) {
-            resolve(createResp.result.id);
-          }).catch(reject);
-        }
-      }).catch(reject);
-    });
-  }
-
-  /* ---- Init ---- */
-  async function init() {
-    activateIncognito();
-
-    /* PIN lock check */
-    if (isLockEnabled()) {
-      await showLockScreen();
-      if (isLocked()) {
-        await renderEntryHistory();
-        return;
-      }
-    }
-
-    await initPinLockConfig();
-    initLinkGate();
-    initBackToLanding();
-    initAttachments();
-    await initSaveEntry();
-    initSettingsModal();
-
-    var backupAllBtn = document.getElementById('vots-backup-all');
-    if (backupAllBtn) {
-      backupAllBtn.addEventListener('click', backupAllToDrive);
-    }
-
-    /* Restore drafts */
-    var draft = '';
-    try { draft = localStorage.getItem(LINK_DRAFT_KEY) || ''; } catch (e) {}
-    if (draft) {
-      currentLink = draft;
-      currentLinkType = detectLinkType(draft);
-      var gate = document.getElementById('vots-link-gate');
-      var editorSection = document.getElementById('vots-editor-section');
-      var entryForm = document.getElementById('vots-entry-form');
-      if (gate && editorSection && entryForm) {
-        gate.style.display = 'none';
-        editorSection.style.display = 'block';
-        entryForm.style.display = 'block';
-      }
-      var linkRefInput = document.getElementById('vots-link-ref-input');
-      if (linkRefInput) linkRefInput.value = currentLink;
-      var dt = document.getElementById('vots-datetime');
-      if (dt) dt.textContent = formatTimestamp(Date.now());
-      try { localStorage.removeItem(LINK_DRAFT_KEY); } catch (e) {}
-      var titleInput = document.getElementById('vots-title-input');
-      if (titleInput) {
-        try { titleInput.value = localStorage.getItem(TITLE_DRAFT_KEY) || ''; } catch (e) {}
-      }
-      var contentInput = document.getElementById('vots-content-input');
-      if (contentInput) {
-        try { contentInput.value = localStorage.getItem(TEXT_DRAFT_KEY) || ''; } catch (e) {}
-      }
-    }
-
-    /* Save drafts on input */
-    var titleInput = document.getElementById('vots-title-input');
-    if (titleInput) {
-      titleInput.addEventListener('input', function () {
-        try { localStorage.setItem(TITLE_DRAFT_KEY, titleInput.value); } catch (e) {}
-      });
-    }
-    var contentInput = document.getElementById('vots-content-input');
-    if (contentInput) {
-      contentInput.addEventListener('input', function () {
-        try { localStorage.setItem(TEXT_DRAFT_KEY, contentInput.value); } catch (e) {}
-      });
-    }
-
-    await renderEntryHistory();
-
-    if (contentInput) {
-      window.addEventListener('beforeunload', function () {
-        try { localStorage.setItem('matey-vots-temp', contentInput.value); } catch (e) {}
-      });
-    }
-  }
-
-  /* ---- Pin Lock ---- */
-  function showLockScreen() {
-    return new Promise(function (resolve) {
-      var screen = document.getElementById('vots-lock-screen');
-      var input = document.getElementById('vots-pin-input');
-      var submit = document.getElementById('vots-pin-submit');
-      var historySection = document.getElementById('vots-history-section');
-      if (historySection) historySection.style.display = 'none';
-      if (screen) screen.style.display = 'flex';
-      if (input) { input.value = ''; input.focus(); }
-      var onUnlock = function () {
-        var pin = input ? input.value : '';
-        verifyPin(pin).then(function (ok) {
-          if (ok) {
-            unlock(pin).then(function () {
-              if (screen) screen.style.display = 'none';
-              if (historySection) historySection.style.display = 'block';
-              resolve();
-            });
-          } else {
-            showMessage('Incorrect PIN');
-            if (input) input.focus();
-          }
-        });
-      };
-      if (input) input.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); onUnlock(); }
-      });
-      if (submit) submit.addEventListener('click', onUnlock, { once: true });
-    });
-  }
-
-  /* ---- Pin Lock Config in Settings ---- */
-  async function initPinLockConfig() {
-    var toggleBtn = document.getElementById('vots-pin-toggle');
-    var labelEl = document.querySelector('#sec-models .journal-setting-row[label]');
-    var settingRow = toggleBtn ? toggleBtn.closest('.journal-setting-row') : null;
-    if (!toggleBtn) return;
-    var cfg = getLockConfig();
-    if (cfg && cfg.enabled) {
-      toggleBtn.textContent = 'Change PIN';
-      if (settingRow) settingRow.setAttribute('data-locked', 'true');
-      if (settingRow) {
-        var lbl = settingRow.querySelector('label');
-        if (lbl) lbl.textContent = 'PIN lock enabled';
-      }
-    } else {
-      toggleBtn.textContent = 'Enable';
-      if (settingRow) settingRow.setAttribute('data-locked', 'false');
-      if (settingRow) {
-        var lbl2 = settingRow.querySelector('label');
-        if (lbl2) lbl2.textContent = 'PIN Lock';
-      }
-    }
-    toggleBtn.onclick = function () {
-      showConfirm(
-        'Set PIN for My-VOTS?',
-        'This will encrypt all entries and require a PIN to access them.',
-        async function () {
-          var newPin = prompt('Enter a 4-digit PIN');
-          if (!newPin || newPin.length < 4) return;
-          await setLock(newPin);
-          /* Re-encrypt existing entries with new PIN */
-          var data = await getData();
-          await saveData(data);
-          showMessage('PIN lock enabled');
-          if (toggleBtn) toggleBtn.textContent = 'Change PIN';
-          if (settingRow) {
-            var lbl3 = settingRow.querySelector('label');
-            if (lbl3) lbl3.textContent = 'PIN lock enabled';
-            settingRow.setAttribute('data-locked', 'true');
-          }
-        }
-      );
+  /* ==================== Media ==================== */
+  function saveMedia(blob, meta) {
+    var media = {
+      id: uuid(),
+      blob: blob,
+      type: blob.type,
+      size: blob.size,
+      name: meta && meta.name || '',
+      duration: meta && meta.duration || 0,
+      createdAt: new Date().toISOString()
     };
+    return tx(STORE_MEDIA, 'readwrite').then(function (store) {
+      return reqToPromise(store.put(media));
+    }).then(function () { return media; });
   }
 
-  /* ---- Search ---- */
-  function initSearch() {
-    var searchInput = document.getElementById('vots-search-input');
-    if (!searchInput) return;
-    var timer = null;
-    searchInput.addEventListener('input', function () {
-      clearTimeout(timer);
-      timer = setTimeout(function () {
-        var q = searchInput.value.trim();
-        renderEntryHistory(q);
-      }, 300);
+  function getMediaBlob(id) {
+    return tx(STORE_MEDIA, 'readonly').then(function (store) {
+      return reqToPromise(store.get(id));
+    }).then(function (m) { return m ? m.blob : null; });
+  }
+
+  /* ==================== Events ==================== */
+  function notifyListeners(event) {
+    _listeners.forEach(function (fn) { fn(event); });
+  }
+
+  function onVotsChange(fn) {
+    if (_listeners.indexOf(fn) === -1) _listeners.push(fn);
+  }
+
+  /* ==================== Init ==================== */
+  function init() {
+    openDB().then(function () {
+      return migrateLegacyLocalStorage();
+    }).then(function (migrated) {
+      if (migrated) {
+        console.log('[MateyVots] Legacy localStorage data migrated to IndexedDB');
+      }
+    }).catch(function (e) {
+      console.error('[MateyVots] Init failed:', e);
     });
-  }
-
-  /* ---- View Toggle ---- */
-  function initViewToggle() {
-    var btn = document.getElementById('vots-view-toggle');
-    if (!btn) return;
-    btn.addEventListener('click', function () {
-      currentView = currentView === 'list' ? 'grid' : 'list';
-      try { localStorage.setItem(VIEWS_KEY, JSON.stringify(currentView)); } catch (e) {}
-      renderEntryHistory(document.getElementById('vots-search-input') ? document.getElementById('vots-search-input').value.trim() : '');
-    });
-  }
-
-  /* ---- Settings Modal ---- */
-  function initSettingsModal() {
-    var settingsBtn = document.getElementById('vots-settings-btn');
-    var overlay = document.getElementById('vots-settings-overlay');
-    var closeBtn = document.getElementById('vots-settings-close');
-    var exportBtn = document.getElementById('vots-export-btn');
-    if (settingsBtn && overlay) {
-      settingsBtn.addEventListener('click', function () {
-        overlay.style.display = 'flex';
-      });
-    }
-    if (closeBtn && overlay) {
-      closeBtn.addEventListener('click', function () {
-        overlay.style.display = 'none';
-      });
-    }
-    if (exportBtn) {
-      exportBtn.addEventListener('click', exportEntries);
-    }
-  }
-
-  async function exportEntries() {
-    var data = await getData();
-    if (!data.entries.length) {
-      showMessage('No entries to export');
-      return;
-    }
-    var content = data.entries.map(function (e) {
-      var tags = e.tags && e.tags.length ? '  tags: ' + e.tags.join(', ') : '';
-      return '# ' + e.title + '\n**Source:** [' + e.domain + '](' + e.link + ')**Date:** ' + formatTimestamp(e.timestamp) + '\n\n' + (e.content || '') + tags + '\n\n---\n\n';
-    }).join('\n');
-    try {
-      var blob = new Blob([content], { type: 'text/markdown' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = 'my-vots-' + new Date().toISOString().slice(0, 10) + '.md';
-      a.click();
-      URL.revokeObjectURL(url);
-      showMessage('Exported ' + data.entries.length + ' entries');
-    } catch (e) {
-      showMessage('Export failed');
-    }
   }
 
   if (document.readyState === 'loading') {
@@ -1000,19 +388,31 @@
     init();
   }
 
+  /* ==================== Public API ==================== */
   window.MateyVots = {
-    getData: getData,
-    saveData: saveData,
-    isLocked: isLocked,
-    isLockEnabled: isLockEnabled,
-    unlock: unlock,
-    lock: lock,
-    setLock: setLock,
-    removeLock: removeLock,
-    verifyPin: verifyPin,
-    getEntries: function () { return getData().then(function(d) { return d.entries; }); },
-    getCurrentLink: function () { return currentLink; },
-    formatTimestamp: formatTimestamp,
-    renderEntryHistory: renderEntryHistory
+    /* Migration */
+    migrateLegacyLocalStorage: migrateLegacyLocalStorage,
+    isMigrationDone: function () { return _migrationDone; },
+
+    /* Entries */
+    createEntry: createEntry,
+    getEntry: getEntry,
+    getAllEntries: getAllEntries,
+    updateEntry: updateEntry,
+    deleteEntry: deleteEntry,
+    deleteAllEntries: deleteAllEntries,
+    searchEntries: searchEntries,
+    getAllTags: getAllTags,
+
+    /* Media */
+    saveMedia: saveMedia,
+    getMediaBlob: getMediaBlob,
+
+    /* Link parsing */
+    detectLinkType: detectLinkType,
+    getDomain: getDomain,
+
+    /* Events */
+    onVotsChange: onVotsChange
   };
 })();
