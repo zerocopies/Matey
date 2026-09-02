@@ -37,6 +37,9 @@
   var _audioChunks = [];
   var _recordingStartTime = 0;
   var _autoSaveTimer = null;
+  var _isListening = false;
+  var _speechRecognition = null;
+  var _speechStream = null;
 
   /* ==================== DOM refs ==================== */
   var $ = function (id) { return document.getElementById(id); };
@@ -474,6 +477,101 @@
     if (btn) btn.classList.remove('jnl-toolbar-btn-recording');
   }
 
+  /* ==================== Speech-to-Text ==================== */
+  function getSpeechRecognition() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return null;
+    var rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = 'en-US';
+    return rec;
+  }
+
+  function insertTextAtCursor(text) {
+    var editor = $('jnl-editor-body');
+    if (!editor) return;
+    editor.focus();
+    var start = editor.selectionStart;
+    var end = editor.selectionEnd;
+    var val = editor.value;
+    editor.value = val.substring(0, start) + text + val.substring(end);
+    editor.setSelectionRange(start + text.length, start + text.length);
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function startSpeechToText() {
+    if (_isListening) return;
+    var rec = getSpeechRecognition();
+    if (!rec) {
+      showToast('Speech recognition not supported');
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      _speechStream = stream;
+      _speechRecognition = rec;
+      _isListening = true;
+      rec.onresult = function (e) {
+        var transcript = '';
+        for (var i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) {
+            transcript += e.results[i][0].transcript;
+          }
+        }
+        if (transcript) {
+          insertTextAtCursor(transcript);
+        }
+      };
+      rec.onerror = function (e) {
+        if (e.error === 'not-allowed') {
+          showToast('Microphone permission denied');
+        } else if (e.error !== 'no-speech') {
+          showToast('Speech error: ' + e.error);
+        }
+        stopSpeechToText();
+      };
+      rec.onend = function () {
+        if (_isListening) {
+          try { rec.start(); } catch (err) { stopSpeechToText(); }
+        }
+      };
+      rec.start();
+      showToast('Listening...');
+      var micBtn = document.getElementById('journal-mic-btn');
+      if (micBtn) {
+        micBtn.classList.add('mic-active');
+        micBtn.classList.add('mic-active-oval');
+      }
+    }).catch(function () {
+      showToast('Microphone permission denied');
+    });
+  }
+
+  function stopSpeechToText() {
+    _isListening = false;
+    if (_speechRecognition) {
+      try { _speechRecognition.stop(); } catch (err) {}
+      _speechRecognition = null;
+    }
+    if (_speechStream) {
+      _speechStream.getTracks().forEach(function (t) { t.stop(); });
+      _speechStream = null;
+    }
+    var micBtn = document.getElementById('journal-mic-btn');
+    if (micBtn) {
+      micBtn.classList.remove('mic-active');
+      micBtn.classList.remove('mic-active-oval');
+    }
+  }
+
+  function toggleSpeechToText() {
+    if (_isListening) {
+      stopSpeechToText();
+    } else {
+      startSpeechToText();
+    }
+  }
+
   /* ==================== Mood Picker ==================== */
   function openMoodPicker() {
     var grid = $('jnl-mood-grid');
@@ -909,13 +1007,13 @@
         });
       });
 
-      // Mic button - use journal's voice recording
+      // Mic button - speech-to-text via Web Speech API
       var micBtn = document.getElementById('journal-mic-btn');
       if (micBtn) {
         micBtn.addEventListener('click', function (e) {
           e.preventDefault();
           e.stopPropagation();
-          toggleVoiceRecording();
+          toggleSpeechToText();
         });
       }
     }, 200);
