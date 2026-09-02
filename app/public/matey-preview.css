@@ -7360,6 +7360,11 @@ body {
 }
 
 /* ---------- Coach card ---------- */
+[data-cat="coach"], #lf-coach-card {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
 .lf-coach-icon {
   animation: coach-glow 3s infinite ease-in-out;
 }

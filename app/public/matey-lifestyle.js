@@ -754,7 +754,8 @@
     var sub = document.getElementById('lf-coach-subtitle');
     if (!sub) return;
     var tip = getNextTip();
-    sub.textContent = tip.text.length > 60 ? tip.text.slice(0, 57) + '…' : tip.text;
+    var text = (tip && tip.text) ? tip.text : 'One thing your Agent can do';
+    sub.textContent = text.length > 60 ? text.slice(0, 57) + '…' : text;
   }
 
   function openCoach() {
