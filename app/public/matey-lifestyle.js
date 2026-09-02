@@ -720,6 +720,64 @@
     return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
   }
 
+  /* ============================================================
+     COACH — tip rotation with local hardening state
+     ============================================================ */
+  var COACH_TIPS = [
+    { id: 'tip-1', text: 'You can drop PDFs or CSVs directly into the chat to search and analyze them locally.' },
+    { id: 'tip-2', text: 'Ask your Agent to inspect local directory files using native shell commands.' },
+    { id: 'tip-3', text: 'Set custom workspace filters in Journal to organize entries by tag or keyword.' },
+    { id: 'tip-4', text: 'Your Agent streams responses locally without sending raw text to an external cloud.' },
+    { id: 'tip-5', text: 'Paste X or YouTube links in My-VOTS to draft instant zero-network takes.' },
+    { id: 'tip-6', text: 'Long-press or record up to 60 seconds of voice input with auto noise suppression.' },
+    { id: 'tip-7', text: 'Use pattern or PIN locks to secure private Journal entries locally.' },
+    { id: 'tip-8', text: 'Attach images to extract inline text and context directly into Agent conversations.' }
+  ];
+
+  function getHardenedTips() {
+    try { var v = JSON.parse(localStorage.getItem('matey-coach-hardened')); return Array.isArray(v) ? v : []; }
+    catch (e) { return []; }
+  }
+  function setHardenedTips(arr) { try { localStorage.setItem('matey-coach-hardened', JSON.stringify(arr)); } catch (e) {} }
+  function isTipHardened(tipId) { return getHardenedTips().some(function (h) { return h.tipId === tipId; }); }
+
+  function getNextTip() {
+    var hardened = getHardenedTips();
+    var hardenedIds = hardened.map(function (h) { return h.tipId; });
+    for (var i = 0; i < COACH_TIPS.length; i++) {
+      if (hardenedIds.indexOf(COACH_TIPS[i].id) === -1) return COACH_TIPS[i];
+    }
+    return COACH_TIPS[0];
+  }
+
+  function updateCoachCardSubtitle() {
+    var sub = document.getElementById('lf-coach-subtitle');
+    if (!sub) return;
+    var tip = getNextTip();
+    sub.textContent = tip.text.length > 60 ? tip.text.slice(0, 57) + '…' : tip.text;
+  }
+
+  function openCoach() {
+    var accent = '#FFD166';
+    var modal = createModal('modal-coach', "Matey's Corner", '', accent);
+    var tip = getNextTip();
+
+    modal.setBody(
+      '<div class="lf-coach-tip">' +
+        '<div class="lf-coach-tip-text">' + esc(tip.text) + '</div>' +
+        '<button type="button" class="lf-btn-primary" id="lf-coach-next" style="margin-top:18px;background:' + accent + ';color:#1c1c20">Got it, next one</button>' +
+      '</div>'
+    );
+
+    modal.querySelector('#lf-coach-next').addEventListener('click', function () {
+      var hardened = getHardenedTips();
+      hardened.push({ tipId: tip.id, tipText: tip.text, hardenedAt: new Date().toISOString() });
+      setHardenedTips(hardened);
+      updateCoachCardSubtitle();
+      modal.close();
+    });
+  }
+
   /* ---------- wiring ---------- */
   function wire() {
     document.addEventListener('click', function (e) {
@@ -731,6 +789,7 @@
       else if (cat === 'culinary') openCulinary();
       else if (cat === 'living') openLiving();
       else if (cat === 'beat') openBeat();
+      else if (cat === 'coach') openCoach();
     });
     updateBeatBadge();
   }
