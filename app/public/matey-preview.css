@@ -4364,8 +4364,15 @@ body {
 
   /* Journal two-row symbol toolbar — match Editor/VOTS shared toolbar */
   .md-composer-symbols-only.journal-toolbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
     flex-direction: column;
     gap: 4px;
+    background: var(--bg-card, #181825);
+    border-top: 1px solid var(--border-card, rgba(255, 255, 255, 0.08));
   }
   .md-composer-symbols-only.journal-toolbar .matey-symbol-row {
     display: flex;
@@ -5932,9 +5939,78 @@ body {
 .jnl-editor-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--page-gutter);
   border-bottom: 1px solid var(--border);
+}
+
+.jnl-editor-date-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--page-gutter);
+  border-bottom: 1px solid var(--border-card, rgba(255, 255, 255, 0.08));
+}
+
+.jnl-editor-date-row-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+  min-width: 0;
+}
+
+.jnl-quick-back {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-card, rgba(255, 255, 255, 0.08));
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration-fast);
+  flex-shrink: 0;
+}
+
+.jnl-quick-back:active {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(0.92);
+}
+
+.jnl-editor-date {
+  font-size: var(--font-sm);
+  color: var(--text-dim);
+}
+
+.jnl-editor-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.jnl-quick-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-card, rgba(255, 255, 255, 0.08));
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration-fast);
+  flex-shrink: 0;
+}
+
+.jnl-quick-action:active {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(0.92);
 }
 
 .jnl-editor-scroll {
@@ -5942,28 +6018,7 @@ body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: var(--space-md) var(--page-gutter);
-}
-
-.jnl-editor-title {
-  width: 100%;
-  background: transparent;
-  border: none;
-  color: var(--text);
-  font-size: var(--font-xl);
-  font-weight: var(--font-weight-semibold);
-  outline: none;
-  font-family: inherit;
-  margin-bottom: var(--space-xs);
-}
-
-.jnl-editor-title::placeholder {
-  color: var(--text-dim);
-}
-
-.jnl-editor-date {
-  font-size: var(--font-sm);
-  color: var(--text-dim);
-  margin-bottom: var(--space-md);
+  padding-bottom: calc(var(--space-md) + 220px + env(safe-area-inset-bottom, 0px));
 }
 
 .jnl-editor-body {
@@ -5984,11 +6039,169 @@ body {
   color: var(--text-dim);
 }
 
-.jnl-editor-attachments {
+/* ===== Media Stack (above text canvas) ===== */
+.jnl-media-stack {
   display: flex;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
-  margin-bottom: var(--space-md);
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px var(--page-gutter) 0;
+  background: var(--bg);
+}
+
+.jnl-media-image-card {
+  position: relative;
+  width: 100%;
+  height: 260px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--bg-card, #181825);
+  border: 1px solid var(--border-card, rgba(255, 255, 255, 0.08));
+}
+
+.jnl-media-image-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.jnl-media-image-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(194, 65, 12, 0.12);
+  color: #c2410c;
+}
+
+.jnl-media-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.jnl-media-location-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(194, 65, 12, 0.12);
+  border: 1px solid rgba(194, 65, 12, 0.25);
+  border-radius: 9999px;
+  color: #c2410c;
+  font-size: var(--font-sm);
+}
+
+.jnl-media-location-chip svg {
+  flex-shrink: 0;
+}
+
+.jnl-media-location-chip span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jnl-media-voice-player {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-card, #181825);
+  border: 1px solid var(--border-card, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+}
+
+.jnl-voice-play {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: none;
+  background: rgba(194, 65, 12, 0.2);
+  color: #c2410c;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.jnl-voice-play:active {
+  background: rgba(194, 65, 12, 0.35);
+  transform: scale(0.95);
+}
+
+.jnl-voice-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.jnl-voice-waveform {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+}
+
+.jnl-voice-waveform span {
+  width: 3px;
+  border-radius: 9999px;
+  background: #c2410c;
+  opacity: 0.7;
+}
+
+.jnl-voice-waveform span:nth-child(1) { height: 30%; }
+.jnl-voice-waveform span:nth-child(2) { height: 60%; }
+.jnl-voice-waveform span:nth-child(3) { height: 100%; }
+.jnl-voice-waveform span:nth-child(4) { height: 50%; }
+.jnl-voice-waveform span:nth-child(5) { height: 80%; }
+
+.jnl-voice-duration {
+  font-size: var(--font-xs);
+  color: var(--text-dim);
+}
+
+/* Photo-forward entry card in library */
+.jnl-entry-card-photo {
+  position: relative;
+  min-height: 220px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 1px solid var(--border-card, rgba(255, 255, 255, 0.08));
+}
+
+.jnl-entry-card-photo .jnl-entry-photo-placeholder {
+  display: none;
+}
+
+.jnl-entry-card-photo .jnl-entry-photo-scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--space-lg) var(--space-md) var(--space-md);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.2), transparent);
+  border-radius: 0 0 var(--card-radius) var(--card-radius);
 }
 
 .jnl-attachment-thumb {

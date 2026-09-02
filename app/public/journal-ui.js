@@ -36,6 +36,7 @@
   var _mediaRecorder = null;
   var _audioChunks = [];
   var _recordingStartTime = 0;
+  var _autoSaveTimer = null;
 
   /* ==================== DOM refs ==================== */
   var $ = function (id) { return document.getElementById(id); };
@@ -141,7 +142,6 @@
     if (entryId) {
       MateyJournal.getEntry(entryId).then(function (entry) {
         if (!entry) return;
-        $('jnl-editor-title').value = entry.title || '';
         $('jnl-editor-body').value = entry.body || '';
         $('jnl-editor-date').textContent = formatDate(entry.createdAt);
         _currentTags = entry.tags ? entry.tags.slice() : [];
@@ -152,14 +152,14 @@
         } else {
           $('jnl-editor-body').style.fontFamily = '';
         }
-        renderEditorAttachments();
+        renderMediaStack();
       });
     } else {
-      $('jnl-editor-title').value = '';
       $('jnl-editor-body').value = '';
       $('jnl-editor-body').style.fontFamily = '';
       $('jnl-editor-date').textContent = formatDate(new Date().toISOString());
-      renderEditorAttachments();
+      renderMediaStack();
+      setTimeout(function () { $('jnl-editor-body').focus(); }, 50);
     }
   }
 
@@ -233,7 +233,8 @@
           '</button>';
         card.addEventListener('click', function (e) {
           if (e.target.closest('.jnl-journal-card-menu')) return;
-          goToEntryList(j.id);
+          _currentJournalId = j.id;
+          goToEditor(null);
         });
         card.querySelector('.jnl-journal-card-menu').addEventListener('click', function (e) {
           e.stopPropagation();
@@ -274,7 +275,7 @@
     var name = prompt('Journal name:');
     if (!name || !name.trim()) return;
     MateyJournal.createJournal(name.trim(), COVERS[Math.floor(Math.random() * COVERS.length)]).then(function () {
-      renderLibrary();
+      goToEditor(null);
     });
   }
 
@@ -302,8 +303,7 @@
         var hasPhoto = entry.photos && entry.photos.length;
         if (hasPhoto) {
           card.classList.add('jnl-entry-card-photo');
-          var photoHtml = '<div class="jnl-entry-photo-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>';
-          card.innerHTML = photoHtml +
+          card.innerHTML =
             '<div class="jnl-entry-photo-scrim">' +
               '<div class="jnl-entry-card-title">' + escapeHtml(entry.title || formatDate(entry.createdAt)) + '</div>' +
               '<div class="jnl-entry-card-date">' + formatRelative(entry.createdAt) + '</div>' +
@@ -345,6 +345,10 @@
         img.src = url;
         img.onload = function () { placeholder.style.display = 'none'; };
         card.insertBefore(img, placeholder);
+      } else {
+        card.style.backgroundImage = 'url(' + url + ')';
+        card.style.backgroundSize = 'cover';
+        card.style.backgroundPosition = 'center';
       }
     });
   }
@@ -368,50 +372,6 @@
     });
   }
 
-  /* ==================== Tier 3: Editor ==================== */
-  function renderEditorAttachments() {
-    var container = $('jnl-editor-attachments');
-    var html = '';
-    _currentPhotos.forEach(function (p, i) {
-      html += '<div class="jnl-attachment-thumb" data-type="photo" data-index="' + i + '">' +
-        '<div class="jnl-attachment-thumb-placeholder"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/></svg></div>' +
-        '<button class="jnl-attachment-remove" type="button">&times;</button>' +
-        '</div>';
-    });
-    _currentVoiceNotes.forEach(function (v, i) {
-      html += '<div class="jnl-attachment-voice" data-type="voice" data-index="' + i + '">' +
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>' +
-        '<span class="jnl-voice-duration">' + (v.duration ? formatDuration(v.duration) : 'Voice') + '</span>' +
-        '<button class="jnl-attachment-remove" type="button">&times;</button>' +
-        '</div>';
-    });
-    container.innerHTML = html;
-    container.querySelectorAll('.jnl-attachment-remove').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var parent = btn.parentElement;
-        var type = parent.getAttribute('data-type');
-        var idx = parseInt(parent.getAttribute('data-index'), 10);
-        if (type === 'photo') { _currentPhotos.splice(idx, 1); }
-        else { _currentVoiceNotes.splice(idx, 1); }
-        renderEditorAttachments();
-      });
-    });
-    _currentPhotos.forEach(function (p, i) {
-      var thumb = container.querySelector('.jnl-attachment-thumb[data-index="' + i + '"]');
-      if (!thumb) return;
-      MateyJournal.getMediaBlob(p.id).then(function (blob) {
-        if (!blob || !thumb.isConnected) return;
-        var url = URL.createObjectURL(blob);
-        var img = document.createElement('img');
-        img.className = 'jnl-attachment-thumb-img';
-        img.src = url;
-        var placeholder = thumb.querySelector('.jnl-attachment-thumb-placeholder');
-        if (placeholder) placeholder.style.display = 'none';
-        thumb.insertBefore(img, thumb.firstChild);
-      });
-    });
-  }
-
   function formatDuration(seconds) {
     var m = Math.floor(seconds / 60);
     var s = Math.floor(seconds % 60);
@@ -419,11 +379,10 @@
   }
 
   function saveEntry() {
-    var title = $('jnl-editor-title').value.trim();
     var body = $('jnl-editor-body').value;
     var fontChoice = $('jnl-editor-body').style.fontFamily || null;
     var data = {
-      title: title,
+      title: '',
       body: body,
       tags: _currentTags.slice(),
       photos: _currentPhotos.slice(),
@@ -452,7 +411,7 @@
       MateyJournal.saveMedia(file, { name: file.name }).then(function (media) {
         _currentPhotos.push({ id: media.id, name: media.name, type: media.type });
         processed++;
-        if (processed === files.length) renderEditorAttachments();
+        if (processed === files.length) renderMediaStack();
       });
     });
     e.target.value = '';
@@ -494,7 +453,7 @@
         stream.getTracks().forEach(function (t) { t.stop(); });
         MateyJournal.saveMedia(blob, { name: 'voice-note.webm', duration: duration }).then(function (media) {
           _currentVoiceNotes.push({ id: media.id, duration: duration, type: media.type });
-          renderEditorAttachments();
+          renderMediaStack();
         });
       };
       _mediaRecorder.start(250);
@@ -611,6 +570,86 @@
       grid.appendChild(btn);
     });
     showOverlay('jnl-cover-overlay');
+  }
+
+  /* ==================== Attach Picker ==================== */
+  function showAttachPicker() {
+    var picker = $('jnl-attach-picker');
+    if (picker) {
+      picker.style.display = 'flex';
+      picker.classList.add('jnl-overlay-visible');
+    }
+  }
+
+  function renderMediaStack() {
+    var stack = $('jnl-media-stack');
+    if (!stack) return;
+    var html = '';
+    _currentPhotos.forEach(function (p, i) {
+      html += '<div class="jnl-media-image-card" data-type="photo" data-index="' + i + '">' +
+        '<img class="jnl-media-image-img" src="" alt="" style="display:none" />' +
+        '<button class="jnl-media-remove" type="button" data-remove="' + i + '">&times;</button>' +
+        '</div>';
+    });
+    var loc = _currentTags.find(function (t) { return t.indexOf('\ud83d\udccd') === 0; });
+    if (loc) {
+      html += '<div class="jnl-media-location-chip">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
+        '<span>' + escapeHtml(loc.replace('\ud83d\udccd ', '')) + '</span>' +
+        '<button class="jnl-media-remove" type="button" data-remove-loc="1">&times;</button>' +
+        '</div>';
+    }
+    _currentVoiceNotes.forEach(function (v, i) {
+      html += '<div class="jnl-media-voice-player" data-type="voice" data-index="' + i + '">' +
+        '<button class="jnl-voice-play" type="button" data-voice-index="' + i + '" aria-label="Play">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>' +
+        '</button>' +
+        '<div class="jnl-voice-meta">' +
+        '<div class="jnl-voice-waveform"><span></span><span></span><span></span><span></span><span></span></div>' +
+        '<div class="jnl-voice-duration">' + (v.duration ? formatDuration(v.duration) : 'Voice') + '</div>' +
+        '</div>' +
+        '<button class="jnl-media-remove" type="button" data-remove-voice="' + i + '">&times;</button>' +
+        '</div>';
+    });
+    stack.innerHTML = html;
+    stack.querySelectorAll('.jnl-media-image-img').forEach(function (img) {
+      var card = img.closest('.jnl-media-image-card');
+      var idx = parseInt(card.getAttribute('data-index'), 10);
+      var photo = _currentPhotos[idx];
+      if (!photo) return;
+      MateyJournal.getMediaBlob(photo.id).then(function (blob) {
+        if (!blob || !card.isConnected) return;
+        var url = URL.createObjectURL(blob);
+        img.src = url;
+        img.style.display = 'block';
+        img.onload = function () {
+          var placeholder = card.querySelector('.jnl-media-image-placeholder');
+          if (placeholder) placeholder.style.display = 'none';
+        };
+      });
+    });
+    stack.querySelectorAll('[data-remove]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(this.getAttribute('data-remove'), 10);
+        _currentPhotos.splice(idx, 1);
+        renderMediaStack();
+        renderEditorAttachments();
+      });
+    });
+    stack.querySelectorAll('[data-remove-loc]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _currentTags = _currentTags.filter(function (t) { return t.indexOf('\ud83d\udccd') !== 0; });
+        renderMediaStack();
+      });
+    });
+    stack.querySelectorAll('[data-remove-voice]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(this.getAttribute('data-remove-voice'), 10);
+        _currentVoiceNotes.splice(idx, 1);
+        renderMediaStack();
+        renderEditorAttachments();
+      });
+    });
   }
 
   /* ==================== Action Sheet ==================== */
@@ -750,24 +789,137 @@
 
     /* Editor */
     $('jnl-editor-back').addEventListener('click', function () { goToEntryList(_currentJournalId); });
-    $('jnl-editor-save').addEventListener('click', saveEntry);
-    $('jnl-editor-menu-btn').addEventListener('click', function () { showOverlay('jnl-editor-menu-overlay'); });
-    $('jnl-menu-delete').addEventListener('click', function () {
-      hideOverlay('jnl-editor-menu-overlay');
+    $('jnl-editor-body').addEventListener('input', debounce(function () {
       if (_currentEntryId) {
-        showConfirm('Delete Entry?', 'This entry will be permanently deleted.', function () {
-          MateyJournal.deleteEntry(_currentEntryId).then(function () { goToEntryList(_currentJournalId); });
-        });
-      } else {
-        goToEntryList(_currentJournalId);
+        var body = $('jnl-editor-body').value;
+        var fontChoice = $('jnl-editor-body').style.fontFamily || null;
+        MateyJournal.updateEntry(_currentEntryId, {
+          body: body,
+          fontChoice: fontChoice,
+          tags: _currentTags.slice(),
+          photos: _currentPhotos.slice(),
+          voiceNotes: _currentVoiceNotes.slice(),
+          mood: _currentTags.find(function (t) { return MOODS.some(function (m) { return m.emoji + ' ' + m.label === t; }); }) || null
+        }).catch(function () {});
       }
-    });
-    $('jnl-menu-tags').addEventListener('click', function () {
-      hideOverlay('jnl-editor-menu-overlay');
-      openTagsEditor();
-    });
+    }, 800));
+    $('jnl-quick-attach').addEventListener('click', function () { showAttachPicker(); });
+    $('jnl-attach-pick-photo').addEventListener('click', function () { hideOverlay('jnl-attach-picker'); $('jnl-photo-input').click(); });
+    $('jnl-attach-pick-location').addEventListener('click', function () { hideOverlay('jnl-attach-picker'); addLocation(); });
+    $('jnl-attach-pick-voice').addEventListener('click', function () { hideOverlay('jnl-attach-picker'); toggleVoiceRecording(); });
+    $('jnl-attach-pick-cancel').addEventListener('click', function () { hideOverlay('jnl-attach-picker'); });
+    $('jnl-quick-mood').addEventListener('click', openMoodPicker);
+    $('jnl-quick-font').addEventListener('click', openFontPicker);
 
     /* Toolbar */
+    if (window.MateyToolbar && typeof window.MateyToolbar.init === 'function') {
+      window.MateyToolbar.init('journal', '#md-composer.journal-toolbar');
+    }
+    // Wire double-stacked toolbar buttons to #jnl-editor-body
+    setTimeout(function () {
+      var editor = $('jnl-editor-body');
+      if (!editor) return;
+
+      // Edit row buttons (arrows, cut, copy, paste, pin)
+      document.querySelectorAll('#md-composer .matey-edit-btn').forEach(function (btn) {
+        var action = btn.dataset.action;
+        if (!action) return;
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          editor.focus();
+          var start = editor.selectionStart;
+          var end = editor.selectionEnd;
+          var val = editor.value;
+
+          switch (action) {
+            case 'arrowLeft':
+              editor.setSelectionRange(Math.max(0, start - 1), Math.max(0, end - 1));
+              break;
+            case 'arrowRight':
+              editor.setSelectionRange(Math.min(val.length, start + 1), Math.min(val.length, end + 1));
+              break;
+            case 'arrowUp':
+              var beforeNewline = val.lastIndexOf('\n', start - 1);
+              if (beforeNewline >= 0) {
+                var lineStart = val.lastIndexOf('\n', beforeNewline - 1) + 1;
+                var diff = start - beforeNewline - 1;
+                var newPos = Math.max(lineStart, lineStart + Math.min(diff, val.substring(lineStart, beforeNewline).length));
+                editor.setSelectionRange(newPos, newPos);
+              }
+              break;
+            case 'arrowDown':
+              var nextNewline = val.indexOf('\n', start);
+              if (nextNewline !== -1) {
+                var lineStart = nextNewline + 1;
+                var endOfNextLine = val.indexOf('\n', lineStart);
+                if (endOfNextLine === -1) endOfNextLine = val.length;
+                var lineLen = endOfNextLine - lineStart;
+                var currLineStart = val.lastIndexOf('\n', start - 1) + 1;
+                var diff = start - currLineStart;
+                var newPos = Math.min(lineStart + lineLen, lineStart + Math.min(diff, lineLen));
+                editor.setSelectionRange(newPos, newPos);
+              }
+              break;
+            case 'cut':
+              if (start !== end) {
+                navigator.clipboard.writeText(val.substring(start, end)).then(function () {
+                  editor.value = val.substring(0, start) + val.substring(end);
+                  editor.setSelectionRange(start, start);
+                  editor.dispatchEvent(new Event('input', { bubbles: true }));
+                });
+              }
+              break;
+            case 'copy':
+              if (start !== end) {
+                navigator.clipboard.writeText(val.substring(start, end));
+              }
+              break;
+            case 'paste':
+              navigator.clipboard.readText().then(function (text) {
+                editor.value = val.substring(0, start) + text + val.substring(end);
+                editor.setSelectionRange(start + text.length, start + text.length);
+                editor.dispatchEvent(new Event('input', { bubbles: true }));
+              }).catch(function () {});
+              break;
+            case 'pin':
+              var timestamp = new Date().toLocaleString([], { hour12: true });
+              editor.value = val.substring(0, start) + '[' + timestamp + '] ' + val.substring(end);
+              editor.setSelectionRange(start + timestamp.length + 3, start + timestamp.length + 3);
+              editor.dispatchEvent(new Event('input', { bubbles: true }));
+              break;
+          }
+        });
+      });
+
+      // Symbol row buttons
+      document.querySelectorAll('#md-composer .matey-symbol-btn').forEach(function (btn) {
+        var key = btn.dataset.key;
+        if (!key) return;
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          editor.focus();
+          var start = editor.selectionStart;
+          var end = editor.selectionEnd;
+          var val = editor.value;
+          editor.value = val.substring(0, start) + key + val.substring(end);
+          editor.setSelectionRange(start + key.length, start + key.length);
+          editor.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+      });
+
+      // Mic button - use journal's voice recording
+      var micBtn = document.getElementById('journal-mic-btn');
+      if (micBtn) {
+        micBtn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleVoiceRecording();
+        });
+      }
+    }, 200);
+
     $('jnl-attach-photo').addEventListener('click', function () { $('jnl-photo-input').click(); });
     $('jnl-photo-input').addEventListener('change', handlePhotoSelect);
     $('jnl-attach-voice').addEventListener('click', toggleVoiceRecording);

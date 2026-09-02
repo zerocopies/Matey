@@ -135,19 +135,27 @@
 
       <!-- ==================== TIER 3: EDITOR ==================== -->
       <main class="jnl-editor" id="jnl-editor" style="display:none">
-        <div class="jnl-editor-header">
-          <button class="jnl-icon-btn" id="jnl-editor-back" type="button" aria-label="Back">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <button class="jnl-btn jnl-btn-sm jnl-btn-primary" id="jnl-editor-save" type="button">Save</button>
-          <button class="jnl-icon-btn" id="jnl-editor-menu-btn" type="button" aria-label="More">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-          </button>
+        <div class="jnl-editor-date-row">
+          <div class="jnl-editor-date-row-left">
+            <button class="jnl-icon-btn jnl-quick-back" id="jnl-editor-back" type="button" aria-label="Back">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div class="jnl-editor-date" id="jnl-editor-date"></div>
+          </div>
+          <div class="jnl-editor-quick-actions">
+            <button class="jnl-icon-btn jnl-quick-action" id="jnl-quick-attach" type="button" title="Attach">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            </button>
+            <button class="jnl-icon-btn jnl-quick-action" id="jnl-quick-mood" type="button" title="Add emoji">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            </button>
+            <button class="jnl-icon-btn jnl-quick-action" id="jnl-quick-font" type="button" title="Fonts">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+            </button>
+          </div>
         </div>
+        <div id="jnl-media-stack" class="jnl-media-stack"></div>
         <div class="jnl-editor-scroll">
-          <input type="text" class="jnl-editor-title" id="jnl-editor-title" placeholder="Entry title..." />
-          <div class="jnl-editor-date" id="jnl-editor-date"></div>
-          <div class="jnl-editor-attachments" id="jnl-editor-attachments"></div>
           <textarea class="jnl-editor-body" id="jnl-editor-body" placeholder="What's on your mind?"></textarea>
         </div>
         <div class="jnl-editor-toolbar">
@@ -167,8 +175,29 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
           </button>
         </div>
+        <div id="md-composer" class="journal-toolbar md-composer-symbols-only"></div>
         <input type="file" id="jnl-photo-input" accept="image/*" capture="environment" style="display:none" />
       </main>
+
+      <!-- ==================== ATTACH PICKER OVERLAY ==================== -->
+      <div class="jnl-overlay" id="jnl-attach-picker" style="display:none">
+        <div class="jnl-sheet" id="jnl-attach-sheet">
+          <h3 class="jnl-sheet-title">Attach</h3>
+          <button class="jnl-sheet-item" id="jnl-attach-pick-photo" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Photo
+          </button>
+          <button class="jnl-sheet-item" id="jnl-attach-pick-location" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Location
+          </button>
+          <button class="jnl-sheet-item" id="jnl-attach-pick-voice" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            Voice Note
+          </button>
+          <button class="jnl-sheet-item jnl-sheet-cancel" id="jnl-attach-pick-cancel" type="button">Cancel</button>
+        </div>
+      </div>
 
       <!-- ==================== EDITOR MENU OVERLAY ==================== -->
       <div class="jnl-overlay" id="jnl-editor-menu-overlay" style="display:none">
