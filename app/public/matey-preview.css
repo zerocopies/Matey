@@ -508,7 +508,9 @@ body {
 .content {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  height: 100% !important;
+  overflow-y: scroll !important;
+  -webkit-overflow-scrolling: touch !important;
   padding: var(--section-gap) max(var(--page-gutter), env(safe-area-inset-right, 0px)) 0 max(var(--page-gutter), env(safe-area-inset-left, 0px));
   display: flex;
   flex-direction: column;
@@ -7320,10 +7322,10 @@ body {
    Per-section accent injected via --lf-accent (and --lf-accent-deep). */
 
 /* ---------- Home screen ---------- */
-.lf-home { padding-bottom: 24px; }
+.lf-home { padding-bottom: 140px !important; }
 .lf-home-title { font-size: 22px; font-weight: 500; color: #f5f5f5; margin: 8px 0 4px; }
 .lf-home-sub { font-size: 13px; font-weight: 400; color: #8b8b90; margin: 0 0 20px; }
-.lf-rows { display: flex; flex-direction: column; gap: 10px; }
+.lf-rows { display: flex; flex-direction: column; gap: 10px; padding-bottom: 40px !important; }
 .lf-row {
   display: flex;
   align-items: center;

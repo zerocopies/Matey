@@ -484,7 +484,8 @@
     var rec = new SR();
     rec.continuous = true;
     rec.interimResults = true;
-    rec.lang = 'en-US';
+    rec.lang = navigator.language || 'en-US';
+    rec.maxAlternatives = 1;
     return rec;
   }
 
@@ -519,10 +520,14 @@
           }
         }
         if (transcript) {
-          insertTextAtCursor(transcript);
+          insertTextAtCursor(transcript + ' ');
         }
       };
       rec.onerror = function (e) {
+        console.error('[SpeechRec Error]:', e.error);
+        if (e.error === 'network' || e.error === 'service-not-allowed') {
+          alert('Speech recognition requires a network connection or Google speech service. Please ensure it is enabled in Android settings.');
+        }
         if (e.error === 'not-allowed') {
           showToast('Microphone permission denied');
         } else if (e.error !== 'no-speech') {
@@ -531,6 +536,7 @@
         stopSpeechToText();
       };
       rec.onend = function () {
+        console.log('[SpeechRec Ended]');
         if (_isListening) {
           try { rec.start(); } catch (err) { stopSpeechToText(); }
         }
