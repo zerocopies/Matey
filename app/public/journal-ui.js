@@ -815,8 +815,12 @@
     /* Listen for auto-lock */
     MateyJournal.onJournalChange(function (event) {
       if (event === 'autoLocked' || event === 'locked') {
-        showLock();
-        activateIncognitoIcon();
+        MateyJournal.isLockEnabled().then(function (enabled) {
+          if (enabled) {
+            showLock();
+            activateIncognitoIcon();
+          }
+        });
       } else if (event === 'unlocked') {
         activateIncognitoIcon();
       }

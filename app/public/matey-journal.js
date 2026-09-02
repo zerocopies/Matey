@@ -385,11 +385,14 @@
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) {
         _backgroundTime = Date.now();
-        getSetting('autoLockMs', 30000).then(function (ms) {
-          _autoLockTimer = setTimeout(function () {
-            lockJournal();
-            notifyListeners('autoLocked');
-          }, ms);
+        isLockEnabled().then(function (enabled) {
+          if (!enabled) return;
+          getSetting('autoLockMs', 30000).then(function (ms) {
+            _autoLockTimer = setTimeout(function () {
+              lockJournal();
+              notifyListeners('autoLocked');
+            }, ms);
+          });
         });
       } else {
         if (_autoLockTimer) { clearTimeout(_autoLockTimer); _autoLockTimer = null; }

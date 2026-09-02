@@ -37,6 +37,12 @@
   --accent-green-dim: rgba(61, 220, 132, 0.15);
   --accent-green-text: var(--accent-green);
 
+  /* Journal / Lifestyle dark tokens */
+  --bg-card: var(--app-surface-raised, #181825);
+  --border-card: rgba(255, 255, 255, 0.08);
+  --text-primary: #ffffff;
+  --text-dim: var(--app-muted, #9399b2);
+
   /* Typography — blueprint scale */
   --font-xs: 10px;
   --font-sm: 12px;
@@ -5615,8 +5621,8 @@ body {
   gap: var(--space-md);
   padding: var(--space-md);
   margin-bottom: var(--space-sm);
-  background: var(--card-bg);
-  border: 1px solid var(--border);
+  background: var(--bg-card, #181825);
+  border: 1px solid var(--border-card, rgba(255, 255, 255, 0.08));
   border-radius: var(--card-radius);
   cursor: pointer;
   transition: all var(--duration-fast);
@@ -5633,6 +5639,7 @@ body {
   height: 56px;
   border-radius: var(--radius-md);
   background: var(--jnl-cover);
+  border: 2px solid rgba(255, 255, 255, 0.12);
   flex-shrink: 0;
 }
 
@@ -5785,8 +5792,8 @@ body {
 
 /* Entry Card */
 .jnl-entry-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
+  background: var(--bg-card, #181825);
+  border: 1px solid var(--border-card, rgba(255, 255, 255, 0.08));
   border-radius: var(--card-radius);
   margin-bottom: var(--space-md);
   cursor: pointer;
@@ -5802,7 +5809,7 @@ body {
   position: relative;
   border: none;
   padding: 0;
-  background: var(--bg);
+  background: var(--bg-card, #181825);
 }
 
 .jnl-entry-photo-placeholder {
@@ -5988,10 +5995,11 @@ body {
   position: relative;
   width: 56px;
   height: 56px;
-  border-radius: var(--radius-sm);
+  border-radius: 9999px;
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-card, rgba(255, 255, 255, 0.08));
   flex-shrink: 0;
+  background: var(--bg-card, #181825);
 }
 
 .jnl-attachment-thumb-placeholder {
@@ -6000,8 +6008,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--card-bg);
-  color: var(--text-dim);
+  background: rgba(194, 65, 12, 0.12);
+  color: #c2410c;
 }
 
 .jnl-attachment-thumb-img {
@@ -6014,12 +6022,12 @@ body {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-sm);
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  background: rgba(194, 65, 12, 0.12);
+  border: 1px solid rgba(194, 65, 12, 0.25);
+  border-radius: 9999px;
   font-size: var(--font-xs);
-  color: var(--text-secondary);
+  color: #c2410c;
 }
 
 .jnl-voice-duration {
@@ -6052,19 +6060,19 @@ body {
 .jnl-editor-toolbar {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-sm) var(--page-gutter);
-  padding-bottom: calc(var(--space-sm) + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--border);
-  background: var(--card-bg);
+  gap: 8px;
+  padding: 10px var(--page-gutter);
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border-card, rgba(255, 255, 255, 0.08));
+  background: var(--bg-card, #181825);
 }
 
 .jnl-toolbar-btn {
   width: 40px;
   height: 40px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: transparent;
+  border-radius: 9999px;
+  border: 1px solid var(--border-card, rgba(255, 255, 255, 0.08));
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
   cursor: pointer;
   display: flex;
@@ -6075,20 +6083,20 @@ body {
 }
 
 .jnl-toolbar-btn:active {
-  background: var(--border);
+  background: rgba(255, 255, 255, 0.1);
   transform: scale(0.92);
 }
 
 .jnl-toolbar-btn-recording {
-  background: var(--accent-green);
-  border-color: var(--accent-green);
-  color: #fff;
+  background: #c2410c;
+  border-color: #c2410c;
+  color: #ffffff;
   animation: jnl-mic-pulse 1.5s ease-in-out infinite;
 }
 
 @keyframes jnl-mic-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(194, 65, 12, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(194, 65, 12, 0); }
 }
 
 /* Overlays / Sheets */
