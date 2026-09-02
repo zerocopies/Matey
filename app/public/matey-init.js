@@ -2,6 +2,34 @@
 (function () {
   'use strict';
 
+  /* ---- Stage 9B: Cold-start measurement ---- */
+  var _bootStart = performance.now();
+  var _coldStartMs = null;
+
+  var _brainReady = null;
+  function _loadBrain() {
+    if (window.BrainState) return Promise.resolve();
+    if (_brainReady) return _brainReady;
+    _brainReady = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = './matey-brain.js';
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    return _brainReady;
+  }
+
+  function measureColdStart() {
+    if (_coldStartMs != null) return _coldStartMs;
+    _coldStartMs = Math.round(performance.now() - _bootStart);
+    var navEntry = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || {};
+    var jsParseMs = Math.round(performance.now() - _bootStart);
+    console.log('[MateyBoot] Cold start: ' + _coldStartMs + 'ms (JS init' + (navEntry.domContentLoadedEventEnd ? ', DOM ready: ' + Math.round(navEntry.domContentLoadedEventEnd) + 'ms' : '') + ')');
+    try { localStorage.setItem('matey-cold-start-ms', String(_coldStartMs)); } catch (e) {}
+    return _coldStartMs;
+  }
+
   /* ---- App Lock Gate ---- */
   var APP_LOCK_KEY = 'matey-app-lock';
   var APP_LOCK_SESSION = 'matey-app-lock-session';
@@ -198,16 +226,18 @@
     row.querySelector('#upgrade-btn').addEventListener('click',function(){MateyLicense.unlock();row.remove();initLicenseUI();});card.appendChild(row);
   }
 
-  function init(){
-    initWhisperUI();initLicenseUI();
-    // Track page visit for adaptive ML
-    if (window.MateyBehavior) {
-      var page = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
-      MateyBehavior.trackPage(page);
-    }
-    // Gate the app with PIN/biometric lock if enabled
-    appLockScreen();
-   }
-  window.MateyInit = { initWhisperUI: initWhisperUI, initLicenseUI: initLicenseUI };
+   async function init(){
+      try { await _loadBrain(); if (typeof BrainState !== 'undefined' && BrainState.init) { await BrainState.init(); } } catch (e) { console.warn('[MateyInit] BrainState init failed:', e); }
+      initWhisperUI();initLicenseUI();
+      // Track page visit for adaptive ML
+      if (window.MateyBehavior) {
+        var page = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
+        MateyBehavior.trackPage(page);
+      }
+      // Gate the app with PIN/biometric lock if enabled
+      appLockScreen();
+      measureColdStart();
+     }
+   window.MateyInit = { initWhisperUI: initWhisperUI, initLicenseUI: initLicenseUI, getColdStartMs: function () { return _coldStartMs != null ? _coldStartMs : measureColdStart(); } };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
