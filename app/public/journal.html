@@ -7,14 +7,14 @@
       html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
       .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; display: flex; flex-direction: column; }
     </style>
-    <meta name="description" content="Matey — your on-device personal AI assistant with BYOK AI providers, offline Whisper STT, encrypted journal, and syntax-driven note vault." />
+    <meta name="description" content="Matey Journal — private, encrypted, local-first journaling." />
     <meta name="page-type" content="journal" />
     <link rel="icon" href="./images/matey-logo.png" type="image/png" />
     <meta name="theme-color" content="#000000" />
     <title>Matey - Journal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script src="./version.js"></script>
     <script>
       document.write('<link rel="stylesheet" href="./matey-preview.css?v=' + MATEY_CSS_VERSION + '">');
@@ -71,71 +71,185 @@
 
       <div class="tab-border" style="height:1px;background:var(--border-card);width:100%"></div>
 
-      <main class="journal-page" id="journal-page">
-        <!-- Lock Screen -->
-        <div class="journal-lock-screen" id="journal-lock-screen" style="display:none">
-          <div class="journal-lock-content">
-            <div class="journal-lock-icon">🔒</div>
-            <h2 class="journal-lock-title">Journal Locked</h2>
-            <p class="journal-lock-desc">Enter your PIN to unlock your encrypted journal</p>
-            <input type="password" id="journal-pin-input" inputmode="numeric" pattern="[0-9]*" placeholder="••••" />
-            <button class="journal-btn journal-btn-primary" id="journal-unlock-btn" type="button">Unlock</button>
-            <button class="journal-btn journal-btn-secondary" id="journal-setup-lock-btn" type="button" style="display:none">Set Up Journal PIN</button>
+      <!-- ==================== LOCK SCREEN ==================== -->
+      <div class="jnl-lock" id="jnl-lock" style="display:none">
+        <div class="jnl-lock-content">
+          <div class="jnl-lock-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           </div>
+          <h2 class="jnl-lock-title">Journal Locked</h2>
+          <p class="jnl-lock-desc" id="jnl-lock-desc">Enter your PIN to unlock</p>
+          <input type="password" class="jnl-lock-input" id="jnl-pin-input" inputmode="numeric" pattern="[0-9]*" placeholder="••••" maxlength="8" />
+          <button class="jnl-btn jnl-btn-primary" id="jnl-unlock-btn" type="button">Unlock</button>
+          <button class="jnl-btn jnl-btn-secondary" id="jnl-setup-btn" type="button" style="display:none">Set Up PIN</button>
+          <p class="jnl-lock-error" id="jnl-lock-error" style="display:none">Incorrect PIN</p>
         </div>
-
-        <!-- Journal Main -->
-      <div class="journal-main" id="journal-main" style="display:none">
-        <!-- Entries List -->
-        <div class="journal-entries" id="journal-entries">
-          <p class="journal-empty-state">No entries yet.</p>
-        </div>
-
-        <!-- New Entry FAB -->
-        <button class="journal-fab" id="journal-new-entry-btn" type="button" title="New entry">
-          <span class="journal-fab-icon">+</span>
-        </button>
       </div>
 
-        <!-- New/Edit Entry Form -->
-        <div class="journal-entry-form" id="journal-entry-form" style="display:none">
-          <!-- Title row: title input (flex-grow) + Save button + ⋮ menu -->
-          <div class="journal-title-row" id="journal-title-row">
-            <input type="text" class="journal-title-input" id="journal-title-input" placeholder="Enter the title..." />
-            <button class="journal-btn journal-btn-sm journal-save-btn" id="journal-save-btn" type="button" title="Save entry">Save</button>
-            <button class="journal-btn journal-btn-sm journal-header-menu-btn" id="journal-header-menu-btn" type="button" title="More">⋮</button>
-          </div>
-
-          <!-- Auto-generated date/time (not editable) -->
-          <div class="journal-datetime" id="journal-datetime"></div>
-
-          <!-- Main content textarea -->
-          <div class="journal-content-wrapper" id="journal-content-wrapper">
-            <textarea class="journal-content-input" id="journal-content-input" placeholder="What's on your mind?" rows="8"></textarea>
-            <input type="file" id="journal-attach-input" accept="image/*" style="display:none" />
-            <div class="journal-attachments" id="journal-attachments"></div>
-          </div>
-
-          <!-- Attachment dropdown menu -->
-          <div class="journal-attach-menu" id="journal-attach-menu" style="display:none">
-            <button class="journal-menu-item" id="journal-add-image" type="button">📷 Photo</button>
-            <button class="journal-menu-item" id="journal-add-file" type="button">📄 File</button>
-            <button class="journal-menu-item" id="journal-add-location" type="button">📍 Location</button>
-          </div>
+      <!-- ==================== TIER 1: LIBRARY ==================== -->
+      <main class="jnl-library" id="jnl-library" style="display:none">
+        <div class="jnl-library-header">
+          <h1 class="jnl-library-title">Journals</h1>
+          <button class="jnl-btn jnl-btn-primary jnl-new-journal-btn" id="jnl-new-journal-btn" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Journal
+          </button>
         </div>
-
-        <!-- Three-dot menu dropdown (screen-level) -->
-        <div class="journal-three-dot-menu" id="journal-three-dot-menu" style="display:none">
-          <button class="journal-menu-item" id="journal-save-as-btn" type="button">💾 Save as</button>
-          <button class="journal-menu-item" id="journal-delete-entry" type="button">🗑️ Delete</button>
+        <div class="jnl-library-list" id="jnl-library-list"></div>
+        <div class="jnl-library-empty" id="jnl-library-empty" style="display:none">
+          <div class="jnl-library-empty-icon">📓</div>
+          <p class="jnl-library-empty-text">No journals yet</p>
+          <p class="jnl-library-empty-sub">Create your first journal to start writing</p>
         </div>
       </main>
 
-      <!-- Symbol toolbar only — no chat box; keyboard symbols insert into active text input -->
-      <!-- Shared edit/symbol/mic toolbar (injected by matey-toolbar.js) -->
-      <div class="md-composer md-composer-symbols-only journal-toolbar matey-toolbar-container" id="md-composer"></div>
-     </div>
+      <!-- ==================== TIER 2: ENTRY LIST ==================== -->
+      <main class="jnl-entry-list" id="jnl-entry-list" style="display:none">
+        <div class="jnl-entry-list-header">
+          <button class="jnl-icon-btn" id="jnl-entry-list-back" type="button" aria-label="Back">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <h2 class="jnl-entry-list-title" id="jnl-journal-name">Journal</h2>
+          <div class="jnl-entry-list-actions">
+            <button class="jnl-icon-btn" id="jnl-search-btn" type="button" aria-label="Search">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
+            <button class="jnl-icon-btn" id="jnl-journal-settings-btn" type="button" aria-label="Journal settings">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="jnl-search-bar" id="jnl-search-bar" style="display:none">
+          <input type="text" class="jnl-search-input" id="jnl-search-input" placeholder="Search entries..." />
+        </div>
+        <div class="jnl-tags-filter" id="jnl-tags-filter"></div>
+        <div class="jnl-entries" id="jnl-entries"></div>
+        <div class="jnl-entries-empty" id="jnl-entries-empty" style="display:none">
+          <p class="jnl-entries-empty-text">No entries yet</p>
+          <p class="jnl-entries-empty-sub">Tap + to write your first entry</p>
+        </div>
+        <button class="jnl-fab" id="jnl-new-entry-fab" type="button" title="New entry">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </main>
+
+      <!-- ==================== TIER 3: EDITOR ==================== -->
+      <main class="jnl-editor" id="jnl-editor" style="display:none">
+        <div class="jnl-editor-header">
+          <button class="jnl-icon-btn" id="jnl-editor-back" type="button" aria-label="Back">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button class="jnl-btn jnl-btn-sm jnl-btn-primary" id="jnl-editor-save" type="button">Save</button>
+          <button class="jnl-icon-btn" id="jnl-editor-menu-btn" type="button" aria-label="More">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+        </div>
+        <div class="jnl-editor-scroll">
+          <input type="text" class="jnl-editor-title" id="jnl-editor-title" placeholder="Entry title..." />
+          <div class="jnl-editor-date" id="jnl-editor-date"></div>
+          <div class="jnl-editor-attachments" id="jnl-editor-attachments"></div>
+          <textarea class="jnl-editor-body" id="jnl-editor-body" placeholder="What's on your mind?"></textarea>
+        </div>
+        <div class="jnl-editor-toolbar">
+          <button class="jnl-toolbar-btn" id="jnl-attach-photo" type="button" title="Add photo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </button>
+          <button class="jnl-toolbar-btn" id="jnl-attach-voice" type="button" title="Record voice note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <button class="jnl-toolbar-btn" id="jnl-attach-mood" type="button" title="Mood">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          </button>
+          <button class="jnl-toolbar-btn" id="jnl-attach-location" type="button" title="Location">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </button>
+          <button class="jnl-toolbar-btn" id="jnl-attach-font" type="button" title="Font">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+          </button>
+        </div>
+        <input type="file" id="jnl-photo-input" accept="image/*" capture="environment" style="display:none" />
+      </main>
+
+      <!-- ==================== EDITOR MENU OVERLAY ==================== -->
+      <div class="jnl-overlay" id="jnl-editor-menu-overlay" style="display:none">
+        <div class="jnl-sheet" id="jnl-editor-menu-sheet">
+          <button class="jnl-sheet-item" id="jnl-menu-delete" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Delete Entry
+          </button>
+          <button class="jnl-sheet-item" id="jnl-menu-tags" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            Edit Tags
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================== JOURNAL SETTINGS OVERLAY ==================== -->
+      <div class="jnl-overlay" id="jnl-settings-overlay" style="display:none">
+        <div class="jnl-sheet" id="jnl-settings-sheet">
+          <h3 class="jnl-sheet-title">Journal Settings</h3>
+          <button class="jnl-sheet-item" id="jnl-settings-rename" type="button">Rename Journal</button>
+          <button class="jnl-sheet-item" id="jnl-settings-cover" type="button">Change Cover</button>
+          <button class="jnl-sheet-item" id="jnl-settings-autolock" type="button">Auto-lock Timeout</button>
+          <button class="jnl-sheet-item" id="jnl-settings-pin" type="button">Change PIN</button>
+          <button class="jnl-sheet-item jnl-sheet-danger" id="jnl-settings-delete" type="button">Delete Journal</button>
+        </div>
+      </div>
+
+      <!-- ==================== COVER PICKER OVERLAY ==================== -->
+      <div class="jnl-overlay" id="jnl-cover-overlay" style="display:none">
+        <div class="jnl-sheet" id="jnl-cover-sheet">
+          <h3 class="jnl-sheet-title">Choose Cover</h3>
+          <div class="jnl-cover-grid" id="jnl-cover-grid"></div>
+        </div>
+      </div>
+
+      <!-- ==================== MOOD PICKER OVERLAY ==================== -->
+      <div class="jnl-overlay" id="jnl-mood-overlay" style="display:none">
+        <div class="jnl-sheet" id="jnl-mood-sheet">
+          <h3 class="jnl-sheet-title">How are you feeling?</h3>
+          <div class="jnl-mood-grid" id="jnl-mood-grid"></div>
+        </div>
+      </div>
+
+      <!-- ==================== FONT PICKER OVERLAY ==================== -->
+      <div class="jnl-overlay" id="jnl-font-overlay" style="display:none">
+        <div class="jnl-sheet" id="jnl-font-sheet">
+          <h3 class="jnl-sheet-title">Entry Font</h3>
+          <div class="jnl-font-list" id="jnl-font-list"></div>
+        </div>
+      </div>
+
+      <!-- ==================== TAGS EDITOR OVERLAY ==================== -->
+      <div class="jnl-overlay" id="jnl-tags-overlay" style="display:none">
+        <div class="jnl-sheet" id="jnl-tags-sheet">
+          <h3 class="jnl-sheet-title">Tags</h3>
+          <div class="jnl-tags-edit-list" id="jnl-tags-edit-list"></div>
+          <input type="text" class="jnl-tags-input" id="jnl-tags-input" placeholder="Add tag..." />
+          <button class="jnl-btn jnl-btn-sm jnl-btn-primary" id="jnl-tags-add-btn" type="button">Add Tag</button>
+        </div>
+      </div>
+
+      <!-- ==================== CONFIRM DIALOG ==================== -->
+      <div class="jnl-confirm" id="jnl-confirm" style="display:none">
+        <div class="jnl-confirm-box">
+          <div class="jnl-confirm-icon">⚠️</div>
+          <h3 class="jnl-confirm-title" id="jnl-confirm-title">Delete?</h3>
+          <p class="jnl-confirm-text" id="jnl-confirm-text">This action cannot be undone.</p>
+          <div class="jnl-confirm-actions">
+            <button class="jnl-btn jnl-btn-sm" id="jnl-confirm-cancel" type="button">Cancel</button>
+            <button class="jnl-btn jnl-btn-sm jnl-btn-danger" id="jnl-confirm-ok" type="button">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TOAST ==================== -->
+      <div class="jnl-toast" id="jnl-toast" style="display:none">
+        <span id="jnl-toast-text"></span>
+      </div>
+
     </div>
+
     <script src="./matey-themes.js?v=100"></script>
     <script src="./matey-swipe.js?v=100"></script>
     <script src="./matey-profile.js?v=100"></script>
@@ -167,398 +281,6 @@
     <script src="./matey-fs.js?v=100"></script>
     <script type="module" src="./matey-shadow-twin.js"></script>
     <script src="./matey-hooks-manager.js?v=100"></script>
-    <script>
-      (function () {
-        'use strict';
-        var lockScreen = document.getElementById('journal-lock-screen');
-        var journalMain = document.getElementById('journal-main');
-        var pinInput = document.getElementById('journal-pin-input');
-        var unlockBtn = document.getElementById('journal-unlock-btn');
-        var setupBtn = document.getElementById('journal-setup-lock-btn');
-        var entriesEl = document.getElementById('journal-entries');
-        var entryForm = document.getElementById('journal-entry-form');
-        var titleInput = document.getElementById('journal-title-input');
-        var datetimeEl = document.getElementById('journal-datetime');
-        var contentInput = document.getElementById('journal-content-input');
-        var attachInput = document.getElementById('journal-attach-input');
-        var attachmentsEl = document.getElementById('journal-attachments');
-        var saveBtn = document.getElementById('journal-save-btn');
-        var newEntryBtn = document.getElementById('journal-new-entry-btn');
-        var attachMenu = document.getElementById('journal-attach-menu');
-        var headerMenuBtn = document.getElementById('journal-header-menu-btn');
-        var threeDotMenu = document.getElementById('journal-three-dot-menu');
-        var saveAsBtn = document.getElementById('journal-save-as-btn');
-        var deleteEntryBtn = document.getElementById('journal-delete-entry');
-        var addImageBtn = document.getElementById('journal-add-image');
-        var addFileBtn = document.getElementById('journal-add-file');
-        var addLocationBtn = document.getElementById('journal-add-location');
-
-        var currentEditId = null;
-        var currentAttachments = [];
-
-        function escapeHtml(s) {
-          return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
-
-        function formatDate(ts) {
-          var d = new Date(ts);
-          var now = Date.now();
-          var diff = now - ts;
-          if (diff < 86400000) return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-          if (diff < 86400000 * 7) return d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'});
-          return d.toLocaleDateString([], {month:'short',day:'numeric',year:'numeric'});
-        }
-
-        function renderEntries() {
-          MateyJournal.getEntries().then(function (entries) {
-            if (!entries.length) {
-              entriesEl.innerHTML = '<p class="journal-empty-state">No entries yet.</p>';
-              return;
-            }
-            entriesEl.innerHTML = entries.map(function (e) {
-              var preview = (e.content || '').substring(0, 120);
-              if (e.content && e.content.length > 120) preview += '\u2026';
-              var hasAttachments = e.attachments && e.attachments.length;
-              return '<div class="journal-entry-card list-card" data-id="' + e.id + '">' +
-                '<div class="journal-entry-date">' + formatDate(e.createdAt) + '</div>' +
-                '<div class="journal-entry-title">' + escapeHtml(e.title || 'Untitled') + '</div>' +
-                '<div class="journal-entry-preview">' + escapeHtml(preview) + '</div>' +
-                (hasAttachments ? '<div class="journal-entry-count">' + hasAttachments + '</div>' : '') +
-              '</div>';
-            }).join('');
-            entriesEl.querySelectorAll('.journal-entry-card').forEach(function (card) {
-              card.addEventListener('click', function () {
-                var id = card.getAttribute('data-id');
-                loadEntryIntoView(id);
-              });
-            });
-          }).catch(function (e) {
-            entriesEl.innerHTML = '<p class="journal-empty-state">Error loading entries.</p>';
-          });
-        }
-
-        function getDateTimeTitle() {
-          var d = new Date();
-          var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-          var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-          var dayName = days[d.getDay()];
-          var monthName = months[d.getMonth()];
-          var date = d.getDate();
-          var hours = d.getHours();
-          var minutes = d.getMinutes();
-          var ampm = hours >= 12 ? 'PM' : 'AM';
-          hours = hours % 12;
-          if (hours === 0) hours = 12;
-          if (minutes < 10) minutes = '0' + minutes;
-          return dayName + ', ' + monthName + ' ' + date + ' \u00b7 ' + hours + ':' + minutes + ' ' + ampm;
-        }
-
-        function updateDateTimeDisplay() {
-          if (datetimeEl) datetimeEl.textContent = getDateTimeTitle();
-        }
-
-        function loadEntryIntoView(id) {
-          MateyJournal.getEntry(id).then(function (entry) {
-            if (!entry) return;
-            currentEditId = id;
-            titleInput.value = entry.title || '';
-            contentInput.value = entry.content || '';
-            currentAttachments = entry.attachments || [];
-            updateDateTimeDisplay();
-            entryForm.style.display = 'flex';
-            journalMain.style.display = 'none';
-            if (newEntryBtn) newEntryBtn.classList.add('hidden');
-            renderAttachmentList();
-          });
-        }
-
-        function hideEntryForm() {
-          saveEntry();
-          entryForm.style.display = 'none';
-          journalMain.style.display = 'flex';
-          if (newEntryBtn) newEntryBtn.classList.remove('hidden');
-          currentEditId = null;
-          if (attachMenu) attachMenu.style.display = 'none';
-          if (threeDotMenu) threeDotMenu.style.display = 'none';
-          if (headerMenuBtn) headerMenuBtn.classList.remove('menu-active');
-        }
-
-        function showNewEntryForm() {
-          currentEditId = null;
-          titleInput.value = '';
-          contentInput.value = '';
-          currentAttachments = [];
-          updateDateTimeDisplay();
-          entryForm.style.display = 'flex';
-          journalMain.style.display = 'none';
-        }
-
-        function saveEntry() {
-          var title = titleInput.value.trim() || getDateTimeTitle();
-          var content = contentInput.value;
-
-          if (currentEditId) {
-            MateyJournal.updateEntry(currentEditId, {
-              title: title,
-              content: content,
-              attachments: currentAttachments
-            }).then(function () {
-              renderEntries();
-            });
-          } else {
-            MateyJournal.createEntry(title, content, [], currentAttachments).then(function () {
-              renderEntries();
-            });
-          }
-        }
-
-        function setupLockUI() {
-          var locked = MateyJournal.isLocked();
-          if (locked) {
-            lockScreen.style.display = 'flex';
-            journalMain.style.display = 'none';
-          } else {
-            lockScreen.style.display = 'none';
-            journalMain.style.display = 'block';
-            showNewEntryForm();
-          }
-        }
-
-        if (unlockBtn) {
-          unlockBtn.addEventListener('click', function () {
-            var pin = pinInput.value;
-            if (!pin) {
-              if (setupBtn.style.display !== 'none') {
-                var newPin = prompt('Set a 4-digit PIN for your journal:');
-                if (newPin && newPin.length >= 4) {
-                  MateyJournal.setLock(pin || newPin).then(function () {
-                    pinInput.value = '';
-                    setupLockUI();
-                  });
-                }
-                return;
-              }
-              alert('Please enter your PIN');
-              return;
-            }
-            MateyJournal.unlock(pin).then(function (valid) {
-              if (valid) {
-                pinInput.value = '';
-                lockScreen.style.display = 'none';
-                journalMain.style.display = 'block';
-                showNewEntryForm();
-              } else {
-                pinInput.value = '';
-                alert('Incorrect PIN');
-              }
-            });
-          });
-        }
-
-        if (setupBtn) {
-          setupBtn.addEventListener('click', function () {
-            var pin = prompt('Set a 4-digit PIN for your journal:');
-            if (pin && pin.length >= 4) {
-              MateyJournal.setLock(pin).then(function () {
-                setupLockUI();
-              });
-            }
-          });
-        }
-
-        if (pinInput) {
-          pinInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              unlockBtn.click();
-            }
-          });
-        }
-
-         if (saveBtn) {
-          saveBtn.addEventListener('click', function () {
-            saveEntry();
-          });
-        }
-
-        if (newEntryBtn) {
-          newEntryBtn.addEventListener('click', function () {
-            showNewEntryForm();
-          });
-        }
-
-        if (headerMenuBtn && attachMenu) {
-          headerMenuBtn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            attachMenu.style.display = attachMenu.style.display === 'block' ? 'none' : 'block';
-            if (threeDotMenu) threeDotMenu.style.display = 'none';
-          });
-        }
-
-        if (addImageBtn && attachInput) {
-          addImageBtn.addEventListener('click', function () {
-            attachInput.accept = 'image/*';
-            attachInput.click();
-            if (attachMenu) attachMenu.style.display = 'none';
-          });
-        }
-
-        if (addFileBtn && attachInput) {
-          addFileBtn.addEventListener('click', function () {
-            attachInput.accept = 'file/*';
-            attachInput.click();
-            if (attachMenu) attachMenu.style.display = 'none';
-          });
-        }
-
-        if (addLocationBtn) {
-          addLocationBtn.addEventListener('click', function () {
-            navigator.geolocation.getCurrentPosition(function (pos) {
-              var loc = 'https://maps.google.com/?q=' + pos.coords.latitude + ',' + pos.coords.longitude;
-              currentAttachments.push({
-                id: loc,
-                name: 'Location: ' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4),
-                size: 0,
-                type: 'text/location'
-              });
-              renderAttachmentList();
-            }, function () {
-              alert('Location permission denied');
-            });
-            if (attachMenu) attachMenu.style.display = 'none';
-          });
-        }
-
-        if (headerMenuBtn && threeDotMenu) {
-          headerMenuBtn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            threeDotMenu.style.display = threeDotMenu.style.display === 'block' ? 'none' : 'block';
-            if (attachMenu) attachMenu.style.display = 'none';
-            headerMenuBtn.classList.toggle('menu-active');
-          });
-        }
-
-        if (saveAsBtn) {
-          saveAsBtn.addEventListener('click', async function () {
-            if (threeDotMenu) threeDotMenu.style.display = 'none';
-            if (headerMenuBtn) headerMenuBtn.classList.remove('menu-active');
-
-            var title = titleInput.value.trim() || 'journal-entry';
-            var safeName = title.replace(/[^a-zA-Z0-9\-_ ]/g, '').trim().replace(/\s+/g, '-');
-            if (!safeName) safeName = 'journal-entry';
-            var defaultName = safeName + '.md';
-
-            var filename = prompt('Enter filename:', defaultName);
-            if (!filename) return;
-            if (!filename.toLowerCase().endsWith('.md')) filename += '.md';
-
-            var content = (titleInput.value.trim() + '\n\n' + contentInput.value).trim();
-
-            try {
-              if (window.MateyFS && MateyFS.supports()) {
-                await MateyFS.writeFile(filename, content);
-                alert('Saved as ' + filename);
-              } else if (window.MateyFSAdapter && MateyFSAdapter.saveAsFile) {
-                var result = await MateyFSAdapter.saveAsFile(content, {
-                  filename: filename,
-                  mimeType: 'text/plain'
-                });
-                if (result && result.ok) {
-                  alert('Saved as ' + filename);
-                } else {
-                  alert('Save failed: ' + (result.error || 'unknown error'));
-                }
-              } else {
-                var a = document.createElement('a');
-                a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
-                a.download = filename;
-                a.style.display = 'none';
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(function () { document.body.removeChild(a); }, 100);
-                alert('Downloaded ' + filename);
-              }
-            } catch (e) {
-              if (e && e.name === 'AbortError') return;
-              alert('Save failed: ' + (e.message || String(e)));
-            }
-          });
-        }
-
-        if (deleteEntryBtn) {
-          deleteEntryBtn.addEventListener('click', function () {
-            if (currentEditId && confirm('Delete this entry?')) {
-              MateyJournal.deleteEntry(currentEditId).then(function () {
-                if (threeDotMenu) threeDotMenu.style.display = 'none';
-                if (headerMenuBtn) headerMenuBtn.classList.remove('menu-active');
-                hideEntryForm();
-                renderEntries();
-              });
-            }
-          });
-        }
-
-        document.addEventListener('click', function () {
-          if (attachMenu) attachMenu.style.display = 'none';
-          if (threeDotMenu) threeDotMenu.style.display = 'none';
-          if (headerMenuBtn) headerMenuBtn.classList.remove('menu-active');
-        });
-
-        if (attachInput) {
-          attachInput.addEventListener('change', function () {
-            var files = this.files;
-            if (!files || !files.length) return;
-            Array.from(files).forEach(function (file) {
-              var reader = new FileReader();
-              reader.onload = function (e) {
-                var dataUrl = e.target.result;
-                currentAttachments.push({
-                  id: dataUrl,
-                  name: file.name,
-                  size: file.size,
-                  type: file.type
-                });
-                renderAttachmentList();
-              };
-              reader.readAsDataURL(file);
-            });
-            this.value = '';
-          });
-        }
-
-        function renderAttachmentList() {
-          attachmentsEl.innerHTML = currentAttachments.map(function (a, i) {
-            var isImage = a.type && a.type.indexOf('image/') === 0;
-            if (isImage) {
-              return '<img src="' + a.id + '" class="journal-attachment-thumb" />' +
-                     '<button class="journal-attachment-remove" data-index="' + i + '">✕</button>';
-            }
-            return '<div class="journal-attachment-name">' + escapeHtml(a.name) + '</div>' +
-                   '<button class="journal-attachment-remove" data-index="' + i + '">✕</button>';
-          }).join('');
-          attachmentsEl.querySelectorAll('.journal-attachment-remove').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-              var idx = parseInt(btn.getAttribute('data-index'), 10);
-              currentAttachments.splice(idx, 1);
-              renderAttachmentList();
-            });
-          });
-        }
-
-        // Auto-save on input change (500ms debounce)
-        var saveDebounce = null;
-        [titleInput, contentInput].forEach(function (el) {
-          if (el) {
-            el.addEventListener('input', function () {
-              if (saveDebounce) clearTimeout(saveDebounce);
-              saveDebounce = setTimeout(function () { saveEntry(); }, 500);
-            });
-          }
-        });
-
-        // Initialize
-        setupLockUI();
-      })();
-    </script>
+    <script src="./journal-ui.js?v=100"></script>
   </body>
 </html>

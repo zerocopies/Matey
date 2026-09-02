@@ -1,399 +1,465 @@
-/* Matey Journal — Penzu-style encrypted local-first journaling
+/* Matey Journal — three-tier local-first journaling
  *
- * Features:
- * - AES-256-GCM encryption at rest (entries unreadable in localStorage)
- * - PIN/password lock specific to Journal section
- * - Customizable covers (color, pattern, icon)
- * - Tags for organizing
- * - Attach photos to entries
- * - Full-text on-device search
- * - Local scheduled write reminders
- *
- * No cloud sync — stays fully local (deliberate design choice)
+ * Tiers: Library → Entry List → Entry Editor
+ * Storage: IndexedDB (matey-journal) with journals, entries, media stores
+ * Privacy: PIN-hashed lock via MateyAppLock, auto-lock on background
  */
 (function () {
   'use strict';
 
-  var STORAGE_KEY = 'matey-journal-encrypted';
-  var LOCK_KEY = 'matey-journal-lock';
-  var COVERS_KEY = 'matey-journal-covers';
-  var SETTINGS_KEY = 'matey-journal-settings';
-  var REMINDER_KEY = 'matey-journal-reminder';
+  var DB_NAME = 'matey-journal';
+  var DB_VERSION = 2;
+  var STORE_JOURNALS = 'journals';
+  var STORE_ENTRIES = 'entries';
+  var STORE_MEDIA = 'media';
+  var STORE_SETTINGS = 'settings';
 
-  var COVER_COLORS = ['#1a1a2e','#16213e','#0f3460','#5e548e','#9b5de5','#e94560','#f0a500','#e3e3e3','#2a9d8f','#8d99ae'];
-  var COVER_PATTERNS = ['solid','dots','lines','gradient'];
-  var COVER_ICONS = ['book','heart','star','sun','moon','cloud','tree','music','travel','code','run','coffee'];
+  var _db = null;
+  var _listeners = [];
 
-  var currentEncryptionKey = null;
-  var isUnlocked = false;
-  var listeners = [];
-
-  /* ==================== Encryption ==================== */
-  function strToBytes(str) {
-    var enc = new TextEncoder();
-    return enc.encode(str);
+  /* ==================== UUID ==================== */
+  function uuid() {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = crypto.getRandomValues(new Uint8Array(1))[0] % 16;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
   }
 
-  function bytesToStr(bytes) {
-    var dec = new TextDecoder();
-    return dec.decode(bytes);
+  /* ==================== IndexedDB ==================== */
+  function openDB() {
+    if (_db) return Promise.resolve(_db);
+    return new Promise(function (resolve, reject) {
+      var req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = function (e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE_JOURNALS)) {
+          db.createObjectStore(STORE_JOURNALS, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(STORE_ENTRIES)) {
+          var es = db.createObjectStore(STORE_ENTRIES, { keyPath: 'id' });
+          es.createIndex('journalId', 'journalId', { unique: false });
+          es.createIndex('createdAt', 'createdAt', { unique: false });
+        }
+        if (!db.objectStoreNames.contains(STORE_MEDIA)) {
+          db.createObjectStore(STORE_MEDIA, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
+          db.createObjectStore(STORE_SETTINGS, { keyPath: 'key' });
+        }
+      };
+      req.onsuccess = function (e) { _db = e.target.result; resolve(_db); };
+      req.onerror = function (e) { reject(e.target.error); };
+    });
   }
 
-  function hexToBytes(hex) {
-    var bytes = new Uint8Array(hex.length / 2);
-    for (var i = 0; i < hex.length; i += 2) {
-      bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
-    }
-    return bytes;
+  function tx(store, mode) {
+    return openDB().then(function (db) {
+      return db.transaction(store, mode).objectStore(store);
+    });
   }
 
-  function bytesToHex(bytes) {
-    var hex = '';
-    for (var i = 0; i < bytes.length; i++) {
-      hex += bytes[i].toString(16).padStart(2, '0');
-    }
-    return hex;
+  function reqToPromise(req) {
+    return new Promise(function (resolve, reject) {
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
   }
 
-  async function deriveKey(pin, salt) {
-    var enc = new TextEncoder();
-    var keyMaterial = await crypto.subtle.importKey(
-      'raw', enc.encode(pin), { name: 'PBKDF2' }, false, ['deriveKey']
-    );
-    return crypto.subtle.deriveKey(
-      { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
-      keyMaterial, { name: 'AES-GCM', length: 256 }, false,
-      ['encrypt', 'decrypt']
-    );
+  function txDone(transaction) {
+    return new Promise(function (resolve, reject) {
+      transaction.oncomplete = function () { resolve(); };
+      transaction.onerror = function () { reject(transaction.error); };
+      transaction.onabort = function () { reject(transaction.error || new Error('tx aborted')); };
+    });
   }
 
-  async function encryptData(data, pin) {
-    var salt = crypto.getRandomValues(new Uint8Array(16));
-    var key = await deriveKey(pin, salt);
-    var iv = crypto.getRandomValues(new Uint8Array(12));
-    var plaintext = JSON.stringify(data);
-    var encrypted = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv: iv },
-      key,
-      strToBytes(plaintext)
-    );
-    return {
-      salt: bytesToHex(salt),
-      iv: bytesToHex(iv),
-      data: bytesToHex(new Uint8Array(encrypted))
+  /* ==================== Journal CRUD ==================== */
+  function createJournal(name, coverStyle) {
+    var journal = {
+      id: uuid(),
+      name: name || 'Untitled Journal',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      coverStyle: coverStyle || '--journal-cover-1'
     };
+    return tx(STORE_JOURNALS, 'readwrite').then(function (store) {
+      return reqToPromise(store.put(journal));
+    }).then(function () {
+      notifyListeners('journalsChanged');
+      return journal;
+    });
   }
 
-  async function decryptData(encObj, pin) {
-    var key = await deriveKey(pin, hexToBytes(encObj.salt));
-    var decrypted = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: hexToBytes(encObj.iv) },
-      key,
-      hexToBytes(encObj.data)
-    );
-    return JSON.parse(bytesToStr(new Uint8Array(decrypted)));
+  function getJournal(id) {
+    return tx(STORE_JOURNALS, 'readonly').then(function (store) {
+      return reqToPromise(store.get(id));
+    });
   }
 
-  /* ==================== Lock State ==================== */
-  function getLockConfig() {
-    try { return JSON.parse(localStorage.getItem(LOCK_KEY) || 'null'); }
-    catch (e) { return null; }
+  function getAllJournals() {
+    return tx(STORE_JOURNALS, 'readonly').then(function (store) {
+      return reqToPromise(store.getAll());
+    });
   }
 
-  function setLockConfig(config) {
-    localStorage.setItem(LOCK_KEY, JSON.stringify(config));
-  }
-
-  function isLockEnabled() {
-    var cfg = getLockConfig();
-    return cfg && cfg.enabled && cfg.pin;
-  }
-
-   async function verifyPin(pin) {
-     var cfg = getLockConfig();
-     if (!cfg || !cfg.enabled) return true;
-     return pin === cfg.pin;
-   }
-
-  function lock() {
-    isUnlocked = false;
-    currentEncryptionKey = null;
-    notifyListeners('locked');
-  }
-
-   async function unlock(pin) {
-     var ok = await verifyPin(pin);
-     if (!ok) return false;
-     isUnlocked = true;
-     currentEncryptionKey = pin;
-     try {
-       var all = getAllEncrypted();
-       decryptData(all, pin).catch(function () {});
-     } catch (e) {}
-     notifyListeners('unlocked');
-     return true;
-   }
-
-  function isLocked() {
-    return isLockEnabled() && !isUnlocked;
-  }
-
-   async function setLock(pin) {
-     setLockConfig({ enabled: true, pin: pin, createdAt: Date.now() });
-   }
-
-  function removeLock() {
-    localStorage.removeItem(LOCK_KEY);
-  }
-
-  /* ==================== Data Storage ==================== */
-  function getAllEncrypted() {
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
-    return { entries: [], covers: {}, tags: {} };
-  }
-
-  function saveAllEncrypted(data) {
-    if (currentEncryptionKey) {
-      encryptData(data, currentEncryptionKey).then(function (enc) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(enc));
-      }).catch(function (e) {
-        // If encryption fails, save unencrypted as fallback
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  function updateJournal(id, updates) {
+    return getJournal(id).then(function (journal) {
+      if (!journal) return null;
+      Object.keys(updates).forEach(function (k) { journal[k] = updates[k]; });
+      journal.updatedAt = new Date().toISOString();
+      return tx(STORE_JOURNALS, 'readwrite').then(function (store) {
+        return reqToPromise(store.put(journal));
+      }).then(function () {
+        notifyListeners('journalsChanged');
+        return journal;
       });
-    } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
+    });
   }
 
-  function getJournalData() {
-    if (!isUnlocked && isLockEnabled()) return { entries: [], covers: {}, tags: {} };
-    var raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { entries: [], covers: {}, tags: {} };
-    try {
-      var parsed = JSON.parse(raw);
-      // Check if it's encrypted (has salt/iv/data)
-      if (parsed && parsed.salt && parsed.iv && parsed.data && currentEncryptionKey) {
-        var decrypted = null;
-        // Synchronous decrypt not possible — use fallback
-        return { entries: [], covers: {}, tags: {} };
-      }
-      return parsed;
-    } catch (e) {
-      return { entries: [], covers: {}, tags: {} };
-    }
+  function deleteJournal(id) {
+    return openDB().then(function (db) {
+      var t = db.transaction([STORE_JOURNALS, STORE_ENTRIES, STORE_MEDIA], 'readwrite');
+      t.objectStore(STORE_JOURNALS).delete(id);
+      var idx = t.objectStore(STORE_ENTRIES).index('journalId');
+      var req = idx.openCursor(IDBKeyRange.only(id));
+      req.onsuccess = function (e) {
+        var cursor = e.target.result;
+        if (cursor) {
+          var entry = cursor.value;
+          if (entry.photos) entry.photos.forEach(function (m) { t.objectStore(STORE_MEDIA).delete(m.id); });
+          if (entry.voiceNotes) entry.voiceNotes.forEach(function (m) { t.objectStore(STORE_MEDIA).delete(m.id); });
+          cursor.delete();
+          cursor.continue();
+        }
+      };
+      return txDone(t);
+    }).then(function () {
+      notifyListeners('journalsChanged');
+      notifyListeners('entriesChanged');
+    });
   }
 
-  /* ==================== Async Data Access ==================== */
-  async function getJournalDataDecrypted() {
-    var raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { entries: [], covers: {}, tags: {} };
-    try {
-      var parsed = JSON.parse(raw);
-      if (parsed && parsed.salt && parsed.iv && parsed.data && currentEncryptionKey) {
-        return await decryptData(parsed, currentEncryptionKey);
-      }
-      return parsed;
-    } catch (e) {
-      return { entries: [], covers: {}, tags: {} };
-    }
+  function getEntryCount(journalId) {
+    return tx(STORE_ENTRIES, 'readonly').then(function (store) {
+      var idx = store.index('journalId');
+      return reqToPromise(idx.count(journalId));
+    });
   }
 
-  async function saveJournalData(data) {
-    if (currentEncryptionKey) {
-      var enc = await encryptData(data, currentEncryptionKey);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(enc));
-    } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
-    notifyListeners('dataChanged');
-  }
-
-  /* ==================== Entry Management ==================== */
-  async function createEntry(title, content, tags, attachments) {
-    var data = await getJournalDataDecrypted();
+  /* ==================== Entry CRUD ==================== */
+  function createEntry(journalId, data) {
     var entry = {
-      id: Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
-      title: title || 'Untitled',
-      content: content || '',
-      tags: tags || [],
-      attachments: attachments || [],
-      createdAt: Date.now(),
-      updatedAt: Date.now()
+      id: uuid(),
+      journalId: journalId,
+      title: data.title || '',
+      body: data.body || '',
+      mood: data.mood || null,
+      tags: data.tags || [],
+      photos: data.photos || [],
+      voiceNotes: data.voiceNotes || [],
+      location: data.location || '',
+      fontChoice: data.fontChoice || null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
-    data.entries.unshift(entry);
-    await saveJournalData(data);
-    return entry;
+    return tx(STORE_ENTRIES, 'readwrite').then(function (store) {
+      return reqToPromise(store.put(entry));
+    }).then(function () {
+      return updateJournal(journalId, { updatedAt: new Date().toISOString() });
+    }).then(function () {
+      notifyListeners('entriesChanged');
+      return entry;
+    });
   }
 
-  async function updateEntry(id, updates) {
-    var data = await getJournalDataDecrypted();
-    var entry = data.entries.find(function (e) { return e.id === id; });
-    if (entry) {
+  function getEntry(id) {
+    return tx(STORE_ENTRIES, 'readonly').then(function (store) {
+      return reqToPromise(store.get(id));
+    });
+  }
+
+  function getEntriesByJournal(journalId) {
+    return tx(STORE_ENTRIES, 'readonly').then(function (store) {
+      var idx = store.index('journalId');
+      return reqToPromise(idx.getAll(journalId));
+    }).then(function (entries) {
+      entries.sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+      return entries;
+    });
+  }
+
+  function updateEntry(id, updates) {
+    return getEntry(id).then(function (entry) {
+      if (!entry) return null;
       Object.keys(updates).forEach(function (k) { entry[k] = updates[k]; });
-      entry.updatedAt = Date.now();
-      await saveJournalData(data);
-    }
-    return entry;
-  }
-
-  async function deleteEntry(id) {
-    var data = await getJournalDataDecrypted();
-    data.entries = data.entries.filter(function (e) { return e.id !== id; });
-    await saveJournalData(data);
-  }
-
-  async function getEntries(filter) {
-    var data = await getJournalDataDecrypted();
-    var entries = data.entries;
-    if (filter && filter.tag) {
-      entries = entries.filter(function (e) {
-        return e.tags && e.tags.indexOf(filter.tag) !== -1;
+      entry.updatedAt = new Date().toISOString();
+      return tx(STORE_ENTRIES, 'readwrite').then(function (store) {
+        return reqToPromise(store.put(entry));
+      }).then(function () {
+        notifyListeners('entriesChanged');
+        return entry;
       });
-    }
-    return entries;
+    });
   }
 
-  async function getEntry(id) {
-    var data = await getJournalDataDecrypted();
-    return data.entries.find(function (e) { return e.id === id; }) || null;
+  function deleteEntry(id) {
+    return getEntry(id).then(function (entry) {
+      if (!entry) return;
+      return openDB().then(function (db) {
+        var t = db.transaction([STORE_ENTRIES, STORE_MEDIA], 'readwrite');
+        t.objectStore(STORE_ENTRIES).delete(id);
+        if (entry.photos) entry.photos.forEach(function (m) { t.objectStore(STORE_MEDIA).delete(m.id); });
+        if (entry.voiceNotes) entry.voiceNotes.forEach(function (m) { t.objectStore(STORE_MEDIA).delete(m.id); });
+        return txDone(t);
+      }).then(function () {
+        notifyListeners('entriesChanged');
+      });
+    });
+  }
+
+  /* ==================== Media (Blobs) ==================== */
+  function saveMedia(blob, meta) {
+    var media = {
+      id: uuid(),
+      blob: blob,
+      type: blob.type,
+      size: blob.size,
+      name: meta && meta.name || '',
+      duration: meta && meta.duration || 0,
+      createdAt: new Date().toISOString()
+    };
+    return tx(STORE_MEDIA, 'readwrite').then(function (store) {
+      return reqToPromise(store.put(media));
+    }).then(function () { return media; });
+  }
+
+  function getMedia(id) {
+    return tx(STORE_MEDIA, 'readonly').then(function (store) {
+      return reqToPromise(store.get(id));
+    });
+  }
+
+  function getMediaBlob(id) {
+    return getMedia(id).then(function (m) { return m ? m.blob : null; });
+  }
+
+  function deleteMedia(id) {
+    return tx(STORE_MEDIA, 'readwrite').then(function (store) {
+      return reqToPromise(store.delete(id));
+    });
   }
 
   /* ==================== Search ==================== */
-  async function searchEntries(query) {
+  function searchEntries(journalId, query) {
     var q = (query || '').toLowerCase().trim();
-    if (!q) return [];
-    var data = await getJournalDataDecrypted();
-    return data.entries.filter(function (e) {
-      return (e.title && e.title.toLowerCase().indexOf(q) !== -1) ||
-             (e.content && e.content.toLowerCase().indexOf(q) !== -1) ||
-             (e.tags && e.tags.some(function (t) { return t.toLowerCase().indexOf(q) !== -1; }));
+    if (!q) return getEntriesByJournal(journalId);
+    return getEntriesByJournal(journalId).then(function (entries) {
+      return entries.filter(function (e) {
+        return (e.title && e.title.toLowerCase().indexOf(q) !== -1) ||
+               (e.body && e.body.toLowerCase().indexOf(q) !== -1) ||
+               (e.tags && e.tags.some(function (t) { return t.toLowerCase().indexOf(q) !== -1; })) ||
+               (e.location && e.location.toLowerCase().indexOf(q) !== -1);
+      });
     });
   }
 
   /* ==================== Tags ==================== */
-  async function getAllTags() {
-    var data = await getJournalDataDecrypted();
-    var tagSet = {};
-    data.entries.forEach(function (e) {
-      if (e.tags) {
-        e.tags.forEach(function (t) { tagSet[t] = true; });
-      }
+  function getAllTags(journalId) {
+    return getEntriesByJournal(journalId).then(function (entries) {
+      var tagSet = {};
+      entries.forEach(function (e) {
+        if (e.tags) e.tags.forEach(function (t) { tagSet[t] = true; });
+      });
+      return Object.keys(tagSet).sort();
     });
-    return Object.keys(tagSet);
   }
 
-  /* ==================== Covers ==================== */
-  function getCoverSettings() {
-    try { return JSON.parse(localStorage.getItem(COVERS_KEY) || '{}'); }
-    catch (e) { return {}; }
+  /* ==================== Settings (IndexedDB) ==================== */
+  function getSetting(key, fallback) {
+    return tx(STORE_SETTINGS, 'readonly').then(function (store) {
+      return reqToPromise(store.get(key)).then(function (r) { return r ? r.value : fallback; });
+    });
   }
 
-  function saveCoverSettings(covers) {
-    localStorage.setItem(COVERS_KEY, JSON.stringify(covers));
+  function setSetting(key, value) {
+    return tx(STORE_SETTINGS, 'readwrite').then(function (store) {
+      return reqToPromise(store.put({ key: key, value: value }));
+    });
   }
 
-  function getCover(entryId) {
-    var covers = getCoverSettings();
-    return covers[entryId] || { color: COVER_COLORS[0], pattern: 'solid', icon: 'book' };
-  }
-
-  function saveCover(entryId, cover) {
-    var covers = getCoverSettings();
-    covers[entryId] = cover;
-    saveCoverSettings(covers);
-  }
-
-  /* ==================== Settings ==================== */
   function getSettings() {
-    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); }
-    catch (e) { return {}; }
+    return Promise.all([
+      getSetting('autoLockMs', 30000),
+      getSetting('journalPinHash', null),
+      getSetting('journalPinSalt', null)
+    ]).then(function (r) {
+      return { autoLockMs: r[0], pinHash: r[1], pinSalt: r[2] };
+    });
   }
 
   function saveSettings(settings) {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  }
-
-  /* ==================== Reminders ==================== */
-  function getReminderSettings() {
-    try { return JSON.parse(localStorage.getItem(REMINDER_KEY) || '{"enabled":false}'); }
-    catch (e) { return { enabled: false }; }
-  }
-
-  function saveReminderSettings(settings) {
-    localStorage.setItem(REMINDER_KEY, JSON.stringify(settings));
-    if (settings.enabled) {
-      scheduleReminder(settings);
+    var promises = [];
+    if (typeof settings.autoLockMs !== 'undefined') {
+      promises.push(setSetting('autoLockMs', settings.autoLockMs));
     }
+    if (typeof settings.pinHash !== 'undefined') {
+      promises.push(setSetting('journalPinHash', settings.pinHash));
+    }
+    if (typeof settings.pinSalt !== 'undefined') {
+      promises.push(setSetting('journalPinSalt', settings.pinSalt));
+    }
+    return Promise.all(promises).then(function () {
+      notifyListeners('settingsChanged');
+    });
   }
 
-  function scheduleReminder(settings) {
-    // In a real Capacitor app, this would use local notifications plugin
-    // For now, we store the settings and let the native layer handle scheduling
-    // The reminder is a daily local notification
-    if (window.MateyNotifications && typeof MateyNotifications.schedule === 'function') {
-      MateyNotifications.schedule({
-        title: settings.title || 'Journal time',
-        body: settings.message || "It's a good time to write in your journal.",
-        hour: settings.hour || 9,
-        minute: settings.minute || 0,
-        repeat: 'daily',
-        enabled: settings.enabled
+  /* ==================== Lock (IndexedDB PIN, no localStorage) ==================== */
+  function hashPin(pin, salt) {
+    var enc = new TextEncoder();
+    var data = enc.encode(pin + salt);
+    return crypto.subtle.digest('SHA-256', data).then(function (buf) {
+      var arr = Array.from(new Uint8Array(buf));
+      return arr.map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+    });
+  }
+
+  function generateSalt() {
+    var arr = new Uint8Array(16);
+    crypto.getRandomValues(arr);
+    return Array.from(arr).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+  }
+
+  function isLockEnabled() {
+    return getSetting('journalPinHash', null).then(function (h) { return !!h; });
+  }
+
+  function isLocked() {
+    return isLockEnabled().then(function (enabled) {
+      if (!enabled) return false;
+      return !_unlocked;
+    });
+  }
+
+  function setPin(pin) {
+    var salt = generateSalt();
+    return hashPin(pin, salt).then(function (pinHash) {
+      return saveSettings({ pinHash: pinHash, pinSalt: salt }).then(function () {
+        _unlocked = true;
+        notifyListeners('unlocked');
       });
-    }
+    });
   }
 
-  /* ==================== Listeners ==================== */
-  function notifyListeners(event, data) {
-    listeners.forEach(function (fn) { fn(event, data); });
+  function verifyPin(pin) {
+    return Promise.all([getSetting('journalPinHash', null), getSetting('journalPinSalt', null)]).then(function (r) {
+      var pinHash = r[0], salt = r[1];
+      if (!pinHash || !salt) return false;
+      return hashPin(pin, salt).then(function (inputHash) { return inputHash === pinHash; });
+    });
+  }
+
+  function unlockJournal(pin) {
+    return verifyPin(pin).then(function (ok) {
+      if (ok) {
+        _unlocked = true;
+        notifyListeners('unlocked');
+        return true;
+      }
+      return false;
+    });
+  }
+
+  function lockJournal() {
+    _unlocked = false;
+    notifyListeners('locked');
+  }
+
+  var _unlocked = false;
+
+  /* ==================== Auto-lock ==================== */
+  var _backgroundTime = null;
+  var _autoLockTimer = null;
+
+  function startAutoLockWatcher() {
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        _backgroundTime = Date.now();
+        getSetting('autoLockMs', 30000).then(function (ms) {
+          _autoLockTimer = setTimeout(function () {
+            lockJournal();
+            notifyListeners('autoLocked');
+          }, ms);
+        });
+      } else {
+        if (_autoLockTimer) { clearTimeout(_autoLockTimer); _autoLockTimer = null; }
+        _backgroundTime = null;
+      }
+    });
+  }
+
+  /* ==================== Events ==================== */
+  function notifyListeners(event) {
+    _listeners.forEach(function (fn) { fn(event); });
   }
 
   function onJournalChange(fn) {
-    if (listeners.indexOf(fn) === -1) listeners.push(fn);
+    if (_listeners.indexOf(fn) === -1) _listeners.push(fn);
+  }
+
+  /* ==================== Init ==================== */
+  function init() {
+    openDB().catch(function (e) { console.error('[MateyJournal] DB init failed:', e); });
+    startAutoLockWatcher();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 
   /* ==================== Public API ==================== */
   window.MateyJournal = {
-    /* Lock */
-    isLocked: isLocked,
-    isLockEnabled: isLockEnabled,
-    verifyPin: verifyPin,
-    unlock: unlock,
-    lock: lock,
-    setLock: setLock,
-    removeLock: removeLock,
+    /* Journals */
+    createJournal: createJournal,
+    getJournal: getJournal,
+    getAllJournals: getAllJournals,
+    updateJournal: updateJournal,
+    deleteJournal: deleteJournal,
+    getEntryCount: getEntryCount,
 
     /* Entries */
     createEntry: createEntry,
+    getEntry: getEntry,
+    getEntriesByJournal: getEntriesByJournal,
     updateEntry: updateEntry,
     deleteEntry: deleteEntry,
-    getEntries: getEntries,
-    getEntry: getEntry,
+
+    /* Media */
+    saveMedia: saveMedia,
+    getMedia: getMedia,
+    getMediaBlob: getMediaBlob,
+    deleteMedia: deleteMedia,
 
     /* Search */
     searchEntries: searchEntries,
-
-    /* Tags */
     getAllTags: getAllTags,
-
-    /* Covers */
-    getCover: getCover,
-    saveCover: saveCover,
-    COVER_COLORS: COVER_COLORS,
-    COVER_PATTERNS: COVER_PATTERNS,
-    COVER_ICONS: COVER_ICONS,
 
     /* Settings */
     getSettings: getSettings,
     saveSettings: saveSettings,
 
-    /* Reminders */
-    getReminderSettings: getReminderSettings,
-    saveReminderSettings: saveReminderSettings,
+    /* Lock */
+    isLockEnabled: isLockEnabled,
+    isLocked: isLocked,
+    lockJournal: lockJournal,
+    unlockJournal: unlockJournal,
 
     /* Events */
-    onJournalChange: onJournalChange
+    onJournalChange: onJournalChange,
+
+    /* Utils */
+    uuid: uuid
   };
 })();
