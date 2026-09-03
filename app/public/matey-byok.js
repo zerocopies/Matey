@@ -191,35 +191,176 @@
      return key.slice(0, 4) + '••••' + key.slice(-4);
    }
 
-  function testConnection() {
-    var name = document.getElementById('byok-name').value.trim();
-    var baseUrl = cleanBaseUrl(document.getElementById('byok-url').value);
-    var apiKey = document.getElementById('byok-key').value.trim();
-    var testBtn = document.getElementById('byok-test');
-    if (!baseUrl) return;
-    testBtn.textContent = 'Testing…';
-    testBtn.disabled = true;
-    nativeFetch(buildApiUrl(baseUrl, '/v1/models'), {
-      method: 'GET',
-      headers: apiKey ? { 'Authorization': 'Bearer ' + apiKey } : {}
-    }).then(function (r) {
-      if (r.ok) return r.json().then(function () { return '✅ Connected'; });
-      return r.text().then(function (t) { throw new Error(t.slice(0,80)); });
-    }).then(function (msg) {
-      testBtn.textContent = msg;
-      testBtn.style.color = '#22c55e';
-    }).catch(function (err) {
-      testBtn.textContent = '❌ Failed';
-      testBtn.style.color = '#f87171';
-      console.warn('BYOK test:', err.message || err);
-    }).finally(function () {
-      setTimeout(function () {
-        testBtn.textContent = 'Test';
-        testBtn.style.color = '';
-        testBtn.disabled = false;
-      }, 2500);
-    });
-  }
+   function readRateLimitHeaders(headers) {
+     if (!headers) return null;
+     var result = {};
+     var keys = ['x-ratelimit-limit', 'x-ratelimit-remaining', 'x-ratelimit-reset', 'retry-after', 'x-ratelimit-limit-requests', 'x-ratelimit-remaining-requests', 'x-ratelimit-limit-tokens', 'x-ratelimit-remaining-tokens'];
+     var found = false;
+     keys.forEach(function (k) {
+       var v = null;
+       if (typeof headers.get === 'function') { try { v = headers.get(k); } catch (e) {} }
+       else if (typeof headers === 'object') { v = headers[k] || headers[k.toLowerCase()]; }
+       if (v != null && v !== '') { result[k] = v; found = true; }
+     });
+     return found ? result : null;
+   }
+
+   function formatRateLimit(rate) {
+     if (!rate) return '';
+     var parts = [];
+     if (rate['x-ratelimit-remaining-requests'] != null && rate['x-ratelimit-limit-requests'] != null) {
+       parts.push(rate['x-ratelimit-remaining-requests'] + '/' + rate['x-ratelimit-limit-requests'] + ' req');
+     }
+     if (rate['x-ratelimit-remaining-tokens'] != null && rate['x-ratelimit-limit-tokens'] != null) {
+       parts.push(rate['x-ratelimit-remaining-tokens'] + '/' + rate['x-ratelimit-limit-tokens'] + ' tokens');
+     }
+     if (rate['retry-after']) parts.push('retry after ' + rate['retry-after'] + 's');
+     return parts.join(' · ');
+   }
+
+   function showStatus(ok, title, detail) {
+     var el = document.getElementById('byok-status');
+     if (!el) return;
+     el.className = 'byok-status visible ' + (ok ? 'ok' : 'fail');
+     var html = '<div class="byok-status-title">' + esc(title) + '</div>';
+     if (detail) html += '<div class="byok-status-detail">' + detail + '</div>';
+     el.innerHTML = html;
+   }
+
+   function clearStatus() {
+     var el = document.getElementById('byok-status');
+     if (el) { el.className = 'byok-status'; el.innerHTML = ''; }
+   }
+
+   /* Silent key validation: one minimal-token diagnostic call that confirms the
+      key is valid, the model is accessible, and (optionally) reads rate limits. */
+   function testConnection() {
+     var nameEl = document.getElementById('byok-name');
+     var urlEl = document.getElementById('byok-url');
+     var apiKey = document.getElementById('byok-key').value.trim();
+     var model = document.getElementById('byok-model').value.trim();
+     var testBtn = document.getElementById('byok-test');
+
+    /* Auto-detect from the API key if the hidden fields are not yet populated
+       (user clicked Test before the debounced detection fired). */
+    if ((!nameEl || !nameEl.value.trim()) && apiKey && window.MateyProviderPresets) {
+      var preset = window.MateyProviderPresets.detect(apiKey);
+      if (preset) {
+        if (nameEl) nameEl.value = preset.name;
+        if (urlEl) urlEl.value = preset.baseUrl;
+        if (!model && preset.defaultModel) model = preset.defaultModel;
+        (preset.capabilities || ['text']).forEach(function (c) {
+          var el = document.getElementById('cap_' + c);
+          if (el) el.checked = true;
+        });
+      }
+    }
+
+     var baseUrl = urlEl ? urlEl.value.trim() : '';
+     if (!baseUrl) { showStatus(false, 'Unrecognized API key', 'Could not auto-detect the provider from this key.'); return; }
+     testBtn.textContent = 'Validating…';
+     testBtn.disabled = true;
+     clearStatus();
+
+      var baseLower = baseUrl.toLowerCase();
+      var isGemini = baseLower.indexOf('generativelanguage') !== -1 || baseLower.indexOf('gemini') !== -1;
+      var isAnthropic = baseLower.indexOf('anthropic') !== -1;
+
+      var resolvedModel = model;
+      var detectedModel = null;
+      var rateLimit = null;
+
+      function doValidate(modelToUse) {
+        if (isAnthropic) {
+          var anthModel = modelToUse || 'claude-3-5-sonnet-20241022';
+          var url = 'https://api.anthropic.com/v1/messages';
+          return nativeFetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+            body: JSON.stringify({ model: anthModel, max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] })
+          }).then(function (r) {
+            if (r.status === 401 || r.status === 403) throw new Error('Invalid API key (HTTP ' + r.status + ')');
+            if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 120)); });
+            return r.json().then(function () { return anthModel; });
+          });
+        }
+        if (isGemini) {
+         var geminiModel = modelToUse || 'gemini-1.5-flash';
+         var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(geminiModel) + ':generateContent?key=' + encodeURIComponent(apiKey);
+         return nativeFetch(url, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'hi' }] }], generationConfig: { maxOutputTokens: 1 } })
+         }).then(function (r) {
+           rateLimit = readRateLimitHeaders(r.headers);
+           if (!r.ok) {
+             return r.text().then(function (t) {
+               var reason = t.slice(0, 120);
+               if (r.status === 401 || r.status === 403) throw new Error('Invalid API key (HTTP ' + r.status + ')');
+               if (r.status === 404) throw new Error('Model "' + geminiModel + '" not found (HTTP 404)');
+               throw new Error('HTTP ' + r.status + ': ' + reason);
+             });
+           }
+           return r.json().then(function () { return geminiModel; });
+         });
+       }
+       var apiUrl = buildApiUrl(baseUrl, '/v1/chat/completions');
+       return nativeFetch(apiUrl, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+         body: JSON.stringify({ model: modelToUse, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1, stream: false })
+       }).then(function (r) {
+         rateLimit = readRateLimitHeaders(r.headers);
+         if (!r.ok) {
+           return r.text().then(function (t) {
+             var reason = t.slice(0, 120);
+             if (r.status === 401 || r.status === 403) throw new Error('Invalid API key (HTTP ' + r.status + ')');
+             if (r.status === 404) throw new Error('Model "' + modelToUse + '" not found (HTTP 404)');
+             throw new Error('HTTP ' + r.status + ': ' + reason);
+           });
+         }
+         return r.json().then(function (j) {
+           if (j.model) detectedModel = j.model;
+           return modelToUse;
+         });
+       });
+     }
+
+     var modelPromise = model ? Promise.resolve(model) : resolveModelForProbe(baseUrl, apiKey, isGemini);
+     modelPromise.then(function (m) {
+       resolvedModel = m;
+       return doValidate(m);
+     }).then(function (validatedModel) {
+       var detailLines = ['Model: <span>' + esc(validatedModel) + '</span>'];
+       if (detectedModel && detectedModel !== validatedModel) detailLines.push('Server reported: <span>' + esc(detectedModel) + '</span>');
+       var rl = formatRateLimit(rateLimit);
+       if (rl) detailLines.push('Rate limit: <span>' + esc(rl) + '</span>');
+       showStatus(true, 'Key valid — connected', detailLines.join('<br>'));
+       testBtn.textContent = 'Test Connection';
+       testBtn.disabled = false;
+     }).catch(function (err) {
+       showStatus(false, 'Validation failed', err.message || 'Unknown error');
+       testBtn.textContent = 'Test Connection';
+       testBtn.disabled = false;
+       console.warn('[BYOK] Key validation failed:', err.message || err);
+     });
+   }
+
+   /* Lightweight model detection for the probe (avoids pulling the full catalog
+      when the user left the model field empty). */
+   function resolveModelForProbe(baseUrl, apiKey, isGemini) {
+     if (isGemini) return Promise.resolve('gemini-1.5-flash');
+     var url = buildApiUrl(baseUrl, '/v1/models');
+     return nativeFetch(url, { headers: apiKey ? { 'Authorization': 'Bearer ' + apiKey } : {} })
+       .then(function (r) { if (!r.ok) throw new Error('models endpoint failed'); return r.json(); })
+       .then(function (j) {
+         var list = (j.data || []).map(function (m) { return m.id; });
+         if (!list.length) throw new Error('no models listed');
+         var pref = list.filter(function (id) { return /gpt-4o|llama|mistral|claude|qwen|default/i.test(id); });
+         return (pref[0] || list[0]);
+       })
+       .catch(function () { return 'gpt-4o-mini'; });
+   }
 
   function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -234,15 +375,118 @@
     var modelEl = document.getElementById('byok-model');
     if (modelEl) modelEl.value = p ? (p.model || '') : '';
     var caps = p ? (p.capabilities || []) : [];
+    /* New providers default to text generation; detection refines below */
+    if (!caps.length) caps = ['text'];
     ['cap_text', 'cap_vision', 'cap_stt', 'cap_imagegen'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.checked = caps.indexOf(el.value) !== -1;
     });
-    dialog.setAttribute('data-edit-index', editingIndex != null ? editingIndex : '');
-    dialog.classList.add('open');
-  }
+     dialog.setAttribute('data-edit-index', editingIndex != null ? editingIndex : '');
+     dialog.classList.add('open');
+     wireAutoDetect();
+   }
 
-  function hideDialog() {
+   /* ---- Auto-detect provider from API key ---- */
+   var _detectDebounce = null;
+   function wireAutoDetect() {
+     var keyEl = document.getElementById('byok-key');
+     if (!keyEl || keyEl.getAttribute('data-autodetect-wired') === '1') return;
+     keyEl.setAttribute('data-autodetect-wired', '1');
+     keyEl.addEventListener('input', function () {
+       if (_detectDebounce) clearTimeout(_detectDebounce);
+       var key = keyEl.value.trim();
+       if (!key) { clearDetected(); return; }
+       _detectDebounce = setTimeout(function () { detectAndFill(key); }, 400);
+     });
+   }
+
+   function clearDetected() {
+     var det = document.getElementById('byok-detected');
+     if (det) { det.style.display = 'none'; det.textContent = ''; }
+   }
+
+   function detectAndFill(key) {
+     var preset = window.MateyProviderPresets ? window.MateyProviderPresets.detect(key) : null;
+     var det = document.getElementById('byok-detected');
+     var nameEl = document.getElementById('byok-name');
+     var urlEl = document.getElementById('byok-url');
+     var modelSelect = document.getElementById('byok-model-select');
+     var modelInput = document.getElementById('byok-model');
+     var loadingEl = document.getElementById('byok-model-loading');
+
+     if (!preset) {
+       if (det) { det.style.display = 'block'; det.textContent = 'Unknown key format — enter Base URL manually'; }
+       return;
+     }
+
+     if (det) { det.style.display = 'block'; det.textContent = '✓ ' + preset.name + ' detected — everything is configured automatically'; }
+
+     /* Auto-fill name and URL only if they're empty (fields are hidden; provider details are managed silently) */
+     if (nameEl && !nameEl.value.trim()) nameEl.value = preset.name;
+     if (urlEl && !urlEl.value.trim()) urlEl.value = preset.baseUrl;
+
+     /* Auto-check capabilities based on the detected provider */
+     var presetCaps = preset.capabilities || ['text'];
+     ['cap_text', 'cap_vision', 'cap_stt', 'cap_imagegen'].forEach(function (id) {
+       var el = document.getElementById(id);
+       if (el) el.checked = presetCaps.indexOf(el.value) !== -1;
+     });
+
+     /* Fetch supported models */
+     if (preset.modelEndpoint && preset.parseModels) {
+       if (loadingEl) { loadingEl.style.display = 'block'; loadingEl.textContent = 'Fetching models…'; }
+       fetchModels(preset, key).then(function (models) {
+         if (loadingEl) loadingEl.style.display = 'none';
+         populateModelDropdown(models, preset, modelSelect, modelInput);
+       }).catch(function () {
+         if (loadingEl) loadingEl.style.display = 'none';
+       });
+     } else {
+       /* No model endpoint — set default model */
+       if (modelInput && !modelInput.value.trim() && preset.defaultModel) {
+         modelInput.value = preset.defaultModel;
+       }
+     }
+   }
+
+   function fetchModels(preset, key) {
+     var url = preset.baseUrl + preset.modelEndpoint;
+     var headers = preset.authHeader ? preset.authHeader(key) : {};
+     var fetchOpts = { method: 'GET', headers: headers };
+     if (preset.authQueryParam) {
+       url += (url.indexOf('?') === -1 ? '?' : '&') + preset.authQueryParam + '=' + encodeURIComponent(key);
+     }
+     return nativeFetch(url, fetchOpts).then(function (r) {
+       if (!r.ok) throw new Error('models endpoint failed');
+       return r.json();
+     }).then(function (j) { return preset.parseModels(j); });
+   }
+
+   function populateModelDropdown(models, preset, modelSelect, modelInput) {
+     if (!modelSelect || !models || !models.length) {
+       if (modelSelect) modelSelect.style.display = 'none';
+       if (modelInput && !modelInput.value.trim() && preset.defaultModel) modelInput.value = preset.defaultModel;
+       return;
+     }
+     modelSelect.innerHTML = '';
+     models.forEach(function (m) {
+       var opt = document.createElement('option');
+       opt.value = m;
+       opt.textContent = m;
+       modelSelect.appendChild(opt);
+     });
+     /* Show select, hide text input */
+     modelSelect.style.display = 'block';
+     if (modelInput) modelInput.style.display = 'none';
+     /* Sync: when select changes, update hidden input */
+     modelSelect.addEventListener('change', function () {
+       if (modelInput) modelInput.value = modelSelect.value;
+     });
+     /* Set initial value */
+     if (modelInput) modelInput.value = models[0];
+   }
+
+   function hideDialog() {
     var dialog = document.getElementById('byok-dialog');
     if (dialog) dialog.classList.remove('open');
   }
@@ -255,12 +499,34 @@
     var apiKey = document.getElementById('byok-key').value.trim();
     var modelEl = document.getElementById('byok-model');
     var model = modelEl ? modelEl.value.trim() : '';
+
+    /* 100% auto-detect: if the hidden fields were never filled (user typed a key
+       and hit Save before the debounced detection ran), resolve everything from
+       the API key now. No manual input is ever required. */
+    var preset = window.MateyProviderPresets ? window.MateyProviderPresets.detect(apiKey) : null;
+    if (!name || !baseUrl) {
+      if (!preset) {
+        alert('Unrecognized API key format. Could not auto-detect the provider — nothing was saved.');
+        return;
+      }
+      if (!name) name = preset.name;
+      if (!baseUrl) baseUrl = preset.baseUrl;
+      /* Reflect detection in the capability checkboxes */
+      var presetCaps = preset.capabilities || ['text'];
+      presetCaps.forEach(function (c) {
+        var el = document.getElementById('cap_' + c);
+        if (el) el.checked = true;
+      });
+    }
+    /* Final model fallback: use the detected preset's default model if the
+       models-list fetch failed or never ran */
+    if (!model && preset && preset.defaultModel) model = preset.defaultModel;
+
     var caps = [];
     ['cap_text', 'cap_vision', 'cap_stt', 'cap_imagegen'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el && el.checked) caps.push(el.value);
     });
-      if (!name || !baseUrl) return;
       baseUrl = cleanBaseUrl(baseUrl);
      var providers = load();
     var editIdx = dialog.getAttribute('data-edit-index');
