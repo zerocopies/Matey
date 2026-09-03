@@ -779,6 +779,69 @@
     });
   }
 
+  /* ---------- Matey's Corner: dynamic DOM injection ---------- */
+  /* The Coach card is injected by JS instead of being hardcoded in
+     lifestyle.html. Some Android WebViews drop statically-positioned nodes
+     during layout recalculations; a JS-managed node that re-asserts itself
+     after every render pass stays visible permanently. Click handling needs
+     no rewiring: wire() delegates on [data-cat] at the document level. */
+  var COACH_CARD_HTML =
+    '<div class="lf-row" data-cat="coach" role="button" tabindex="0">' +
+      '<div class="lf-row-icon lf-coach-icon" style="background:rgba(255,215,0,0.12);color:#FFD166"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>' +
+      '<div class="lf-row-text"><div class="lf-row-title">Matey\'s Corner</div><div class="lf-row-desc" id="lf-coach-subtitle">One thing your Agent can do</div></div>' +
+      '<span class="lf-row-chevron"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg></span>' +
+    '</div>';
+
+  var _coachGuard = null;
+
+  function findCoachCard() {
+    return document.querySelector('.lf-rows [data-cat="coach"]');
+  }
+
+  function injectCoachCard(immediate) {
+    var rows = document.querySelector('.lf-rows');
+    if (!rows) return;
+    var run = function () {
+      var existing = findCoachCard();
+      if (existing && existing.isConnected) { assertCoachCardVisible(); return; }
+      rows.insertAdjacentHTML('beforeend', COACH_CARD_HTML);
+      updateCoachCardSubtitle();
+      startCoachGuard();
+    };
+    if (immediate) { run(); return; }
+    /* Guarantee execution after the primary layout render pass (double rAF;
+       setTimeout fallback for WebViews without rAF) */
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(function () { window.requestAnimationFrame(run); });
+    } else {
+      setTimeout(run, 50);
+    }
+  }
+
+  /* Re-enforce visibility immediately if the card was unmounted or hidden */
+  function assertCoachCardVisible() {
+    var card = findCoachCard();
+    if (!card || !card.isConnected) { injectCoachCard(true); return; }
+    if (card.hasAttribute('hidden')) card.removeAttribute('hidden');
+    if (card.style && card.style.display === 'none') card.style.display = '';
+    if (card.style && card.style.visibility === 'hidden') card.style.visibility = '';
+    if (card.style && card.style.opacity === '0') card.style.opacity = '';
+  }
+
+  /* DOM mutation guard: watches .lf-rows for removals/attribute changes and
+     restores the card in the same tick. (An IntersectionObserver is a poor
+     fit here — it also fires when the card is legitimately scrolled out of
+     view, which would cause false re-render loops.) */
+  function startCoachGuard() {
+    if (_coachGuard || typeof window.MutationObserver !== 'function') return;
+    var rows = document.querySelector('.lf-rows');
+    if (!rows) return;
+    _coachGuard = new MutationObserver(function () {
+      assertCoachCardVisible();
+    });
+    _coachGuard.observe(rows, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'hidden', 'class'] });
+  }
+
   /* ---------- wiring ---------- */
   function wire() {
     document.addEventListener('click', function (e) {
@@ -797,12 +860,19 @@
 
   window.MateyLifestyle = {
     wire: wire,
+    injectCoachCard: injectCoachCard,
+    assertCoachCardVisible: assertCoachCardVisible,
     voiceFieldHTML: voiceFieldHTML,
     wireVoiceField: wireVoiceField,
     likeBtnHTML: likeBtnHTML,
     wireLikeButtons: wireLikeButtons,
     trackUsage: trackUsage
   };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
-  else wire();
+  function boot() {
+    wire();
+    /* Inject Matey's Corner after the primary layout render pass */
+    injectCoachCard();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();
