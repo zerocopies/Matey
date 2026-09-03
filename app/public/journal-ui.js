@@ -40,6 +40,7 @@
   var _isListening = false;
   var _speechRecognition = null;
   var _speechStream = null;
+  var _pendingInterim = '';
 
   /* ==================== DOM refs ==================== */
   var $ = function (id) { return document.getElementById(id); };
@@ -381,28 +382,81 @@
     return m + ':' + String(s).padStart(2, '0');
   }
 
-  function saveEntry() {
-    var body = $('jnl-editor-body').value;
-    var fontChoice = $('jnl-editor-body').style.fontFamily || null;
-    var data = {
+  function collectEditorData() {
+    var bodyEl = $('jnl-editor-body');
+    return {
       title: '',
-      body: body,
+      body: bodyEl.value,
       tags: _currentTags.slice(),
       photos: _currentPhotos.slice(),
       voiceNotes: _currentVoiceNotes.slice(),
-      fontChoice: fontChoice,
+      fontChoice: bodyEl.style.fontFamily || null,
       mood: _currentTags.find(function (t) { return MOODS.some(function (m) { return m.emoji + ' ' + m.label === t; }); }) || null
     };
+  }
+
+  /* Immediate synchronous commit of the editor buffer to IndexedDB.
+     Called by the Save button, clipboard events, and back navigation —
+     never waits for the debounced auto-save timer. */
+  function commitEditorState() {
+    if (!_currentEntryId) return Promise.resolve(null);
+    var bodyEl = $('jnl-editor-body');
+    if (!bodyEl) return Promise.resolve(null);
+    return MateyJournal.updateEntry(_currentEntryId, {
+      body: bodyEl.value,
+      fontChoice: bodyEl.style.fontFamily || null,
+      tags: _currentTags.slice(),
+      photos: _currentPhotos.slice(),
+      voiceNotes: _currentVoiceNotes.slice(),
+      mood: _currentTags.find(function (t) { return MOODS.some(function (m) { return m.emoji + ' ' + m.label === t; }); }) || null
+    }).catch(function (err) {
+      console.error('[Journal] auto-save failed:', err);
+    });
+  }
+
+  /* Cancel any pending debounced auto-save so it can never double-write
+     after an explicit commit */
+  function cancelPendingAutoSave() {
+    if (_autoSaveTimer) {
+      clearTimeout(_autoSaveTimer);
+      _autoSaveTimer = null;
+    }
+  }
+
+  function saveEntry() {
+    cancelPendingAutoSave();
+    var data = collectEditorData();
     var promise;
     if (_currentEntryId) {
       promise = MateyJournal.updateEntry(_currentEntryId, data);
     } else {
-      promise = MateyJournal.createEntry(_currentJournalId, data);
+      promise = MateyJournal.createEntry(_currentJournalId, data).then(function (entry) {
+        /* Adopt the created id so subsequent edits flow through updateEntry */
+        if (entry && entry.id) _currentEntryId = entry.id;
+        return entry;
+      });
     }
     promise.then(function () {
       showToast('Entry saved');
-      goToEntryList(_currentJournalId);
+      flashSaveFeedback();
+    }).catch(function (err) {
+      console.error('[Journal] save failed:', err);
+      showToast('Save failed');
     });
+  }
+
+  /* Lightweight visual confirmation that a manual save committed */
+  function flashSaveFeedback() {
+    var btn = $('jnl-editor-save');
+    if (!btn) return;
+    var originalTitle = btn.getAttribute('title') || 'Save';
+    btn.style.transition = 'opacity 0.15s';
+    btn.style.opacity = '0.4';
+    btn.setAttribute('title', 'Saved!');
+    setTimeout(function () {
+      btn.style.opacity = '1';
+      setTimeout(function () { btn.setAttribute('title', originalTitle); }, 600);
+    }, 250);
   }
 
   /* ==================== Photo Attach ==================== */
@@ -512,15 +566,24 @@
       _speechStream = stream;
       _speechRecognition = rec;
       _isListening = true;
+      _pendingInterim = '';
       rec.onresult = function (e) {
         var transcript = '';
+        var interim = '';
         for (var i = e.resultIndex; i < e.results.length; i++) {
           if (e.results[i].isFinal) {
             transcript += e.results[i][0].transcript;
+          } else {
+            interim += e.results[i][0].transcript;
           }
         }
         if (transcript) {
+          _pendingInterim = '';
           insertTextAtCursor(transcript + ' ');
+        } else if (interim) {
+          /* Keep the newest interim buffered so stop can flush it instantly
+             instead of waiting ~1-2s for the service to emit the final result */
+          _pendingInterim = interim;
         }
       };
       rec.onerror = function (e) {
@@ -555,6 +618,13 @@
 
   function stopSpeechToText() {
     _isListening = false;
+    /* Immediate flush: commit any un-finalized interim speech into the input
+       box right now — do NOT wait for the recognition service's lagging
+       final result (typically 1-2s of post-speech silence) */
+    if (_pendingInterim) {
+      insertTextAtCursor(_pendingInterim.trim() + ' ');
+      _pendingInterim = '';
+    }
     if (_speechRecognition) {
       try { _speechRecognition.stop(); } catch (err) {}
       _speechRecognition = null;
@@ -892,21 +962,67 @@
     $('jnl-search-input').addEventListener('input', debounce(function () { renderEntries(); }, 300));
 
     /* Editor */
-    $('jnl-editor-back').addEventListener('click', function () { goToEntryList(_currentJournalId); });
-    $('jnl-editor-body').addEventListener('input', debounce(function () {
+    $('jnl-editor-back').addEventListener('click', function () {
+      /* Flush pending buffer state before leaving the editor: commit debounced
+         edits immediately, and persist brand-new entries that were never saved */
+      cancelPendingAutoSave();
       if (_currentEntryId) {
-        var body = $('jnl-editor-body').value;
-        var fontChoice = $('jnl-editor-body').style.fontFamily || null;
-        MateyJournal.updateEntry(_currentEntryId, {
-          body: body,
-          fontChoice: fontChoice,
-          tags: _currentTags.slice(),
-          photos: _currentPhotos.slice(),
-          voiceNotes: _currentVoiceNotes.slice(),
-          mood: _currentTags.find(function (t) { return MOODS.some(function (m) { return m.emoji + ' ' + m.label === t; }); }) || null
-        }).catch(function () {});
+        commitEditorState();
+      } else if ($('jnl-editor-body').value.trim()) {
+        saveEntry();
       }
-    }, 800));
+      goToEntryList(_currentJournalId);
+    });
+    $('jnl-editor-body').addEventListener('input', function () {
+      cancelPendingAutoSave();
+      _autoSaveTimer = setTimeout(function () {
+        _autoSaveTimer = null;
+        commitEditorState();
+      }, 800);
+    });
+
+    /* Explicit Save — immediate synchronous commit, independent of auto-save */
+    $('jnl-editor-save').addEventListener('click', function () {
+      saveEntry();
+    });
+
+    /* Native Android WebView selection controls fire standard clipboard events.
+       Bind them explicitly so cut/copy/paste interact cleanly with the internal
+       buffer state and hit the same save pipeline as manual typing. */
+    (function bindClipboardEvents() {
+      var editor = $('jnl-editor-body');
+      if (!editor) return;
+      ['cut', 'copy', 'paste'].forEach(function (evtName) {
+        editor.addEventListener(evtName, function (e) {
+          try {
+            if (evtName === 'paste') {
+              var text = (e.clipboardData && e.clipboardData.getData) ? e.clipboardData.getData('text/plain') : '';
+              if (text) {
+                /* Deterministic manual insertion keeps selection state consistent
+                   even where the WebView's default paste is unreliable */
+                e.preventDefault();
+                var start = editor.selectionStart;
+                var end = editor.selectionEnd;
+                editor.value = editor.value.substring(0, start) + text + editor.value.substring(end);
+                editor.setSelectionRange(start + text.length, start + text.length);
+              }
+              /* empty clipboardData → allow native paste, never block the user */
+            }
+            /* cut: native removal fires an 'input' event; copy: no buffer change.
+               Either way, commit the post-event state immediately. */
+            setTimeout(function () {
+              try {
+                if (_currentEntryId) commitEditorState();
+              } catch (err) { console.error('[Journal] post-clipboard commit failed:', err); }
+            }, 0);
+          } catch (err) {
+            /* Zero unhandled exceptions on clipboard events */
+            console.error('[Journal] clipboard event error (' + evtName + '):', err);
+          }
+        });
+      });
+    })();
+
     $('jnl-quick-attach').addEventListener('click', function () { showAttachPicker(); });
     $('jnl-attach-pick-photo').addEventListener('click', function () { hideOverlay('jnl-attach-picker'); $('jnl-photo-input').click(); });
     $('jnl-attach-pick-location').addEventListener('click', function () { hideOverlay('jnl-attach-picker'); addLocation(); });

@@ -511,22 +511,21 @@
   };
 
   UniversalSpeechService.prototype.fallbackTranscribe = function (pcm, domain) {
-    var _this = this;
     return new Promise(function (resolve) {
-      setTimeout(function () {
-        var msg = '';
-        switch (domain) {
-          case STT_DOMAINS.GROOMING: msg = 'Apply retinol serum and moisturizer with SPF 50'; break;
-          case STT_DOMAINS.WARDROBE: msg = 'Black leather jacket size medium'; break;
-          case STT_DOMAINS.CULINARY: msg = 'Two cups of flour, one teaspoon of salt'; break;
-          case STT_DOMAINS.LIVING: msg = 'Buy milk and restock the pantry'; break;
-          case STT_DOMAINS.JOURNAL: msg = 'Today was a productive day. Feeling accomplished.'; break;
-          case STT_DOMAINS.EDITOR: msg = 'const result = await fetch data'; break;
-          case STT_DOMAINS.AGENT: msg = 'Search for files and list directory'; break;
-          default: msg = 'Voice input received.'; break;
-        }
-        resolve(MultiDomainPostProcessor.process(msg, domain));
-      }, 500);
+      /* No artificial buffering delay — resolve immediately. The old 500ms
+         setTimeout here added pure latency to the fallback transcription path. */
+      var msg = '';
+      switch (domain) {
+        case STT_DOMAINS.GROOMING: msg = 'Apply retinol serum and moisturizer with SPF 50'; break;
+        case STT_DOMAINS.WARDROBE: msg = 'Black leather jacket size medium'; break;
+        case STT_DOMAINS.CULINARY: msg = 'Two cups of flour, one teaspoon of salt'; break;
+        case STT_DOMAINS.LIVING: msg = 'Buy milk and restock the pantry'; break;
+        case STT_DOMAINS.JOURNAL: msg = 'Today was a productive day. Feeling accomplished.'; break;
+        case STT_DOMAINS.EDITOR: msg = 'const result = await fetch data'; break;
+        case STT_DOMAINS.AGENT: msg = 'Search for files and list directory'; break;
+        default: msg = 'Voice input received.'; break;
+      }
+      resolve(MultiDomainPostProcessor.process(msg, domain));
     });
   };
 

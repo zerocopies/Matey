@@ -268,8 +268,6 @@
     <script src="./matey-license.js?v=100"></script>
     <script src="./matey-settings.js?v=100"></script>
     <script src="./matey-recall.js?v=101"></script>
-    <script src="./matey-behavior.js?v=101"></script>
-    <script src="./matey-adaptive.js?v=101"></script>
     <script src="./matey-init.js?v=101"></script>
     <script src="./matey-tabs.js?v=101"></script>
     <script src="./matey-keyboard.js?qv=101"></script>
@@ -606,8 +604,23 @@
           safeClick('btn-save', function() {
             if (window.mateyIDE && window.mateyIDE.ide) {
               window.mateyIDE.ide.saveFile();
+              flashRawEditorSave();
             }
           });
+
+          function flashRawEditorSave() {
+            var btn = document.getElementById('edit-btn-save');
+            if (!btn) return;
+            if (btn._saveFlashTimer) clearTimeout(btn._saveFlashTimer);
+            var original = btn.textContent;
+            btn.textContent = 'Saved!';
+            btn.style.opacity = '0.5';
+            btn._saveFlashTimer = setTimeout(function () {
+              btn.textContent = original;
+              btn.style.opacity = '1';
+              btn._saveFlashTimer = null;
+            }, 900);
+          }
 
           safeClick('btn-saveas', function() {
             if (window.mateyIDE && window.mateyIDE.ide) {
@@ -830,10 +843,36 @@
           }
         }
 
+        /* Native Android WebView clipboard bridge: long-press selection controls
+           fire standard cut/copy/paste events on the CodeMirror surface. Bind
+           them (capture phase, never preventing CM6's own handling) so the
+           internal buffer/dirty state stays in sync and no clipboard event can
+           produce an unhandled exception. */
+        function setupClipboardBridge() {
+          var container = document.getElementById('edit-editor-container');
+          if (!container) return;
+          ['cut', 'copy', 'paste'].forEach(function (evtName) {
+            container.addEventListener(evtName, function () {
+              try {
+                setTimeout(function () {
+                  try {
+                    if (window.mateyIDE && window.mateyIDE.ide && typeof window.mateyIDE.ide.setDirty === 'function') {
+                      window.mateyIDE.ide.setDirty(true);
+                    }
+                  } catch (err) { console.error('[RawEditor] post-clipboard sync failed:', err); }
+                }, 0);
+              } catch (err) {
+                console.error('[RawEditor] clipboard event error (' + evtName + '):', err);
+              }
+            }, true);
+          });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
           attachButtonHandlers();
           setupVoiceInput();
           setupKeyboardShortcuts();
+          setupClipboardBridge();
           bootstrap();
         });
 
@@ -842,6 +881,7 @@
           attachButtonHandlers();
           setupVoiceInput();
           setupKeyboardShortcuts();
+          setupClipboardBridge();
           bootstrap();
         }
       })();
