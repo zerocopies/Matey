@@ -49,20 +49,27 @@
       var mainEl = document.querySelector('main.content') || document.querySelector('main');
       if (mainEl) {
         _currentTab = id;
-        mainEl.innerHTML = _navCache[id];
-        if (tabsContainer) {
-          tabsContainer.querySelectorAll('.tab').forEach(function (t) {
-            t.classList.toggle('active', t.getAttribute('data-tab') === id);
-          });
-        }
-        /* Automatic incognito routing on instant (cached) tab switches —
-           MY-VOTS / JOURNAL force ON; others revert OFF unless manually locked. */
-        if (window.MateyIncognito && window.MateyIncognito.routeForTab) {
-          try { window.MateyIncognito.routeForTab(id); } catch (e) {}
-        }
-        if (window.history && window.history.replaceState) {
-          try { window.history.replaceState({ tab: id }, '', './' + id + (id === 'agent' ? '#agent' : '')); } catch (e) {}
-        }
+
+        /* rAF injection: yield to browser paint cycle before heavy DOM swap */
+        requestAnimationFrame(function () {
+          mainEl.innerHTML = _navCache[id];
+
+          if (tabsContainer) {
+            tabsContainer.querySelectorAll('.tab').forEach(function (t) {
+              t.classList.toggle('active', t.getAttribute('data-tab') === id);
+            });
+          }
+
+          /* Automatic incognito routing on instant (cached) tab switches —
+             MY-VOTS / JOURNAL force ON; others revert OFF unless manually locked. */
+          if (window.MateyIncognito && window.MateyIncognito.routeForTab) {
+            try { window.MateyIncognito.routeForTab(id); } catch (e) {}
+          }
+
+          if (window.history && window.history.replaceState) {
+            try { window.history.replaceState({ tab: id }, '', './' + id + (id === 'agent' ? '#agent' : '')); } catch (e) {}
+          }
+        });
         return;
       }
     }
@@ -191,10 +198,17 @@
   document.addEventListener('click', function (e) { if (isDragging) { e.preventDefault(); e.stopImmediatePropagation(); } isDragging = false; }, true);
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { cacheCurrentPage(); renderTabs(); });
+    document.addEventListener('DOMContentLoaded', function () {
+      requestAnimationFrame(function () {
+        cacheCurrentPage();
+        renderTabs();
+      });
+    });
   } else {
-    cacheCurrentPage();
-    renderTabs();
+    requestAnimationFrame(function () {
+      cacheCurrentPage();
+      renderTabs();
+    });
   }
 
   window.MateyTabs = { switchTab: switchTab, getCurrentTab: function() { return _currentTab; } };

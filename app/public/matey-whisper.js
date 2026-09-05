@@ -2,13 +2,9 @@
 (function () {
   'use strict';
   var WHISPER_STATE = { ready: false, model: null, transcriber: null, loading: false, modelId: null, progress: 0, isMultilingual: false };
-  var MODEL_OPTIONS = [
-    { id: 'Xenova/whisper-tiny', label: 'Whisper Tiny (multilingual)', size: '99MB', desc: 'Fast — supports English, Chinese, French, German, Spanish, Arabic, Japanese, Korean, Russian, Portuguese, Italian, Dutch, Czech, Danish, Swedish, Polish, Hindi, Thai, Vietnamese, Turkish, and more', langs: 'multilingual' },
-    { id: 'Xenova/whisper-base', label: 'Whisper Base (multilingual)', size: '300MB', desc: 'Higher accuracy — all languages supported by Tiny plus Finnish, Hungarian, Romanian, Norwegian, Croatian, Serbian, Bulgarian, Greek, Hebrew, Urdu, Bengali, Tamil, Telugu, Marathi, Indonesian, Malay, Welsh, Afrikaans, Swahili, Zulu, and others', langs: 'multilingual' },
-    { id: 'Xenova/whisper-tiny.en', label: 'Whisper Tiny (English)', size: '99MB', desc: 'Fast English-only dictation', langs: 'english' },
-    { id: 'Xenova/whisper-base.en', label: 'Whisper Base (English)', size: '300MB', desc: 'Higher accuracy English-only dictation', langs: 'english' },
-    { id: 'Xenova/whisper-small', label: 'Whisper Small (multilingual)', size: '760MB', desc: 'Balanced speed and accuracy — all languages supported, higher fidelity transcription', langs: 'multilingual' },
-    { id: 'Xenova/whisper-medium', label: 'Whisper Medium (multilingual)', size: '1.5GB', desc: 'Highest quality offline STT — larger download, best accuracy across 99+ languages', langs: 'multilingual' }
+    var MODEL_OPTIONS = [
+    { id: 'Xenova/whisper-tiny.en', label: 'Whisper Tiny (English)', size: '99MB', desc: 'Fast English-only dictation — optimized for mobile', langs: 'english' },
+    { id: 'Xenova/whisper-tiny', label: 'Whisper Tiny (multilingual)', size: '99MB', desc: 'Fast multilingual — supports 99+ languages', langs: 'multilingual' }
   ];
 
   /* ---- CDN URLs for ONNX Runtime Web + Transformers.js ---- */
@@ -197,7 +193,16 @@ return loadFromCDN().then(function () {
   function getModelOptions() { return MODEL_OPTIONS; }
 
   function getStoredModel() {
-    try { return localStorage.getItem('matey-whisper-model') || ''; } catch (e) { return ''; }
+    try {
+      var stored = localStorage.getItem('matey-whisper-model') || '';
+      /* Enforce mobile-safe defaults — reject heavy models that were purged */
+      var allowed = ['Xenova/whisper-tiny.en', 'Xenova/whisper-tiny'];
+      if (allowed.indexOf(stored) === -1) {
+        localStorage.setItem('matey-whisper-model', 'Xenova/whisper-tiny.en');
+        return 'Xenova/whisper-tiny.en';
+      }
+      return stored;
+    } catch (e) { return 'Xenova/whisper-tiny.en'; }
   }
   function storeModel(id) {
     try { localStorage.setItem('matey-whisper-model', id); } catch (e) {}
@@ -217,6 +222,50 @@ return loadFromCDN().then(function () {
     }
   }
 
+    /* ---- Warm-Loaded Singleton (preload) ---- */
+  var _preloadPromise = null;
+  var _preloadResolved = false;
+
+  function preloadEngine() {
+    /* Return cached promise on subsequent calls — model loads exactly once */
+    if (_preloadPromise) return _preloadPromise;
+
+    var modelId = getStoredModel() || 'Xenova/whisper-tiny.en';
+    if (WHISPER_STATE.ready && WHISPER_STATE.modelId === modelId) {
+      _preloadResolved = true;
+      _preloadPromise = Promise.resolve(WHISPER_STATE.transcriber);
+      return _preloadPromise;
+    }
+
+    if (WHISPER_STATE.loading) {
+      /* Wait for in-flight load to finish */
+      _preloadPromise = new Promise(function (resolve, reject) {
+        var check = function () {
+          if (WHISPER_STATE.ready) { _preloadResolved = true; resolve(WHISPER_STATE.transcriber); }
+          else if (!WHISPER_STATE.loading) { reject(new Error('Preload cancelled')); }
+          else { setTimeout(check, 200); }
+        };
+        check();
+      });
+      return _preloadPromise;
+    }
+
+    console.log('[MateyWhisper] preloadEngine: warming up model →', modelId);
+
+    /* Load in background — non-blocking, no UI interaction required */
+    _preloadPromise = loadModel(modelId).then(function (transcriber) {
+      _preloadResolved = true;
+      console.log('[MateyWhisper] preloadEngine: model warmed and cached in memory singleton');
+      return transcriber;
+    }).catch(function (err) {
+      _preloadPromise = null;  /* Allow retry on error */
+      console.warn('[MateyWhisper] preloadEngine: model preload failed:', err && err.message ? err.message : err);
+      return null;
+    });
+
+    return _preloadPromise;
+  }
+
   window.MateyWhisper = {
     loadModel: loadModel,
     transcribe: transcribe,
@@ -227,6 +276,7 @@ return loadFromCDN().then(function () {
     getDownloadedModels: getDownloadedModels,
     isModelDownloaded: isModelDownloaded,
     markModelDownloaded: markModelDownloaded,
+    preloadEngine: preloadEngine,
     debugSwapModel: function (modelId) {
       var opts = MODEL_OPTIONS.find(function (m) { return m.id === modelId; });
       if (!opts) {

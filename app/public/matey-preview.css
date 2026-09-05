@@ -7,6 +7,9 @@
   --app-accent: #4f46e5;
   --app-surface: #080808;
   --app-surface-raised: #1a1a1a;
+  /* Native touch feedback */
+  --touch-active-scale: 0.96;
+  --touch-active-opacity: 0.7;
   /* Grid & spacing — 4px base (blueprint) */
   --space-xs: 4px;
   --space-sm: 8px;
@@ -100,7 +103,32 @@
   --journal-cover-5: #e94560;
 }
 
- html, body {
+/* ---- Native Touch Feedback ---- */
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+button, .btn, .icon-btn, .fab, .card, .tab, .nav-item,
+[role="button"], .clickable, .interactive, .touchable {
+  transition: transform var(--duration-fast) var(--ease-out),
+              opacity var(--duration-fast) var(--ease-out);
+}
+
+button:active, .btn:active, .icon-btn:active, .fab:active,
+.card:active, .tab:active, .nav-item:active,
+[role="button"]:active, .clickable:active, .interactive:active, .touchable:active {
+  transform: scale(var(--touch-active-scale));
+  opacity: var(--touch-active-opacity);
+}
+
+/* Prevent text selection on interactive elements for native feel */
+button, .btn, .icon-btn, .fab, .tab, .nav-item, [role="button"] {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
   background-color: var(--app-bg);
   color: var(--app-fg);
 }
@@ -1861,29 +1889,6 @@ body {
   background: var(--text);
   color: var(--bg);
   border-color: var(--text);
-}
-
-.icon-btn.settings-trigger {
-  border: none;
-  background: transparent;
-  width: auto;
-  height: auto;
-  padding: 8px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-.icon-btn.settings-trigger svg {
-  width: 24px;
-  height: 24px;
-  display: block;
-  color: var(--text);
-}
-.icon-btn.settings-trigger:active svg {
-  transform: scale(0.92);
-  opacity: 0.65;
 }
 
 /* ===== Incognito Toggle ===== */
@@ -4979,10 +4984,10 @@ body {
 .vts-link-input {
   flex: 1;
   padding: var(--space-md);
-  background: var(--card-bg);
+  background: #ffffff;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  color: var(--text);
+  color: #111111;
   font-size: var(--font-base);
   outline: none;
   font-family: inherit;
@@ -5102,10 +5107,10 @@ body {
 .vts-headline-input {
   width: 100%;
   padding: var(--space-sm) var(--space-md);
-  background: var(--card-bg);
+  background: #ffffff;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  color: var(--text);
+  color: #111111;
   font-size: var(--font-base);
   outline: none;
   font-family: inherit;
@@ -5146,9 +5151,9 @@ body {
   flex: 1;
   width: 100%;
   padding: var(--space-md) var(--page-gutter);
-  background: transparent;
+  background: #ffffff;
   border: none;
-  color: var(--text);
+  color: #111111;
   font-size: var(--font-base);
   line-height: var(--line-height-relaxed);
   resize: none;
@@ -5172,6 +5177,26 @@ body {
   gap: var(--space-sm);
   padding: var(--space-sm) var(--page-gutter);
   border-bottom: 1px solid var(--border);
+}
+
+/* Mic button for VOTS editor (mirrors journal) */
+.vts-mic-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: var(--space-sm) var(--page-gutter);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--card-bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+.vts-mic-btn:active {
+  background: var(--accent-gold);
+  color: var(--bg);
 }
 
 .vts-editor-scroll {

@@ -3,8 +3,7 @@
  * Integrates the spec from /home/prp/Documents/matey-stt.js as a browser-compatible
  * IIFE that binds to window.MateySpeech. Provides:
  *   - STT_DOMAINS: Culinary, Wardrobe, Grooming, Living, Journal, Editor, Agent
- *   - STT_MODEL_CATALOG: 4 on-device models (Silero VAD, Distil-Whisper Small,
- *     Whisper Large v3 Turbo, Moonshine Base)
+  *   - STT_MODEL_CATALOG: 2 on-device models (Silero VAD, Distil-Whisper Small)
  *   - ModelStorageManager: IndexedDB-backed model weight storage
  *   - DirectDownloader: fetch-based model download with progress
  *   - ContextConditioner: domain-specific Whisper initial prompts
@@ -30,7 +29,7 @@
     AGENT: 'agent'
   };
 
-  var STT_MODEL_CATALOG = [
+    var STT_MODEL_CATALOG = [
     {
       id: 'silero-vad',
       name: 'Silero VAD (Silence & Noise Filter)',
@@ -48,24 +47,6 @@
       recommended: true,
       description: 'Fastest mobile dictation engine. Instant local voice transcription across all app screens.',
       downloadUrl: 'https://huggingface.co/onnx-community/distil-whisper-small.en-onnx/resolve/main/onnx/decoder_model_merged_quantized.onnx'
-    },
-    {
-      id: 'whisper-large-v3-turbo',
-      name: 'Whisper Large v3 Turbo (ONNX)',
-      type: 'stt',
-      sizeMB: 808,
-      recommended: false,
-      description: 'High-precision engine for 99 languages. Ideal for international language dictation and complex notes.',
-      downloadUrl: 'https://huggingface.co/onnx-community/whisper-large-v3-turbo-onnx/resolve/main/onnx/decoder_model_merged_quantized.onnx'
-    },
-    {
-      id: 'moonshine-base',
-      name: 'Moonshine Base (Ultra-Light Edge)',
-      type: 'stt',
-      sizeMB: 110,
-      recommended: false,
-      description: 'Minimal memory footprint designed for continuous low-power background listening.',
-      downloadUrl: 'https://huggingface.co/onnx-community/moonshine-base-onnx/resolve/main/onnx/model.onnx'
     }
   ];
 
@@ -304,23 +285,51 @@
     }
   };
 
-  /* ---- SileroVADProcessor ---- */
+    /* ---- SileroVADProcessor ---- */
   var SileroVADProcessor = {
     filterSilence: function (float32AudioArray) {
-      var threshold = 0.012;
+      var threshold = 0.015;
       var frameSize = 512;
       var outputBuffer = [];
+      var silenceStreak = 0;
+      var hangoverFrames = 6;  /* ≈75ms tail padding after speech ends — prevents cutting word tails */
+      var inSpeech = false;
+      var totalSilenceFrames = 0;
 
       for (var i = 0; i < float32AudioArray.length; i += frameSize) {
         var frame = float32AudioArray.subarray(i, i + frameSize);
         var sumSquares = 0;
         for (var j = 0; j < frame.length; j++) sumSquares += frame[j] * frame[j];
         var rms = Math.sqrt(sumSquares / frame.length);
+        var isSpeech = rms >= threshold;
 
-        if (rms >= threshold) {
+        if (isSpeech) {
+          inSpeech = true;
+          silenceStreak = 0;
+          /* Flush any pending hangover frames before this speech frame */
           for (var k = 0; k < frame.length; k++) outputBuffer.push(frame[k]);
+        } else if (inSpeech) {
+          silenceStreak++;
+          totalSilenceFrames++;
+          if (silenceStreak <= hangoverFrames) {
+            /* Keep silence during hangover tail — avoids truncating word endings */
+            for (var m = 0; m < frame.length; m++) outputBuffer.push(frame[m]);
+          }
+          if (silenceStreak > hangoverFrames) {
+            inSpeech = false;
+          }
         }
+        /* Frames before first speech detected: dropped entirely (dead air) */
       }
+
+      /* Store stats for debug logging */
+      SileroVADProcessor._lastStats = {
+        originalSamples: float32AudioArray.length,
+        cleanSamples: outputBuffer.length,
+        silenceFramesDropped: totalSilenceFrames,
+        hangoverFrames: hangoverFrames
+      };
+
       return new Float32Array(outputBuffer);
     },
     encodeFloat32ToWav: function (float32Array, sampleRate) {
@@ -352,17 +361,23 @@
     }
   };
 
-  /* ---- UniversalSpeechService ---- */
+    /* ---- UniversalSpeechService ---- */
   function UniversalSpeechService() {
-    this.activeModelId = localStorage.getItem('matey_active_stt_model') || 'distil-whisper-small';
+    this.activeModelId = 'distil-whisper-small';  /* Hardcoded default for mobile stability */
     this.mediaRecorder = null;
     this.audioChunks = [];
     this.isRecording = false;
     this.stream = null;
     this.listeners = [];
-    /* Speech recognizer tuning — continuous session with interim results so live
-       speech is captured fluently without dropping sentences or cutting off early.
-       Applied to any SpeechRecognition instance the engine drives. */
+    /* Rolling chunked decoding state */
+    this._rollingBuffer = [];
+    this._streamingTimer = null;
+    this._interimCallback = null;
+    this._chunkIndex = 0;
+    this._streamText = '';
+    this._streamingActive = false;
+    this._chunkIntervalMs = 2500;  /* Process audio every 2.5 seconds */
+    /* Speech recognizer tuning */
     this.recognitionConfig = {
       continuous: true,
       interimResults: true,
@@ -370,14 +385,144 @@
     };
   }
 
-  UniversalSpeechService.prototype.notifyChange = function () {
+    UniversalSpeechService.prototype.notifyChange = function () {
     var _this = this;
     this.listeners.forEach(function (cb) {
       try { cb({ active: _this.isRecording, modelId: _this.activeModelId }); } catch (e) { console.error('[MateySpeech] Listener error:', e); }
     });
   };
 
-  UniversalSpeechService.prototype.startListening = function () {
+  /* ---- Rolling Chunked Decoding (Streaming) ---- */
+  UniversalSpeechService.prototype.setInterimCallback = function (callback) {
+    this._interimCallback = callback;
+  };
+
+  UniversalSpeechService.prototype.startStreaming = function (domain, contextPayload) {
+    var _this = this;
+    this._streamingActive = true;
+    this._chunkIndex = 0;
+    this._streamText = '';
+    this._rollingBuffer = [];
+
+    console.log('[MateySpeech] Streaming chunked decoding started (interval: ' + this._chunkIntervalMs + 'ms)');
+
+    this._streamingTimer = setInterval(function () {
+      if (!_this._streamingActive) return;
+      _this.processNextChunk(domain, contextPayload);
+    }, this._chunkIntervalMs);
+  };
+
+  UniversalSpeechService.prototype.stopStreaming = function () {
+    this._streamingActive = false;
+    if (this._streamingTimer) {
+      clearInterval(this._streamingTimer);
+      this._streamingTimer = null;
+    }
+    this._rollingBuffer = [];
+    this._chunkIndex = 0;
+    this._streamText = '';
+    console.log('[MateySpeech] Streaming chunked decoding stopped');
+  };
+
+  UniversalSpeechService.prototype.processNextChunk = function (domain, contextPayload) {
+    var _this = this;
+
+    /* Skip if no new audio data since last chunk */
+    if (this.audioChunks.length === 0) return;
+
+    /* Grab accumulated audio and clear the live buffer (rolling window) */
+    var chunksToProcess = this.audioChunks.slice();
+    this.audioChunks = [];
+
+    if (chunksToProcess.length === 0) return;
+
+    var mime = this.mediaRecorder ? (this.mediaRecorder.mimeType || 'audio/webm') : 'audio/webm';
+    var blob = new Blob(chunksToProcess, { type: mime });
+
+    console.debug('[MateySpeech] Processing chunk #' + (this._chunkIndex + 1) + ': ' + blob.size + ' bytes');
+
+    this._transcribeChunk(blob, domain, contextPayload).then(function (text) {
+      if (!text || !text.trim()) return;
+
+      _this._chunkIndex++;
+      _this._streamText += (_this._streamText ? ' ' : '') + text.trim();
+
+      /* Fire interim callback for live UI injection */
+      if (_this._interimCallback && typeof _this._interimCallback === 'function') {
+        try {
+          _this._interimCallback({
+            chunkIndex: _this._chunkIndex,
+            interimText: text.trim(),
+            fullText: _this._streamText,
+            isFinal: false
+          });
+        } catch (e) { console.error('[MateySpeech] Interim callback error:', e); }
+      }
+    }).catch(function (e) {
+      console.warn('[MateySpeech] Chunk #' + (_this._chunkIndex + 1) + ' transcription failed:', e);
+    });
+  };
+
+  UniversalSpeechService.prototype._transcribeChunk = function (blob, domain, contextPayload) {
+    var _this = this;
+    domain = domain || 'journal';
+    contextPayload = contextPayload || {};
+
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        audioCtx.decodeAudioData(reader.result, function (buffer) {
+          var channelData = buffer.getChannelData(0);
+          var sampleRate = buffer.sampleRate;
+
+          /* VAD hard-wired always-on */
+          var cleanPCM = SileroVADProcessor.filterSilence(channelData);
+          if (cleanPCM.length < 100) {
+            resolve('');
+            return;
+          }
+          var finalBlob = SileroVADProcessor.encodeFloat32ToWav(cleanPCM, sampleRate);
+          console.debug('[MateySpeech] Chunk VAD: ' + channelData.length + ' → ' + cleanPCM.length + ' samples');
+
+          if (window.MateyWhisper && window.MateyWhisper.transcribe && window.MateyWhisper.getState && window.MateyWhisper.getState().ready) {
+            MateyWhisper.transcribe(finalBlob).then(function (result) {
+              var rawText = '';
+              if (typeof result === 'string') rawText = result;
+              else if (Array.isArray(result)) rawText = result.map(function (r) { return (r && r.text) ? r.text : ''; }).join(' ').trim();
+              else if (result && result.text) rawText = result.text;
+              else if (result && result.transcription) rawText = result.transcription;
+
+              var processed = MultiDomainPostProcessor.process(rawText, domain);
+
+              /* GC: destroy chunk data after transcription */
+              try {
+                if (blob && blob.type) URL.revokeObjectURL(blob);
+                channelData = null;
+                buffer = null;
+                if (audioCtx) { audioCtx.close(); audioCtx = null; }
+              } catch (gcErr) { /* silent */ }
+
+              resolve(processed);
+            }).catch(function (e) {
+              console.warn('[MateySpeech] Whisper chunk transcribe error:', e);
+              try { if (blob && blob.type) URL.revokeObjectURL(blob); } catch (e3) {}
+              resolve('');
+            });
+          } else {
+            /* Whisper not ready — will be picked up on next chunk when model is loaded */
+            console.debug('[MateySpeech] Whisper not ready for chunk, deferring');
+            try { if (blob && blob.type) URL.revokeObjectURL(blob); } catch (e3) {}
+            resolve('');
+          }
+        }, reject);
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(blob);
+    });
+  };
+
+  UniversalSpeechService.prototype.startListening = function (domain, contextPayload) {
     var _this = this;
     return new Promise(function (resolve, reject) {
       if (_this.isRecording) {
@@ -396,6 +541,9 @@
       }).then(function (stream) {
         _this.stream = stream;
         _this.audioChunks = [];
+        _this._rollingBuffer = [];
+        _this._chunkIndex = 0;
+        _this._streamText = '';
         var mime = 'audio/webm;codecs=opus';
         if (!MediaRecorder.isTypeSupported(mime)) mime = 'audio/wav';
 
@@ -407,11 +555,16 @@
 
         _this.mediaRecorder.onstop = function () {
           _this.isRecording = false;
+          _this.stopStreaming();
           _this.notifyChange();
         };
 
         _this.mediaRecorder.start(250);
         _this.isRecording = true;
+
+        /* Start rolling chunked decoding */
+        _this.startStreaming(domain, contextPayload);
+
         _this.notifyChange();
         resolve();
       }).catch(reject);
@@ -429,13 +582,45 @@
         return;
       }
 
+      /* Stop streaming timer immediately — no more interim chunks */
+      _this.stopStreaming();
+
       var mimeType = _this.mediaRecorder.mimeType || 'audio/webm';
       var onStop = function () {
         _this.stream.getTracks().forEach(function (t) { try { t.stop(); } catch (e) {} });
 
-        var blob = new Blob(_this.audioChunks, { type: mimeType });
+        /* Fire final interim callback with accumulated streaming text */
+        if (_this._interimCallback && typeof _this._interimCallback === 'function' && _this._streamText) {
+          try {
+            _this._interimCallback({
+              chunkIndex: _this._chunkIndex,
+              interimText: '',
+              fullText: _this._streamText,
+              isFinal: true
+            });
+          } catch (e) { console.error('[MateySpeech] Final interim callback error:', e); }
+        }
 
-        _this.processAudioBlob(blob, domain, contextPayload).then(resolve).catch(reject);
+        /* Process any remaining audio in buffer as final chunk */
+        var remainingChunks = _this.audioChunks.slice();
+        _this.audioChunks = [];
+
+        if (remainingChunks.length === 0) {
+          resolve(_this._streamText || '');
+          return;
+        }
+
+        var blob = new Blob(remainingChunks, { type: mimeType });
+        _this.processAudioBlob(blob, domain, contextPayload).then(function (finalText) {
+          /* Append any final text that wasn't caught by streaming */
+          if (finalText && finalText.trim() && finalText.trim() !== _this._streamText) {
+            _this._streamText += (_this._streamText ? ' ' : '') + finalText.trim();
+          }
+          resolve(_this._streamText || finalText);
+        }).catch(function (e) {
+          /* Even on error, return whatever we got from streaming */
+          resolve(_this._streamText || '');
+        });
       };
 
       _this.mediaRecorder.onstop = onStop;
@@ -455,8 +640,7 @@
           var channelData = buffer.getChannelData(0);
           var sampleRate = buffer.sampleRate;
 
-          var vadEnabled = false;
-          try { vadEnabled = localStorage.getItem('matey-vad-enabled') !== 'false'; } catch (e) {}
+                    var vadEnabled = true;  /* Hard-wired: VAD always active */
 
           var finalBlob = blob;
           if (vadEnabled) {
@@ -467,7 +651,7 @@
               return;
             }
             finalBlob = SileroVADProcessor.encodeFloat32ToWav(cleanPCM, sampleRate);
-            console.log('[MateySpeech] VAD trimmed:', channelData.length, '->', cleanPCM.length, 'samples');
+            console.debug('[MateySpeech] VAD truncated ' + (channelData.length - cleanPCM.length) + ' silence samples (' + (channelData.length / sampleRate).toFixed(1) + 's → ' + (cleanPCM.length / sampleRate).toFixed(1) + 's)');
           }
 
           var initialPrompt = ContextConditioner.generatePrompt(domain, contextPayload);
@@ -481,6 +665,16 @@
               else if (result && result.transcription) rawText = result.transcription;
 
               var finalResult = MultiDomainPostProcessor.process(rawText, domain);
+
+              /* ---- Aggressive GC: destroy audio blobs and buffers post-transcription ---- */
+              try {
+                if (blob && blob.type) { URL.revokeObjectURL(blob); }
+                _this.audioChunks = [];
+                channelData = null;
+                buffer = null;
+                if (typeof audioCtx !== 'undefined' && audioCtx) { audioCtx.close(); audioCtx = null; }
+              } catch (gcErr) { /* silent */ }
+
               resolve(finalResult);
             }).catch(function (e) {
               if (window.MateyWhisper && !MateyWhisper.getState().ready) {
@@ -488,20 +682,47 @@
                   MateyWhisper.transcribe(finalBlob).then(function (result) {
                     var rawText = typeof result === 'string' ? result : (Array.isArray(result) ? result.map(function (r) { return (r && r.text) ? r.text : ''; }).join(' ') : (result && result.text ? result.text : ''));
                     var finalResult = MultiDomainPostProcessor.process(rawText, domain);
+
+                    /* ---- Aggressive GC ---- */
+                    try {
+                      if (blob && blob.type) { URL.revokeObjectURL(blob); }
+                      _this.audioChunks = [];
+                      channelData = null;
+                      buffer = null;
+                      if (typeof audioCtx !== 'undefined' && audioCtx) { audioCtx.close(); audioCtx = null; }
+                    } catch (gcErr) { /* silent */ }
+
                     resolve(finalResult);
-                  }).catch(reject);
+                  }).catch(function (gcErr2) {
+                    try { if (blob && blob.type) URL.revokeObjectURL(blob); _this.audioChunks = []; } catch (e3) {}
+                    reject(gcErr2);
+                  });
                 }).catch(function (err) {
                   console.error('[MateySpeech] Auto-loaded model failed:', err);
+                  try { if (blob && blob.type) URL.revokeObjectURL(blob); _this.audioChunks = []; } catch (e3) {}
                   resolve('');
                 });
               } else {
                 console.error('[MateySpeech] Transcription error:', e);
+                try { if (blob && blob.type) URL.revokeObjectURL(blob); _this.audioChunks = []; } catch (e3) {}
                 resolve('');
               }
             });
           } else {
             console.warn('[MateySpeech] MateyWhisper not available, using fallback.');
-            _this.fallbackTranscribe(channelData, domain).then(resolve).catch(reject);
+            _this.fallbackTranscribe(channelData, domain).then(function (result) {
+              try {
+                if (blob && blob.type) { URL.revokeObjectURL(blob); }
+                _this.audioChunks = [];
+                channelData = null;
+                buffer = null;
+                if (typeof audioCtx !== 'undefined' && audioCtx) { audioCtx.close(); audioCtx = null; }
+              } catch (gcErr) { /* silent */ }
+              resolve(result);
+            }).catch(function (gcErr) {
+              try { if (blob && blob.type) URL.revokeObjectURL(blob); _this.audioChunks = []; } catch (e3) {}
+              reject(gcErr);
+            });
           }
         }, reject);
       };
@@ -580,6 +801,14 @@
     };
   };
 
+  UniversalSpeechService.prototype.preloadEngine = function () {
+    /* Delegate to MateyWhisper's warm-load singleton — model loads once, cached in memory */
+    if (window.MateyWhisper && typeof window.MateyWhisper.preloadEngine === 'function') {
+      return window.MateyWhisper.preloadEngine();
+    }
+    return Promise.resolve();
+  };
+
   var service = new UniversalSpeechService();
 
   if (typeof window !== 'undefined') {
@@ -592,6 +821,10 @@
     window.MateySpeech.ContextConditioner = ContextConditioner;
     window.MateySpeech.MultiDomainPostProcessor = MultiDomainPostProcessor;
     window.MateySpeech.SileroVADProcessor = SileroVADProcessor;
+    /* Streaming API */
+    window.MateySpeech.startStreaming = function (domain, ctx) { return service.startStreaming(domain, ctx); };
+    window.MateySpeech.stopStreaming = function () { return service.stopStreaming(); };
+    window.MateySpeech.setInterimCallback = function (cb) { return service.setInterimCallback(cb); };
   }
 
   console.log('[MateySpeech] Universal Speech Engine initialized. Domains:', Object.keys(STT_DOMAINS).join(', '));
