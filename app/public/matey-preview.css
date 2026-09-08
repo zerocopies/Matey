@@ -481,11 +481,13 @@ body {
   align-items: center !important;
   justify-content: space-between !important;
   width: 100% !important;
-  min-height: 52px !important;
-  padding-top: clamp(14px, env(safe-area-inset-top, 16px), 24px) !important; /* Brings logo & icons down */
-  padding-bottom: 6px !important;
-  padding-left: 12px !important;
-  padding-right: 12px !important;
+  height: 56px !important;
+  /* Force large top offset to clear notch/status bar completely */
+  margin-top: 40px !important;
+  padding-top: env(safe-area-inset-top, 10px) !important;
+  padding-bottom: 8px !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
   box-sizing: border-box !important;
   background: var(--app-bg, #0B0B0E) !important;
 }
@@ -506,7 +508,7 @@ body {
 
 /* Folder + USB icon pair: very small, tightly paired */
 .ws-ico {
-  font-size: 15px !important;
+  font-size: 13px !important;   /* two-up pair stays inside the 32px icon box */
   line-height: 1 !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -555,63 +557,62 @@ body {
   color: var(--app-accent) !important;
 }
 
-/* Usage ring (purple circle): fit header height */
-.usage-ring {
-  width: 30px !important;
-  height: 30px !important;
-  flex-shrink: 0 !important;
-}
-
-/* Ghost icon: scale down to fit 56px header */
-.incognito-trigger {
-  width: 30px !important;
-  height: 30px !important;
-  padding: 0 !important;
-  flex-shrink: 0 !important;
+/* EXACT UNIFORM ICON BOX SIZING (32px x 32px SQUARE BOUNDS) */
+.workspace-folder-btn,
+.id-icon,
+.usage-ring,
+.theme-toggle-btn,
+.vault-btn,
+#vault-launcher,
+.incognito-trigger,
+.menu-btn {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+  box-sizing: border-box !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border: none !important;
-  background: transparent !important;
-  cursor: pointer !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  font-size: 15px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
 }
 .incognito-trigger svg {
   display: block !important;
   width: 26px !important;
   height: 30px !important;
 }
-
-/* Burger menu button: standard 3-line hamburger */
-.menu-btn {
-  width: 30px !important;
-  height: 30px !important;
-  padding: 0 !important;
-  flex-shrink: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border: none !important;
-  background: transparent !important;
-  color: var(--app-fg) !important;
-  cursor: pointer !important;
-}
 .menu-btn svg {
   display: block !important;
 }
 
-.header-left, .header-actions {
+/* EVENLY SPACED LEFT & RIGHT GROUPS */
+.header-left {
   display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
   align-items: center !important;
-  gap: 8px !important;
+  gap: 10px !important;
+  flex-shrink: 0 !important;
+}
+
+.header-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  justify-content: flex-end !important;
+  flex-shrink: 0 !important;
 }
 
 .matey-logo {
-  height: 44px !important;
-  width: auto !important;
+  height: 32px !important;
+  width: 32px !important;
   object-fit: contain !important;
-  margin-right: 0 !important;
   flex-shrink: 0 !important;
 }
 
@@ -852,8 +853,8 @@ body {
 .tabs-wrap,
 .tab-navigation,
 .sub-nav {
-  margin-top: 2px !important;
-  margin-bottom: 4px !important; /* Closes gap under tabs */
+  margin-top: 12px !important;
+  margin-bottom: 8px !important;
   padding-top: 2px !important;
   padding-bottom: 4px !important;
   padding-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
@@ -962,6 +963,12 @@ body {
 .view-section,
 .content {
   padding-top: 8px !important; /* Reduced top padding */
+  margin-top: 0 !important;
+}
+
+.lifestyle-container,
+.main-content {
+  padding-top: 4px !important;
   margin-top: 0 !important;
 }
 
