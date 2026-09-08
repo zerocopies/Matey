@@ -13,12 +13,22 @@
       symbolKeys: ['*', '/', '#', '$', '?', '!', '=', '+', '-', '÷', '(', ')']
     },
     vots: {
-      targetInputs: ['vots-content-input', 'vots-title-input'],
+      targetInputs: ['vts-entry-content'],
       showMic: true,
       symbolKeys: ['*', '/', '#', '$', '?', '!', '=', '+', '-', '÷', '(', ')']
     },
     journal: {
       targetInputs: ['journal-title-input', 'journal-content-input'],
+      showMic: true,
+      symbolKeys: ['*', '/', '#', '$', '?', '!', '=', '+', '-', '÷', '(', ')']
+    },
+    culinary: {
+      targetInputs: ['lf-cuisine', 'lf-ingredients'],
+      showMic: true,
+      symbolKeys: ['*', '/', '#', '$', '?', '!', '=', '+', '-', '÷', '(', ')']
+    },
+    agent: {
+      targetInputs: ['md-compose-input'],
       showMic: true,
       symbolKeys: ['*', '/', '#', '$', '?', '!', '=', '+', '-', '÷', '(', ')']
     }
@@ -217,10 +227,10 @@
 
     container.appendChild(editRow);
 
-    // Row 2: Symbol keyboard (agent keyboard copy - green buttons)
+    // Row 2: Symbol keyboard — dark glass tiles, gold/white icons (no neon green)
     if (config.symbolKeys && config.symbolKeys.length) {
       var symbolRow = document.createElement('div');
-      symbolRow.className = 'matey-toolbar-row matey-symbol-row matey-symbol-row-green';
+      symbolRow.className = 'matey-toolbar-row matey-symbol-row';
       symbolRow.style.cssText = 'display:flex;justify-content:space-between;gap:4px;height:auto;align-items:center;flex-wrap:nowrap;';
 
       config.symbolKeys.forEach(function (key) {
@@ -230,7 +240,7 @@
         btn.dataset.key = key;
         btn.title = 'Insert ' + key;
         btn.setAttribute('aria-label', 'Insert ' + key);
-        btn.innerHTML = '<span style="font-size:14px;font-weight:600;color:var(--accent-green,#22ff22);">' + key + '</span>';
+        btn.innerHTML = '<span style="font-size:14px;font-weight:600;color:var(--accent,#B583FC);">' + key + '</span>';
         btn.addEventListener('click', function (e) {
           e.preventDefault();
           e.stopPropagation();
@@ -245,6 +255,18 @@
 
       container.appendChild(symbolRow);
     }
+
+    // Scroll into view on input focus — prevents keyboard overlap
+    config.targetInputs.forEach(function (inputId) {
+      var inputEl = document.getElementById(inputId);
+      if (inputEl) {
+        inputEl.addEventListener('focus', function () {
+          setTimeout(function () {
+            inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 300);
+        });
+      }
+    });
   }
 
   // Auto-init on DOM ready for known screens
@@ -257,8 +279,14 @@
         if (document.getElementById('md-composer') && !document.querySelector('#md-composer .matey-edit-row')) {
           initToolbar('editor', '#md-composer');
         }
-        if (document.querySelector('.vots-composer, #vots-composer')) {
+        if (document.querySelector('.vots-composer, #vots-composer') && !document.querySelector('#vots-composer .matey-edit-row')) {
           initToolbar('vots', '.vots-composer, #vots-composer');
+        }
+        if (document.getElementById('lf-cuisine') && !document.querySelector('#lf-cuisine-wrap .matey-edit-row')) {
+          initToolbar('culinary', '#lf-cuisine-wrap');
+        }
+        if (document.getElementById('md-compose-input') && !document.querySelector('#md-compose-input .matey-edit-row')) {
+          initToolbar('agent', '#md-compose-input');
         }
       }, 100);
     });
@@ -270,13 +298,20 @@
       if (document.getElementById('md-composer') && !document.querySelector('#md-composer .matey-edit-row')) {
         initToolbar('editor', '#md-composer');
       }
-      if (document.querySelector('.vots-composer, #vots-composer')) {
+      if (document.querySelector('.vots-composer, #vots-composer') && !document.querySelector('#vots-composer .matey-edit-row')) {
         initToolbar('vots', '.vots-composer, #vots-composer');
+      }
+      if (document.getElementById('lf-cuisine') && !document.querySelector('#lf-cuisine-wrap .matey-edit-row')) {
+        initToolbar('culinary', '#lf-cuisine-wrap');
+      }
+      if (document.getElementById('md-compose-input') && !document.querySelector('#md-compose-input .matey-edit-row')) {
+        initToolbar('agent', '#md-compose-input');
       }
     }, 100);
   }
 
   window.MateyToolbar = {
-    init: initToolbar
+    init: initToolbar,
+    configs: TOOLBAR_CONFIG
   };
 })();

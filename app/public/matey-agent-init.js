@@ -90,6 +90,7 @@
     setTimeout(initAgentIDE, 100);
   }
 
-  // Expose for debugging
-  window.MateyAgentInit = { init: initAgentIDE };
+  /* Expose Agent instance for debugging and global access */
+  window.MateyAgent = window.MateyIDE || {};
+  window.ACIDAgent = window.MateyAgent;
 })();

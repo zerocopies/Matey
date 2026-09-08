@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stage 4.5 Acceptance Tests</title>
+  <style>
+    body { background: #0d0d0d; color: #e0e0e0; font-family: monospace; padding: 20px; font-size: 13px; }
+    .result { margin: 5px 0; padding: 10px; border-radius: 6px; }
+    .pass { background: #1a2e1a; border: 1px solid #4ade80; }
+    .fail { background: #2e1a1a; border: 1px solid #f87171; }
+    .info { background: #1a1a2e; border: 1px solid #6366f1; }
+    pre { background: #1a1a1a; padding: 10px; border-radius: 6px; overflow: auto; font-size: 11px; max-height: 300px; }
+  </style>
+</head>
+<body>
+  <h1>Stage 4.5 Acceptance Tests</h1>
+  <div id="results"></div>
+  <script>
+    window.MateyBasePath = './';
+  </script>
+  <script type="module">
+    import { ASTIndex } from './matey-ast-index.js';
+    import { TieredDiffMatcher, DIFF_REGEX } from './matey-tiered-diff.js';
+
+    const results = document.getElementById('results');
+    function addResult(label, value, passed) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed ? 'pass' : 'fail');
+      div.innerHTML = '<strong>' + label + '</strong>: ' + value;
+      results.appendChild(div);
+    }
+    function addInfo(label, value) {
+      const div = document.createElement('div');
+      div.className = 'result info';
+      div.innerHTML = '<strong>' + label + '</strong>: ' + (typeof value === 'string' ? value : JSON.stringify(value, null, 2));
+      results.appendChild(div);
+    }
+    function addCode(label, code) {
+      const div = document.createElement('div');
+      div.className = 'result info';
+      div.innerHTML = '<strong>' + label + '</strong>: <pre>' + code + '</pre>';
+      results.appendChild(div);
+    }
+
+    async function main() {
+      // ===== TEST 1: Lazy grammar loading =====
+      addInfo('=== TEST 1: Lazy Grammar Loading ===', '');
+      
+      // Start with clean cache
+      ASTIndex.clearCache();
+      addInfo('After clearCache', { loadedLanguages: ASTIndex.getLoadedLanguages() });
+
+      // Load JS first
+      const jsLang = await ASTIndex.getLanguage('test.js');
+      addResult('JS grammar loaded', JSON.stringify(ASTIndex.getLoadedLanguages()), 
+        ASTIndex.getLoadedLanguages().includes('javascript'));
+      addResult('Python NOT loaded yet', String(!ASTIndex.getLoadedLanguages().includes('python')),
+        !ASTIndex.getLoadedLanguages().includes('python'));
+
+      // Now load Python
+      const pyLang = await ASTIndex.getLanguage('test.py');
+      addResult('Python grammar loaded after JS', JSON.stringify(ASTIndex.getLoadedLanguages()),
+        ASTIndex.getLoadedLanguages().includes('python'));
+      addResult('JS still loaded', String(ASTIndex.getLoadedLanguages().includes('javascript')),
+        ASTIndex.getLoadedLanguages().includes('javascript'));
+
+      // ===== TEST 2: Context size comparison =====
+      addInfo('=== TEST 2: Context Size Comparison ===', '');
+
+      const sampleCode = `import { foo } from './utils.js';
+import { bar } from './helpers.js';
+
+// Caller function 1
+function callerA() {
+  return targetFunction(1, 2);
+}
+
+// Caller function 2
+function callerB() {
+  return targetFunction(3, 4);
+}
+
+// The target function
+function targetFunction(a, b) {
+  const x = a + b;
+  const y = x * 2;
+  const z = y - 1;
+  console.log('computing:', z);
+  return z;
+}
+
+// Some unrelated code below
+function unrelatedFunction() {
+  return 'hello world';
+}
+
+// More padding code
+for (let i = 0; i < 100; i++) {
+  console.log('padding line', i);
+}
+
+const result = targetFunction(10, 20);
+export default targetFunction;`;
+
+      // Old ±50-line window approach (simulated)
+      const lines = sampleCode.split('\n');
+      const cursorLine = 16; // targetFunction is around line 16
+      const oldStart = Math.max(0, cursorLine - 1 - 25);
+      const oldEnd = Math.min(lines.length, oldStart + 50);
+      const oldWindowContent = lines.slice(oldStart, oldEnd).join('\n');
+      const oldWindowBytes = oldWindowContent.length;
+      const oldWindowTokens = Math.ceil(oldWindowBytes / 4);
+
+      // AST-based approach
+      const astContext = await ASTIndex.getFunctionContext('test.js', cursorLine, sampleCode);
+      const astBytes = astContext.content.length;
+      const astTokens = Math.ceil(astBytes / 4);
+
+      addCode('AST-scoped content (function + imports + callers)', astContext.content);
+      addResult('Old window bytes', String(oldWindowBytes), true);
+      addResult('AST bytes', String(astBytes), true);
+      addResult('Bytes saved', String(oldWindowBytes - astBytes), oldWindowBytes - astBytes !== 0);
+      addResult('Tokens saved', String(oldWindowTokens - astTokens), oldWindowTokens - astTokens !== 0);
+      addResult('Function name detected', astContext.functionName, astContext.functionName === 'targetFunction');
+
+      // ===== TEST 3: Pre-flight catches broken diff =====
+      addInfo('=== TEST 3: Pre-flight Validation ===', '');
+
+      const validCode = `function hello() {
+  return "world";
+}`;
+      const brokenCode = `function hello() {
+  return "world"
+}`; // missing semicolon - actually valid JS, let's use truly broken
+
+      const trulyBroken = `function hello() {
+  return "world"
+  {{{ this is not valid JS`;
+      
+      // Test validateParse on valid code
+      const validResult = await ASTIndex.validateParse(validCode, 'javascript');
+      addResult('Valid code passes', JSON.stringify({ valid: validResult.valid, errorNodes: validResult.errorNodes }),
+        validResult.valid === true);
+
+      // Test validateParse on broken code
+      const brokenResult = await ASTIndex.validateParse(trulyBroken, 'javascript');
+      addResult('Broken code fails', JSON.stringify({ valid: brokenResult.valid, errorNodes: brokenResult.errorNodes, firstError: brokenResult.firstError }),
+        brokenResult.valid === false && brokenResult.errorNodes > 0);
+      addInfo('First error details', brokenResult.firstError);
+
+      // Simulate a diff that produces broken code
+      const fileContent = `function calculate(x, y) {
+  return x + y;
+}`;
+      const brokenSearch = `function calculate(x, y) {
+  return x + y;
+}`;
+      const brokenReplace = `function calculate(x, y) {
+  return x + y
+  {{{ not valid syntax at all`;
+
+      // Apply the diff
+      const resultingContent = fileContent.replace(brokenSearch, brokenReplace);
+      const diffValidation = await ASTIndex.validateParse(resultingContent, 'javascript');
+      addResult('Pre-flight catches broken diff', JSON.stringify({ valid: diffValidation.valid, errorNodes: diffValidation.errorNodes }),
+        diffValidation.valid === false);
+      addInfo('Diff validation result', { 
+        resultingContent: resultingContent,
+        firstError: diffValidation.firstError,
+        errorNodes: diffValidation.errorNodes 
+      });
+
+      // ===== TEST 4: AST index reflects new signature =====
+      addInfo('=== TEST 4: AST Index Freshness ===', '');
+
+      // Original code
+      const v1Code = `function greet(name) {
+  return 'Hello, ' + name;
+}`;
+      
+      const v1Context = await ASTIndex.getFunctionContext('test.js', 2, v1Code);
+      addResult('v1: function name', v1Context.functionName, v1Context.functionName === 'greet');
+      
+      // Extract the actual function signature from AST
+      const v1Lang = await ASTIndex.getLanguage('test.js');
+      const v1Parser = new ASTIndex._Parser();
+      v1Parser.setLanguage(v1Lang);
+      const v1Tree = v1Parser.parse(v1Code);
+      
+      // Find the function name and params
+      function extractSignature(tree, code) {
+        const root = tree.rootNode;
+        let sig = null;
+        function walk(node) {
+          if (node.type === 'function_declaration' && !sig) {
+            const nameNode = node.childForFieldName('name');
+            const paramsNode = node.childForFieldName('parameters');
+            sig = {
+              name: nameNode ? nameNode.text : null,
+              params: paramsNode ? paramsNode.text : null,
+            };
+          }
+          for (let i = 0; i < node.namedChildCount; i++) walk(node.namedChild(i));
+        }
+        walk(root);
+        return sig;
+      }
+      
+      const v1Sig = extractSignature(v1Tree, v1Code);
+      addResult('v1: signature extracted', JSON.stringify(v1Sig), v1Sig.name === 'greet' && v1Sig.params === '(name)');
+
+      // Modified code - changed signature
+      const v2Code = `function greet(firstName, lastName) {
+  return 'Hello, ' + firstName + ' ' + lastName;
+}`;
+      
+      const v2Context = await ASTIndex.getFunctionContext('test.js', 2, v2Code);
+      addResult('v2: function name still greet', v2Context.functionName, v2Context.functionName === 'greet');
+      
+      const v2Tree = v1Parser.parse(v2Code);
+      const v2Sig = extractSignature(v2Tree, v2Code);
+      addResult('v2: signature changed', JSON.stringify(v2Sig), v2Sig.name === 'greet' && v2Sig.params === '(firstName, lastName)');
+      addResult('v2: context reflects new params', v2Context.content.includes('firstName'), v2Context.content.includes('firstName'));
+
+      // Verify it's NOT stale (v2 should not show old params)
+      addResult('v2: NOT stale (no old "name" param in body)', 
+        !v2Context.content.includes('return \'Hello, \' + name'), 
+        !v2Context.content.includes('return \'Hello, \' + name'));
+
+      addInfo('=== All tests complete ===', 'See results above');
+    }
+
+    main().catch(e => {
+      const div = document.createElement('div');
+      div.className = 'result fail';
+      div.innerHTML = '<strong>FATAL ERROR</strong>: ' + e.message + '<pre>' + e.stack + '</pre>';
+      results.appendChild(div);
+    });
+  </script>
+</body>
+</html>

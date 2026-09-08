@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stage 4.5 + 4.5b Integration Test</title>
+  <style>
+    body { background: #0d0d0d; color: #e0e0e0; font-family: monospace; padding: 20px; font-size: 13px; }
+    .result { margin: 5px 0; padding: 10px; border-radius: 6px; }
+    .pass { background: #1a2e1a; border: 1px solid #4ade80; }
+    .fail { background: #2e1a1a; border: 1px solid #f87171; }
+    .info { background: #1a1a2e; border: 1px solid #6366f1; }
+    pre { background: #1a1a1a; padding: 10px; border-radius: 6px; overflow: auto; font-size: 11px; max-height: 200px; }
+  </style>
+</head>
+<body>
+  <h1>Stage 4.5 + 4.5b Integration Test (Worker Client)</h1>
+  <div id="results"></div>
+  <script type="module">
+    // Import from the CLIENT (worker-based), same as matey-agent.js does
+    import { ASTIndexClient as ASTIndex } from './matey-ast-client.js';
+    import { TieredDiffMatcher, DIFF_REGEX } from './matey-tiered-diff.js';
+
+    const results = document.getElementById('results');
+    function addResult(label, value, passed) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed ? 'pass' : 'fail');
+      div.innerHTML = '<strong>' + label + '</strong>: ' + value;
+      results.appendChild(div);
+    }
+    function addInfo(label, value) {
+      const div = document.createElement('div');
+      div.className = 'result info';
+      div.innerHTML = '<strong>' + label + '</strong>: ' + (typeof value === 'string' ? value : JSON.stringify(value, null, 2));
+      results.appendChild(div);
+    }
+    function addCode(label, code) {
+      const div = document.createElement('div');
+      div.className = 'result info';
+      div.innerHTML = '<strong>' + label + '</strong>: <pre>' + code + '</pre>';
+      results.appendChild(div);
+    }
+
+    async function main() {
+      addInfo('=== TEST 1: Lazy Grammar Loading (via Worker) ===', '');
+      ASTIndex.clearCache();
+      await ASTIndex.getLanguage('test.js');
+      addResult('JS grammar loaded', JSON.stringify(await ASTIndex.getLoadedLanguages()),
+        (await ASTIndex.getLoadedLanguages()).includes('javascript'));
+      addResult('Python NOT loaded yet', String(!(await ASTIndex.getLoadedLanguages()).includes('python')),
+        !(await ASTIndex.getLoadedLanguages()).includes('python'));
+      await ASTIndex.getLanguage('test.py');
+      addResult('Python grammar loaded after JS', JSON.stringify(await ASTIndex.getLoadedLanguages()),
+        (await ASTIndex.getLoadedLanguages()).includes('python'));
+
+      addInfo('=== TEST 2: Context Size Comparison (via Worker) ===', '');
+      const sampleCode = `import { foo } from './utils.js';
+import { bar } from './helpers.js';
+
+function callerA() {
+  return targetFunction(1, 2);
+}
+
+function callerB() {
+  return targetFunction(3, 4);
+}
+
+function targetFunction(a, b) {
+  const x = a + b;
+  const y = x * 2;
+  const z = y - 1;
+  console.log('computing:', z);
+  return z;
+}
+
+function unrelatedFunction() {
+  return 'hello world';
+}
+
+for (let i = 0; i < 100; i++) {
+  console.log('padding line', i);
+}
+
+const result = targetFunction(10, 20);
+export default targetFunction;`;
+
+      const lines = sampleCode.split('\n');
+      const cursorLine = 16;
+      const oldStart = Math.max(0, cursorLine - 1 - 25);
+      const oldEnd = Math.min(lines.length, oldStart + 50);
+      const oldWindowContent = lines.slice(oldStart, oldEnd).join('\n');
+
+      const astContext = await ASTIndex.getFunctionContext('test.js', cursorLine, sampleCode);
+      addResult('Old window bytes', String(oldWindowContent.length), true);
+      addResult('AST bytes', String(astContext.content.length), true);
+      addResult('Bytes saved', String(oldWindowContent.length - astContext.content.length),
+        oldWindowContent.length > astContext.content.length);
+      addResult('Function name detected', astContext.functionName, astContext.functionName === 'targetFunction');
+      addCode('AST-scoped content', astContext.content);
+
+      addInfo('=== TEST 3: Pre-flight Validation (via Worker) ===');
+      const validCode = `function hello() { return "world"; }`;
+      const brokenCode = `function hello() {\n  return "world"\n  {{{ broken syntax`;
+      
+      const v1 = await ASTIndex.validateParse(validCode, 'javascript');
+      addResult('Valid code passes', JSON.stringify({ valid: v1.valid, errorNodes: v1.errorNodes }), v1.valid === true);
+
+      const v2 = await ASTIndex.validateParse(brokenCode, 'javascript');
+      addResult('Broken code fails', JSON.stringify({ valid: v2.valid, errorNodes: v2.errorNodes }), v2.valid === false);
+
+      // Simulate a broken diff
+      const fileContent = `function calculate(x, y) {\n  return x + y;\n}`;
+      const brokenReplace = `function calculate(x, y) {\n  return x + y\n  {{{ not valid`;
+      const resultingContent = fileContent.replace(fileContent, brokenReplace);
+      const v3 = await ASTIndex.validateParse(resultingContent, 'javascript');
+      addResult('Pre-flight catches broken diff', JSON.stringify({ valid: v3.valid, errorNodes: v3.errorNodes }),
+        v3.valid === false);
+
+      addInfo('=== TEST 4: AST Index Freshness (via Worker) ===', '');
+      const v1Code = `function greet(name) {\n  return 'Hello, ' + name;\n}`;
+      const v1Ctx = await ASTIndex.getFunctionContext('test.js', 2, v1Code);
+      addResult('v1: function name', v1Ctx.functionName, v1Ctx.functionName === 'greet');
+
+      const v2Code = `function greet(firstName, lastName) {\n  return 'Hello, ' + firstName + ' ' + lastName;\n}`;
+      const v2Ctx = await ASTIndex.getFunctionContext('test.js', 2, v2Code);
+      addResult('v2: signature changed', v2Ctx.content.includes('firstName'), v2Ctx.content.includes('firstName'));
+      addResult('v2: NOT stale', !v2Ctx.content.includes("return 'Hello, ' + name"),
+        !v2Ctx.content.includes("return 'Hello, ' + name"));
+
+      addInfo('=== TEST 5: Pre-flight Integration with Diff Pipeline ===', '');
+      // Simulate a broken diff result (searchBlock + replaceBlock applied to file)
+      const diffFileContent = `function calculate(x, y) {\n  return x + y;\n}`;
+      const diffSearchBlock = `function calculate(x, y) {\n  return x + y;\n}`;
+      const diffBrokenReplace = `function calculate(x, y) {\n  return x +\n  {{{ broken syntax`;
+      
+      // Verify the search block matches the file content
+      const diffMatchResult = TieredDiffMatcher.match(diffSearchBlock, diffFileContent);
+      addResult('Diff matched', String(diffMatchResult.matched), diffMatchResult.matched === true);
+      
+      if (diffMatchResult.matched) {
+        // Apply the broken diff
+        const diffResultingContent = diffFileContent.replace(diffSearchBlock, diffBrokenReplace);
+        const diffLangHint = ASTIndex.detectLanguage('test.js');
+        const diffValidation = await ASTIndex.validateParse(diffResultingContent, diffLangHint);
+        addResult('Pre-flight catches broken diff in pipeline', JSON.stringify({ valid: diffValidation.valid, errorNodes: diffValidation.errorNodes }),
+          diffValidation.valid === false && diffValidation.errorNodes > 0);
+      }
+
+      addInfo('=== All tests complete ===', 'All tests use worker-based ASTIndexClient');
+    }
+
+    main().catch(e => {
+      const div = document.createElement('div');
+      div.className = 'result fail';
+      div.innerHTML = '<strong>FATAL ERROR</strong>: ' + e.message + '<pre>' + e.stack + '</pre>';
+      results.appendChild(div);
+    });
+  </script>
+</body>
+</html>

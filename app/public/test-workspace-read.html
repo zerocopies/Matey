@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workspace Read Test</title>
+  <style>
+    body { background: #0d0d0d; color: #e0e0e0; font-family: monospace; padding: 20px; }
+    .result { margin: 5px 0; padding: 10px; border-radius: 6px; }
+    .pass { background: #1a2e1a; border: 1px solid #4ade80; }
+    .fail { background: #2e1a1a; border: 1px solid #f87171; }
+    .info { background: #1a1a2e; border: 1px solid #6366f1; }
+  </style>
+</head>
+<body>
+  <h1>Workspace Read Test</h1>
+  <div id="results"></div>
+  <script type="module" src="./matey-agent-bundle.js?v=102"></script>
+  <script>
+    window.addEventListener('load', async function() {
+      const results = document.getElementById('results');
+      function addResult(label, value, passed) {
+        const div = document.createElement('div');
+        div.className = 'result ' + (passed ? 'pass' : 'fail');
+        div.innerHTML = '<strong>' + label + '</strong>: ' + value;
+        results.appendChild(div);
+      }
+      function addInfo(label, value) {
+        const div = document.createElement('div');
+        div.className = 'result info';
+        div.innerHTML = '<strong>' + label + '</strong>: ' + value;
+        results.appendChild(div);
+      }
+      
+      // Wait for MateyAgent and MateyFS
+      for (let i = 0; i < 30; i++) {
+        if (window.MateyAgent && window.MateyFS) break;
+        await new Promise(r => setTimeout(r, 500));
+      }
+      
+      addInfo('MateyAgent loaded', typeof window.MateyAgent);
+      addInfo('MateyFS loaded', typeof window.MateyFS);
+      
+      const MA = window.MateyAgent;
+      const fs = window.MateyFS;
+      
+      // Try to mount the sandbox workspace
+      addInfo('Mounting workspace...', 'Attempting to set up workspace...');
+      
+      // Try to set up a workspace directory handle directly
+      // The sandbox mode uses Capacitor Filesystem which needs a "workspace" directory
+      try {
+        // Create a workspace file to establish the directory structure
+        await fs.safeWrite('init.txt', 'workspace initialized');
+        addResult('Workspace setup', 'safeWrite succeeded', true);
+      } catch(e) {
+        addResult('Workspace setup', 'safeWrite failed: ' + e.message, false);
+        
+        // If that fails, try mountSandbox
+        try {
+          await window.MateyWorkspaceManager.mountSandbox();
+          addResult('Mount sandbox', 'succeeded', true);
+        } catch(e2) {
+          addResult('Mount sandbox', 'failed: ' + e2.message, false);
+        }
+      }
+      
+      // Now test ToolDispatcher.read_file on nonexistent file
+      addInfo('--- ToolDispatcher.read_file test ---', '');
+      const dispatcher = new MA.ToolDispatcher();
+      
+      try {
+        const result = await dispatcher.dispatch('read_file', { filePath: 'nonexistent.txt' });
+        addResult('Read nonexistent (should fail)', 'Returned: ' + JSON.stringify(result), false);
+      } catch(err) {
+        addResult('Read nonexistent file', 
+          'code=' + err.code + ', message="' + err.message + '"',
+          err.code === 'PERMANENT' && err.message === 'File not found: nonexistent.txt');
+        addResult('Error has reason', err.data && err.data.reason ? err.data.reason : 'missing', 
+          err.data && err.data.reason === 'not_found');
+      }
+      
+      // Also test the raw error message
+      addInfo('--- Direct readFile test ---', '');
+      try {
+        await fs.readFile('nonexistent.txt');
+        addResult('Direct readFile', 'did not throw', false);
+      } catch(err) {
+        addResult('Direct readFile error', 'message="' + err.message + '"', 
+          err.message === 'File not found: nonexistent.txt');
+      }
+      
+      addInfo('Done', 'All tests complete');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Web Worker Test — Stage 4.5b</title>
+  <style>
+    body { background: #0d0d0d; color: #e0e0e0; font-family: monospace; padding: 20px; font-size: 13px; }
+    .result { margin: 5px 0; padding: 10px; border-radius: 6px; }
+    .pass { background: #1a2e1a; border: 1px solid #4ade80; }
+    .fail { background: #2e1a1a; border: 1px solid #f87171; }
+    .info { background: #1a1a2e; border: 1px solid #6366f1; }
+    #scrollArea { height: 200px; overflow-y: auto; background: #1a1a1a; padding: 10px; border-radius: 6px; margin: 10px 0; }
+    .scrollItem { padding: 4px; border-bottom: 1px solid #333; }
+  </style>
+</head>
+<body>
+  <h1>Stage 4.5b — Web Worker Verification</h1>
+  <div id="results"></div>
+  <h3>Scroll Test (tap during heavy op to verify UI responsiveness):</h3>
+  <div id="scrollArea"></div>
+  <button id="heavyBtn">Run Heavy Parse in Worker</button>
+  <button id="uiBtn">UI Responsiveness Check</button>
+
+  <script>
+    const results = document.getElementById('results');
+    const scrollArea = document.getElementById('scrollArea');
+    const heavyBtn = document.getElementById('heavyBtn');
+    const uiBtn = document.getElementById('uiBtn');
+
+    function addResult(label, value, passed) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed ? 'pass' : 'fail');
+      div.innerHTML = '<strong>' + label + '</strong>: ' + value;
+      results.appendChild(div);
+    }
+    function addInfo(label, value) {
+      const div = document.createElement('div');
+      div.className = 'result info';
+      div.innerHTML = '<strong>' + label + '</strong>: ' + (typeof value === 'string' ? value : JSON.stringify(value));
+      results.appendChild(div);
+    }
+
+    // Populate scroll area
+    for (let i = 0; i < 100; i++) {
+      const item = document.createElement('div');
+      item.className = 'scrollItem';
+      item.textContent = 'Scroll item ' + i + ' — tap "Run Heavy Parse" then scroll this area to verify UI thread is not blocked';
+      scrollArea.appendChild(item);
+    }
+
+    let worker = null;
+    let msgId = 0;
+    const pending = new Map();
+
+    function initWorker() {
+      try {
+        worker = new Worker('./test-worker.js');
+        worker.onmessage = function(e) {
+          const { id, type, payload } = e.data;
+          if (pending.has(id)) {
+            pending.get(id)({ type, payload });
+            pending.delete(id);
+          }
+        };
+        worker.onerror = function(e) {
+          addResult('Worker error', e.message, false);
+        };
+        return true;
+      } catch (e) {
+        addResult('Worker creation failed', e.message, false);
+        return false;
+      }
+    }
+
+    function sendWorkerMessage(type, payload) {
+      return new Promise((resolve, reject) => {
+        const id = ++msgId;
+        pending.set(id, resolve);
+        worker.postMessage({ id, type, payload });
+        setTimeout(() => {
+          if (pending.has(id)) {
+            pending.delete(id);
+            reject(new Error('Worker message timeout'));
+          }
+        }, 10000);
+      });
+    }
+
+    async function main() {
+      addInfo('=== Test 1: Web Worker Creation ===', '');
+      const created = initWorker();
+      addResult('Worker created', String(created), created);
+
+      if (!created) return;
+
+      addInfo('=== Test 2: Ping/Pong Communication ===', '');
+      try {
+        const pong = await sendWorkerMessage('ping', { hello: 'world' });
+        addResult('Ping/pong works', JSON.stringify(pong), pong.type === 'pong' && pong.payload.workerSelf === true);
+      } catch (e) {
+        addResult('Ping/pong failed', e.message, false);
+      }
+
+      addInfo('=== Test 3: Heavy Computation in Worker ===', '');
+      heavyBtn.addEventListener('click', async () => {
+        addInfo('Heavy compute started', 'scroll the area below now — UI should stay responsive');
+        const start = performance.now();
+        try {
+          const result = await sendWorkerMessage('compute', {});
+          const elapsed = performance.now() - start;
+          addResult('Heavy compute done', `sum=${result.payload.sum}, ${elapsed.toFixed(0)}ms`, true);
+        } catch (e) {
+          addResult('Heavy compute failed', e.message, false);
+        }
+      });
+
+      addInfo('=== Test 4: UI Responsiveness During Worker Load ===', '');
+      uiBtn.addEventListener('click', async () => {
+        // Start heavy compute in worker
+        const computePromise = sendWorkerMessage('compute', {});
+        // Immediately try to update UI
+        const uiStart = performance.now();
+        for (let i = 0; i < 50; i++) {
+          const item = document.createElement('div');
+          item.className = 'scrollItem';
+          item.textContent = 'UI update ' + i + ' — added while worker computes';
+          scrollArea.appendChild(item);
+          scrollArea.scrollTop = scrollArea.scrollHeight;
+          // Small yield to allow UI thread to process
+          await new Promise(r => setTimeout(r, 0));
+        }
+        const uiElapsed = performance.now() - uiStart;
+        await computePromise;
+        addResult('UI updates during worker load', `${uiElapsed.toFixed(0)}ms for 50 DOM updates`, uiElapsed < 1000);
+      });
+
+      addInfo('=== All tests ready ===', 'Click "Run Heavy Parse" then scroll to verify UI stays responsive');
+    }
+
+    main().catch(e => {
+      const div = document.createElement('div');
+      div.className = 'result fail';
+      div.innerHTML = '<strong>FATAL ERROR</strong>: ' + e.message;
+      results.appendChild(div);
+    });
+  </script>
+</body>
+</html>

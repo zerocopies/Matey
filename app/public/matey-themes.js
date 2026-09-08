@@ -1,6 +1,20 @@
 /* Matey Themes */
 (function () {
   'use strict';
+
+  /* Instant background paint — set <html> bg from the persisted theme BEFORE
+   * first paint so page navigations never flash white. Matte, theme-aware. */
+  var _themeBgs = { graphitexx: '#000000', 'cool-panda': '#1a1d23', minimal: '#fafafa' };
+  try {
+    var _tid = localStorage.getItem('matey-theme') || 'graphitexx';
+    var _bg = _themeBgs[_tid] || _themeBgs.graphitexx;
+    var _d = document.documentElement;
+    _d.style.backgroundColor = _bg;
+    _d.style.setProperty('--app-bg', _bg);
+    var _m = document.querySelector('meta[name="theme-color"]');
+    if (_m) _m.content = _bg;
+  } catch (e) {}
+
   var themes = [
     { id: 'graphitexx', name: 'Graphite XX',
       bg: '#000000', surface: '#080808', surfaceRaised: '#ffffff',

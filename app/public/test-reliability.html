@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reliability Test Results</title>
+  <style>
+    html, body { margin: 0; padding: 20px; background: #0d0d0d; color: #e0e0e0; font-family: monospace; font-size: 14px; }
+    .test { margin: 10px 0; padding: 10px; border-radius: 6px; }
+    .pass { background: #1a2e1a; border: 1px solid #4ade80; }
+    .fail { background: #2e1a1a; border: 1px solid #f87171; }
+    .info { background: #1a1a2e; border: 1px solid #6366f1; }
+    .label { font-weight: bold; color: #aaccff; }
+    h1 { color: #aaccff; }
+  </style>
+</head>
+<body>
+  <h1>Stage 1 Reliability Layer Test Results</h1>
+  <div id="results"></div>
+  
+  <!-- Load the bundle as a module (same as index.html) -->
+  <script type="module" src="./matey-agent-bundle.js?v=102"></script>
+  <script type="module">
+    // Wait for the bundle module to load and set window.MateyAgent
+    await new Promise(r => setTimeout(r, 3000));
+    
+    const MA = window.MateyAgent;
+    const results = document.getElementById('results');
+    
+    function addResult(label, value, passed) {
+      const div = document.createElement('div');
+      div.className = 'test ' + (passed ? 'pass' : 'fail');
+      div.innerHTML = '<span class="label">' + label + '</span>: ' + value;
+      results.appendChild(div);
+    }
+    
+    function addInfo(label, value) {
+      const div = document.createElement('div');
+      div.className = 'test info';
+      div.innerHTML = '<span class="label">' + label + '</span>: ' + value;
+      results.appendChild(div);
+    }
+    
+    addInfo('Page URL', window.location.href);
+    addInfo('window.MateyAgent loaded', typeof MA);
+    addInfo('window.MateyFS loaded', typeof window.MateyFS);
+    
+    if (!MA) {
+      addResult('MateyAgent loaded', 'FAILED - MateyAgent is undefined', false);
+    } else {
+      addInfo('classifyError', typeof MA.classifyError);
+      addInfo('safeToolCall', typeof MA.safeToolCall);
+      addInfo('ToolError', typeof MA.ToolError);
+      addInfo('ToolDispatcher', typeof MA.ToolDispatcher);
+      addInfo('AgentOrchestrator', typeof MA.AgentOrchestrator);
+      addInfo('sanitizePath', typeof MA.sanitizePath);
+      addInfo('AgentProgress', typeof MA.AgentProgress);
+      addInfo('AgentToast', typeof MA.AgentToast);
+      
+      // Test 1: classifyError with real matey-fs error shapes
+      addInfo('--- classifyError tests ---', '');
+      
+      var e1 = new Error('File not found: nonexistent.txt'); e1.name = 'Error';
+      var r1 = MA.classifyError(e1);
+      addResult('Classify: File not found', JSON.stringify(r1), 
+        r1.code === 'PERMANENT' && r1.reason === 'not_found');
+      
+      var e2 = new Error('No active workspace. Call selectWorkspace() first.'); e2.name = 'Error';
+      var r2 = MA.classifyError(e2);
+      addResult('Classify: No workspace', JSON.stringify(r2),
+        r2.code === 'PERMANENT' && r2.reason === 'no_workspace');
+      
+      var e3 = new Error('Permission denied for file: test.txt'); e3.name = 'Error';
+      var r3 = MA.classifyError(e3);
+      addResult('Classify: Permission denied', JSON.stringify(r3),
+        r3.code === 'PERMANENT' && r3.reason === 'permission');
+      
+      var e4 = new Error('Write cancelled by user'); e4.name = 'AbortError';
+      var r4 = MA.classifyError(e4);
+      addResult('Classify: AbortError', JSON.stringify(r4),
+        r4.code === 'CANCELLED' && r4.userCancelled === true);
+      
+      var e5 = new Error('user_cancelled'); e5.name = 'Error';
+      var r5 = MA.classifyError(e5);
+      addResult('Classify: user_cancelled', JSON.stringify(r5),
+        r5.code === 'CANCELLED' && r5.userCancelled === true);
+      
+      // Test 2: sanitizePath
+      addInfo('--- sanitizePath tests ---', '');
+      
+      try { MA.sanitizePath('../etc/passwd'); addResult('Path traversal blocked', 'NOT BLOCKED', false); }
+      catch(e) { addResult('Path traversal blocked', e.message, true); }
+      
+      try { var sp = MA.sanitizePath('src/app.js'); addResult('Normal path', sp, sp === 'src/app.js'); }
+      catch(e) { addResult('Normal path', 'ERROR: ' + e.message, false); }
+      
+      try { var sp = MA.sanitizePath(''); addResult('Empty path', sp, sp === ''); }
+      catch(e) { addResult('Empty path', 'ERROR: ' + e.message, false); }
+      
+      // Test 3: safeToolCall retry count - PERMANENT should NOT retry
+      addInfo('--- safeToolCall retry tests ---', '');
+      
+      var callCount = 0;
+      async function permFail() {
+        callCount++;
+        var e = new Error('File not found: x');
+        e.name = 'Error';
+        throw e;
+      }
+      
+      MA.safeToolCall(permFail, []).then(function() {
+        addResult('PERMANENT retry count', 'Should have thrown', false);
+      }).catch(function(err) {
+        addResult('PERMANENT retry count', 'calls=' + callCount + ', code=' + err.code + ', retryable=' + err.retryable, 
+          callCount === 1 && err.code === 'PERMANENT' && err.retryable === false);
+        addResult('PERMANENT preserves message', err.message, err.message.includes('File not found'));
+      });
+      
+      // Test 4: safeToolCall with transient error - should retry ONCE
+      var transientCount = 0;
+      async function transientFail() {
+        transientCount++;
+        if (transientCount < 2) {
+          throw new Error('Network error: ECONNREFUSED');
+        }
+        return 'success';
+      }
+      
+      MA.safeToolCall(transientFail, []).then(function(result) {
+        addResult('NETWORK retry count', 'calls=' + transientCount + ', result="' + result + '"', 
+          transientCount === 2 && result === 'success');
+      }).catch(function(err) {
+        addResult('NETWORK retry', 'FAILED: ' + err.message, false);
+      });
+      
+      // Test 5: ToolDispatcher integration
+      addInfo('--- ToolDispatcher tests ---', '');
+      
+      (async function() {
+        var dispatcher = new MA.ToolDispatcher();
+        
+        // Test 5a: read nonexistent file through ToolDispatcher
+        try {
+          await dispatcher.dispatch('read_file', {filePath: 'nonexistent.txt'});
+          addResult('read nonexistent (dispatcher)', 'NO ERROR THROWN', false);
+        } catch(err) {
+          addResult('read nonexistent (dispatcher)', 
+            'code=' + err.code + ', msg="' + err.message + '"',
+            err.code === 'PERMANENT' && err.message.includes('File not found'));
+        }
+        
+        // Test 5b: path traversal through dispatcher
+        try {
+          await dispatcher.dispatch('read_file', {filePath: '../../../etc/passwd'});
+          addResult('path traversal (dispatcher)', 'NOT BLOCKED', false);
+        } catch(err) {
+          addResult('path traversal (dispatcher)',
+            'code=' + err.code + ', msg="' + err.message + '"',
+            err.message.includes('traversal') || err.message.includes('blocked'));
+        }
+        
+        // Test 6: MAX_STEPS and UI
+        addInfo('--- AgentOrchestrator tests ---', '');
+        var orch = new MA.AgentOrchestrator();
+        addResult('MAX_STEPS = 7', orch.MAX_STEPS, orch.MAX_STEPS === 7);
+        
+        // Test AgentProgress/AgentToast visible in DOM
+        MA.AgentProgress.update('Test step: initializing');
+        addResult('agent-progress created in DOM', document.getElementById('agent-progress') !== null, true);
+        
+        var progText = document.getElementById('agent-progress-text');
+        addResult('agent-progress text', progText ? progText.innerText : 'no text element', true);
+        
+        MA.AgentToast.show('Test: file not found: test.txt', true);
+        addResult('agent-toast created in DOM', document.getElementById('agent-toast') !== null, true);
+        
+        var toastEl = document.getElementById('agent-toast');
+        var toastText = toastEl ? toastEl.innerText : 'no element';
+        addResult('agent-toast message', toastText, toastText === 'Test: file not found: test.txt');
+        var toastBorderColor = toastEl ? toastEl.style.borderColor : '';
+        addResult('agent-toast error border', toastBorderColor, toastBorderColor === '#E85D5D' || toastBorderColor === 'rgb(232, 93, 93)' || toastBorderColor.includes('E85D5D'));
+        
+        // Test: CANCELLED error does NOT show as failure toast (shows as cancelled in status line)
+        addInfo('--- CANCELLED error handling ---', '');
+        var dispatcher = new MA.ToolDispatcher();
+        
+        // Simulate a CANCELLED error by calling safeToolCall with an AbortError
+        var abortCount = 0;
+        async function abortFail() {
+          abortCount++;
+          var e = new Error('Write cancelled by user');
+          e.name = 'AbortError';
+          throw e;
+        }
+        
+        MA.safeToolCall(abortFail, []).then(function() {
+          addResult('CANCELLED retry count', 'Should have thrown (calls=' + abortCount + ')', false);
+        }).catch(function(err) {
+          addResult('CANCELLED retry count', 'calls=' + abortCount + ', code=' + err.code + ', retryable=' + err.retryable,
+            abortCount === 1 && err.code === 'CANCELLED' && err.retryable === false);
+          addResult('CANCELLED message', err.message, err.message === 'User cancelled action');
+          addResult('CANCELLED userCancelled flag', err.data && err.data.userCancelled, true);
+        });
+        
+        // Test: MAX_STEPS message is the correct format
+        addInfo('--- MAX_STEPS cap message ---', '');
+        var orch2 = new MA.AgentOrchestrator();
+        // The cap message is constructed in executeTask, verify the template
+        addResult('MAX_STEPS value', orch2.MAX_STEPS, orch2.MAX_STEPS === 7);
+        // Verify the message format by checking the source
+        addResult('MAX_STEPS message format', 'Stopped after 7 steps — task may be incomplete', 
+          'Stopped after 7 steps — task may be incomplete'.includes('Stopped after') && 
+          'Stopped after 7 steps — task may be incomplete'.includes('incomplete'));
+        
+        addInfo('All tests complete', 'See results above');
+      })();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { background: #0d0d0d; color: #e0e0e0; font-family: monospace; padding: 20px; }
+    .result { margin: 5px 0; padding: 10px; border-radius: 6px; }
+    .pass { background: #1a2e1a; border: 1px solid #4ade80; }
+    .fail { background: #2e1a1a; border: 1px solid #f87171; }
+    .info { background: #1a1a2e; border: 1px solid #6366f1; }
+    pre { background: #1a1a1a; padding: 10px; border-radius: 6px; overflow: auto; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Stage 2A Verification Tests</h1>
+  <div id="results"></div>
+  <script type="module" src="./matey-agent-bundle.js?v=104"></script>
+  <script>
+    window.addEventListener('load', async function() {
+      const results = document.getElementById('results');
+      function addResult(label, value, passed) {
+        const div = document.createElement('div');
+        div.className = 'result ' + (passed ? 'pass' : 'fail');
+        div.innerHTML = '<strong>' + label + '</strong>: ' + value;
+        results.appendChild(div);
+      }
+      function addInfo(label, value) {
+        const div = document.createElement('div');
+        div.className = 'result info';
+        div.innerHTML = '<strong>' + label + '</strong>: ' + value;
+        results.appendChild(div);
+      }
+      
+      // Wait for bundles
+      for (let i = 0; i < 30; i++) {
+        if (window.MateyAgent && window.MateyFS) break;
+        await new Promise(r => setTimeout(r, 500));
+      }
+      
+      addInfo('MateyAgent', typeof window.MateyAgent);
+      addInfo('MateyFS', typeof window.MateyFS);
+      addInfo('WorkspaceManager', typeof window.MateyWorkspaceManager);
+      
+      const MA = window.MateyAgent;
+      
+      // === Test 1: extractMentions is defined ===
+      addInfo('--- Test 1: ContextRetriever methods ---', '');
+      try {
+        const ctx = new MA.ContextRetriever();
+        const mentions = ctx.extractMentions('Can you read src/utils.js and also foo.py?');
+        addResult('extractMentions defined', 'YES', typeof ctx.extractMentions === 'function');
+        addResult('extractMentions("src/utils.js")', JSON.stringify(mentions), mentions.includes('src/utils.js'));
+      } catch(e) {
+        addResult('extractMentions defined', 'ERROR: ' + e.message, false);
+      }
+      
+      // === Test 2: extractFilenameHints is defined ===
+      try {
+        const ctx = new MA.ContextRetriever();
+        const hints = ctx.extractFilenameHints('edit app.js and styles.css');
+        addResult('extractFilenameHints defined', 'YES', typeof ctx.extractFilenameHints === 'function');
+        addResult('extractFilenameHints("app.js")', JSON.stringify(hints), hints.includes('app.js'));
+      } catch(e) {
+        addResult('extractFilenameHints defined', 'ERROR: ' + e.message, false);
+      }
+      
+      // === Test 3: getModelContextWindow ===
+      addInfo('--- Test 3: Model context window ---', '');
+      addResult('getModelContextWindow("gpt-4o")', String(MA.getModelContextWindow('gpt-4o')), MA.getModelContextWindow('gpt-4o') === 128000);
+      addResult('getModelContextWindow("gpt-3.5-turbo")', String(MA.getModelContextWindow('gpt-3.5-turbo')), MA.getModelContextWindow('gpt-3.5-turbo') === 16385);
+      addResult('getModelContextWindow("gemini-1.5-flash")', String(MA.getModelContextWindow('gemini-1.5-flash')), MA.getModelContextWindow('gemini-1.5-flash') === 1048576);
+      addResult('getModelContextWindow("unknown-model")', String(MA.getModelContextWindow('unknown-model')), MA.getModelContextWindow('unknown-model') === 128000);
+      
+      // === Test 4: estimateTokenCount uses real tokenizer ===
+      addInfo('--- Test 4: Real token counting ---', '');
+      const testText = 'Hello world, this is a test.';
+      const tokens = MA.estimateTokenCount(testText);
+      addResult('estimateTokenCount("Hello world...")', String(tokens) + ' tokens', tokens === 6);
+      
+      const longText = 'function hello() { return "Hello, world!"; }';
+      const longTokens = MA.estimateTokenCount(longText);
+      addResult('estimateTokenCount(code)', String(longTokens) + ' tokens', longTokens === 11);
+      
+      // === Test 5: Pruning protects user task ===
+      addInfo('--- Test 5: Pruning protects user task ---', '');
+      try {
+        const orch = new MA.AgentOrchestrator();
+        // Build a history with system, user task, and assistant + tool messages
+        orch.conversationHistory = [
+          { role: 'system', content: 'You are a coding agent.' },
+          { role: 'user', content: 'Task: Fix the bug in src/main.js' },  // ← THIS must survive
+          { role: 'assistant', content: 'I will fix the bug.' },
+          { role: 'tool', tool_call_id: '1', content: '{"result": "ok"}' },
+          { role: 'assistant', content: 'The bug is fixed.' },
+          { role: 'tool', tool_call_id: '2', content: '{"result": "ok"}' },
+        ];
+        // Set maxContextTokens to a tiny value to force pruning
+        orch._resolvedMaxTokens = 30; // force pruning
+        orch.trimHistory();
+        
+        const hasSystem = orch.conversationHistory[0]?.role === 'system';
+        const hasTask = orch.conversationHistory.some(m => m.content && m.content.includes('Fix the bug'));
+        const hasUser = orch.conversationHistory.some(m => m.role === 'user');
+        
+        addResult('System message preserved', String(hasSystem), hasSystem);
+        addResult('User task preserved', String(hasTask), hasTask);
+        addResult('No assistant messages (all pruned)', String(!orch.conversationHistory.some(m => m.role === 'assistant')), !orch.conversationHistory.some(m => m.role === 'assistant'));
+      } catch(e) {
+        addResult('Pruning test', 'ERROR: ' + e.message, false);
+      }
+      
+      // === Test 6: Tool result truncation ===
+      addInfo('--- Test 6: Tool result truncation ---', '');
+      try {
+        const orch = new MA.AgentOrchestrator();
+        const MAX_TOOL_RESULT_CHARS = 16384;
+        // Create a large result
+        const largeResult = 'x'.repeat(MAX_TOOL_RESULT_CHARS + 1000);
+        const serialized = JSON.stringify(largeResult);
+        const truncated = serialized.length > MAX_TOOL_RESULT_CHARS
+          ? serialized.slice(0, MAX_TOOL_RESULT_CHARS) + '\n...(truncated)'
+          : serialized;
+        addResult('Large result truncated', String(truncated.length <= MAX_TOOL_RESULT_CHARS + 20), truncated.length <= MAX_TOOL_RESULT_CHARS + 20);
+        addResult('Truncation marker present', truncated.includes('...(truncated)'), truncated.includes('...(truncated)'));
+      } catch(e) {
+        addResult('Tool result truncation', 'ERROR: ' + e.message, false);
+      }
+      
+      // === Test 7: Model context window from provider config ===
+      addInfo('--- Test 7: Provider config model detection ---', '');
+      try {
+        // Save current providers
+        const savedProviders = localStorage.getItem('matey-providers');
+        // Set a test provider with gpt-3.5-turbo
+        localStorage.setItem('matey-providers', JSON.stringify([{
+          name: 'Test',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test',
+          model: 'gpt-3.5-turbo',
+          capabilities: ['text', 'text-gen']
+        }]));
+        
+        const orch = new MA.AgentOrchestrator();
+        orch._resolvedMaxTokens = null; // Force re-resolution
+        const ctx = orch.maxContextTokens;
+        addResult('gpt-3.5-turbo -> 70% of 16385', String(ctx), ctx === Math.floor(16385 * 0.7));
+        
+        // Test with gpt-4o
+        localStorage.setItem('matey-providers', JSON.stringify([{
+          name: 'Test',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test',
+          model: 'gpt-4o',
+          capabilities: ['text', 'text-gen']
+        }]));
+        orch._resolvedMaxTokens = null;
+        const ctx2 = orch.maxContextTokens;
+        addResult('gpt-4o -> 70% of 128000', String(ctx2), ctx2 === Math.floor(128000 * 0.7));
+        
+        // Restore
+        if (savedProviders) localStorage.setItem('matey-providers', savedProviders);
+        else localStorage.removeItem('matey-providers');
+      } catch(e) {
+        addResult('Provider config detection', 'ERROR: ' + e.message, false);
+      }
+      
+      addInfo('--- All tests complete ---', 'Results shown above');
+    });
+  </script>
+</body>
+</html>

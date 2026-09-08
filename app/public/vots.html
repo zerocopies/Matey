@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
     <style>
       html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: var(--text-primary); overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif; }
       .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; display: flex; flex-direction: column; }
@@ -31,39 +32,23 @@
     <script src="./matey-boot.js?v=101"></script>
     <script src="./matey-sentry.js?v=101"></script>
   </head>
-  <body>
+<body>
     <div class="app-shell">
       <header class="header">
-        <div class="header-top">
-          <img class="matey-logo" src="./images/matey-logo.png" alt="Matey" />
-          <div class="workspace-display-container" id="workspace-display-container">
-            <div class="workspace-dropdown" id="workspace-dropdown">
-              <span class="workspace-name" id="workspace-display">Workspace</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </div>
-            <div class="workspace-selector" id="workspace-selector"></div>
-          </div>
-          <div class="header-actions">
-            <svg class="usage-ring" viewBox="0 0 36 36" id="usage-ring" aria-hidden="true"><circle class="usage-ring-track" cx="18" cy="18" r="15"></circle><path class="usage-ring-segment" d="" /></svg>
-            <button class="incognito-trigger" type="button" aria-label="Incognito" title="Incognito">
-              <svg class="incognito-ghost" viewBox="0 0 100 120" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path class="ghost-body" d="M 50 4 C 20 4 5 28 5 52 L 5 92 C 5 105 15 105 20 98 C 25 105 35 105 40 98 C 45 105 55 105 60 98 C 65 105 75 105 80 98 C 85 105 95 105 95 92 L 95 52 C 95 28 80 4 50 4 Z"/>
-                <ellipse class="ghost-eye" cx="35" cy="50" rx="10" ry="15"/>
-                <ellipse class="ghost-pupil" cx="35" cy="52" rx="4" ry="8"/>
-                <ellipse class="ghost-eye" cx="65" cy="50" rx="10" ry="15"/>
-                <ellipse class="ghost-pupil" cx="65" cy="52" rx="4" ry="8"/>
-                <path class="ghost-eyebrow" d="M 26 34 L 38 40"/>
-                <path class="ghost-eyebrow" d="M 74 34 L 62 40"/>
-                <path class="ghost-mouth" d="M 38 78 Q 50 94 62 78 Q 50 88 38 78 Z"/>
-                <path class="ghost-teeth" d="M 40 80 L 43 85 L 46 80 L 49 85 L 52 80 L 55 85 L 58 80 L 60 82"/>
-              </svg>
-            </button>
-            <button class="icon-btn settings-trigger" type="button" aria-label="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <line x1="3" y1="12" x2="21" y2="12"/>
-                <line x1="3" y1="18" x2="21" y2="18"/>
-              </svg></button>
-          </div>
+        <!-- LEFT GROUP -->
+        <div class="header-left">
+          <img src="images/matey-logo.png" class="matey-logo" alt="Logo" />
+          <button id="workspace-folder-btn" class="workspace-folder-btn" title="Select Workspace">📁</button>
+          <div class="id-icon" title="ID Badge">🪪</div>
+        </div>
+
+        <!-- RIGHT GROUP -->
+        <div class="header-actions">
+          <div class="usage-ring" title="Token Meter"></div>
+          <button id="lux-theme-toggle" class="theme-toggle-btn" title="Theme Palette">🎨</button>
+          <div id="vault-launcher" class="vault-btn" title="Storage Vault">🗄️</div>
+          <div class="incognito-trigger" title="Incognito">👻</div>
+          <button class="menu-btn" title="Menu">☰</button>
         </div>
       </header>
 
@@ -125,10 +110,6 @@
         <div class="vts-history-section" id="vts-history-section">
           <div class="vts-history-header">
             <h2 class="vts-history-title">Your Responses</h2>
-            <button class="vts-icon-btn" id="vts-settings-btn" type="button" aria-label="Settings">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            </button>
-          </div>
           <div class="vts-history-list" id="vts-history-list"></div>
           <div class="vts-history-empty" id="vts-history-empty">No entries yet. Paste a link above to get started.</div>
         </div>
@@ -140,10 +121,7 @@
           <button class="vts-icon-btn" id="vts-back-to-landing" type="button" aria-label="Back">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
-          <button class="vts-btn vts-btn-primary" id="vts-save-entry-btn" type="button">Save</button>
-          <button class="vts-icon-btn" id="vts-settings-btn" type="button" aria-label="Settings">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51 1z"/></svg>
-          </button>
+          <button class="vts-btn vts-btn-primary" id="vts-save-entry-btn" type="button" style="margin-left:auto">Save</button>
         </div>
 
         <div class="vts-editor-scroll">
@@ -166,20 +144,16 @@
             </div>
           </div>
 
+          <!-- Font selector toolbar (above the writing canvas) -->
+          <div class="vts-font-bar" id="vts-font-bar" role="toolbar" aria-label="Font selector"></div>
+
           <!-- Content Textarea -->
           <textarea class="vts-entry-content" id="vts-entry-content" placeholder="Your response..." rows="6"></textarea>
+
+          <!-- Double-stack keyboard + mic toolbar (mirrors journal) -->
+          <div id="vots-composer" class="vots-toolbar"></div>
         </div>
       </main>
-
-      <!-- ==================== SETTINGS OVERLAY ==================== -->
-      <div class="vts-overlay" id="vts-settings-overlay" style="display:none">
-        <div class="vts-sheet">
-          <h3 class="vts-sheet-title">My-VOTS Settings</h3>
-          <button class="vts-sheet-item" id="vts-settings-change-pin" type="button">Change PIN</button>
-          <button class="vts-sheet-item" id="vts-settings-delete" type="button" style="color:var(--danger)">Delete All Data</button>
-          <button class="vts-sheet-item" id="vts-settings-close" type="button">Close</button>
-        </div>
-      </div>
 
       <!-- ==================== CONFIRM DIALOG ==================== -->
       <div class="vts-confirm-overlay" id="vts-confirm" style="display:none">
@@ -202,6 +176,7 @@
     </div>
 
     <script src="./matey-themes.js?v=101"></script>
+    <script src="./matey-theme-toggle.js?v=101"></script>
     <script src="./matey-swipe.js?v=101"></script>
     <script src="./matey-profile.js?v=101"></script>
     <script src="./matey-greet.js?v=101"></script>
@@ -220,9 +195,7 @@
     <script src="./matey-license.js?v=101"></script>
     <script src="./matey-settings.js?v=101"></script>
     <script src="./matey-recall.js?v=101"></script>
-    <script src="./matey-behavior.js?v=101"></script>
     <script type="module">import { mateyCoach } from './matey-coach.js'; window.mateyCoach = mateyCoach;</script>
-    <script src="./matey-adaptive.js?v=101"></script>
     <script src="./matey-init.js?v=101"></script>
     <script src="./matey-tabs.js?v=101"></script>
     <script src="./matey-keyboard.js?v=101"></script>
@@ -234,5 +207,40 @@
     <script src="./matey-lock.js?v=101"></script>
     <script src="./matey-vots.js?v=101"></script>
     <script src="./vots-ui.js?v=101"></script>
+    <script>
+      /* Font selector toolbar — same font set as the Journal editor.
+         Applies the chosen family to the writing canvas and persists it. */
+      (function () {
+        'use strict';
+        var FONTS = [
+          { name: 'Inter', family: "'Inter', sans-serif" },
+          { name: 'Space Grotesk', family: "'Space Grotesk', sans-serif" },
+          { name: 'DM Sans', family: "'DM Sans', sans-serif" },
+          { name: 'Outfit', family: "'Outfit', sans-serif" }
+        ];
+        var KEY = 'matey-vots-font';
+        var bar = document.getElementById('vts-font-bar');
+        var canvas = document.getElementById('vts-entry-content');
+        if (!bar || !canvas) return;
+        var saved = null;
+        try { saved = localStorage.getItem(KEY); } catch (e) { saved = null; }
+        if (saved) canvas.style.fontFamily = saved;
+        FONTS.forEach(function (f) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'vts-font-btn' + (saved === f.family ? ' active' : '');
+          btn.style.fontFamily = f.family;
+          btn.textContent = f.name;
+          btn.title = 'Set editor font: ' + f.name;
+          btn.addEventListener('click', function () {
+            canvas.style.fontFamily = f.family;
+            try { localStorage.setItem(KEY, f.family); } catch (e) {}
+            Array.prototype.forEach.call(bar.children, function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+          });
+          bar.appendChild(btn);
+        });
+      })();
+    </script>
   </body>
 </html>

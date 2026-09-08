@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stage 4.3 — Continuum Memory Test</title>
+  <style>
+    body { font-family: monospace; background: #111; color: #0f0; padding: 20px; max-width: 800px; margin: 0 auto; }
+    h1 { color: #0ff; font-size: 18px; }
+    .pass { color: #0f0; }
+    .fail { color: #f00; }
+    .info { color: #ff0; }
+    pre { background: #222; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
+    button { background: #333; color: #0f0; border: 1px solid #0f0; padding: 8px 16px; cursor: pointer; margin: 4px; border-radius: 4px; }
+    button:hover { background: #0f0; color: #000; }
+  </style>
+</head>
+<body>
+  <h1>Stage 4.3 — Continuum Memory System: Test Harness</h1>
+  <div id="results"></div>
+  <button onclick="runAllTests()">Run All Tests</button>
+  <button onclick="clearDB()">Clear DB</button>
+
+  <script type="module">
+    import { MateyContinuum } from './matey-continuum.js';
+
+    const results = document.getElementById('results');
+
+    function log(msg, cls) {
+      const div = document.createElement('div');
+      div.className = cls || '';
+      div.textContent = msg;
+      results.appendChild(div);
+    }
+
+    function sep() {
+      const hr = document.createElement('hr');
+      hr.style.borderColor = '#333';
+      results.appendChild(hr);
+    }
+
+    window.clearDB = async () => {
+      await new Promise((resolve) => {
+        const req = indexedDB.deleteDatabase('matey-continuum');
+        req.onsuccess = resolve;
+        req.onerror = () => resolve();
+      });
+      MateyContinuum._db = null;
+      log('DB cleared.', 'info');
+    };
+
+    window.runAllTests = async () => {
+      results.innerHTML = '';
+      log('Running Continuum tests...', 'info');
+      sep();
+
+      // Test 1: Keyword extraction
+      try {
+        const kw = MateyContinuum._extractKeywords('read_file test.txt and write some changes');
+        const hasReadFile = kw.includes('read_file');
+        const hasTest = kw.includes('test.txt') || kw.includes('test');
+        const hasWrite = kw.includes('write');
+        const hasChanges = kw.includes('changes');
+        const hasBigram = kw.some(k => k.includes('_'));
+        const noStopwords = !kw.includes('the') && !kw.includes('and') && !kw.includes('some');
+        const allOk = hasReadFile && hasTest && hasWrite && hasChanges && hasBigram && noStopwords;
+        log(allOk ? 'PASS: Keyword extraction' : 'FAIL: Keyword extraction', allOk ? 'pass' : 'fail');
+        log('  Keywords: ' + JSON.stringify(kw), 'info');
+      } catch (e) { log('FAIL: Keyword extraction — ' + e.message, 'fail'); }
+      sep();
+
+      // Test 2: Entity recording + retrieval
+      try {
+        await MateyContinuum.recordEntity('test-file.js', 'file', 0.7, { path: '/src/test-file.js', lang: 'javascript' });
+        await MateyContinuum.recordEntity('write_file', 'tool', 0.9, {});
+        await MateyContinuum.recordEntity('css_layout', 'concept', 0.5, { framework: 'flexbox' });
+        const entities = await MateyContinuum._relevantEntities(['file', 'write', 'layout'], 10);
+        const names = entities.map(e => e.name);
+        const allOk = names.includes('test-file.js') && names.includes('write_file') && names.includes('css_layout');
+        log(allOk ? 'PASS: Entity recording + retrieval' : 'FAIL: Entity recording + retrieval', allOk ? 'pass' : 'fail');
+        log('  Retrieved: ' + JSON.stringify(names), 'info');
+      } catch (e) { log('FAIL: Entity recording/retrieval — ' + e.message, 'fail'); }
+      sep();
+
+      // Test 3: Episode recording + recall
+      try {
+        await MateyContinuum.recordEpisode('Fixed CSS layout issues in header', ['css', 'layout', 'header'], 3, 'completed');
+        await MateyContinuum.recordEpisode('Added test-file.js unit tests', ['test', 'file', 'jest'], 5, 'completed');
+        await MateyContinuum.recordEpisode('Attempted webpack config but failed', ['webpack', 'config'], 7, 'exceeded_max_steps');
+        const context = await MateyContinuum.recallContext('fix the css file layout', 500);
+        const hasCss = context && context.includes('css');
+        const hasLayout = context && context.includes('layout');
+        const allOk = hasCss && hasLayout;
+        log(allOk ? 'PASS: Episode recording + relevant recall' : 'FAIL: Episode recording + recall', allOk ? 'pass' : 'fail');
+        log('  Context preview: ' + (context ? context.slice(0, 150) + '...' : 'null'), 'info');
+      } catch (e) { log('FAIL: Episode recording/recall — ' + e.message, 'fail'); }
+      sep();
+
+      // Test 4: Token budget enforcement
+      try {
+        const long = 'word '.repeat(500);
+        const truncated = MateyContinuum._truncateToTokenBudget(long, 50);
+        const budgetOk = truncated.length <= 50 * 4;
+        const endedAtWord = truncated.endsWith('…');
+        log(budgetOk && endedAtWord ? 'PASS: Token budget truncation' : 'FAIL: Token budget truncation', budgetOk && endedAtWord ? 'pass' : 'fail');
+        log('  Truncated length: ' + truncated.length + ' (budget: ' + (50 * 4) + ')', 'info');
+      } catch (e) { log('FAIL: Token budget — ' + e.message, 'fail'); }
+      sep();
+
+      // Test 5: Importance decay
+      try {
+        const entity = { importance: 0.8, lastUpdated: Date.now() - 3 * 86400000 };
+        const decayed = MateyContinuum._decayImportance(entity);
+        const decayedOk = decayed < 0.8 && decayed > 0.5;
+        log(decayedOk ? 'PASS: Importance decay (3 days)' : 'FAIL: Importance decay', decayedOk ? 'pass' : 'fail');
+        log('  Original: 0.8 -> Decayed: ' + decayed.toFixed(4), 'info');
+      } catch (e) { log('FAIL: Decay — ' + e.message, 'fail'); }
+      sep();
+
+      // Test 6: Relevance scoring
+      try {
+        const entity = { name: 'read_file', type: 'tool', importance: 0.8, firstSeen: Date.now() - 3600000, lastTouched: Date.now() };
+        const score1 = MateyContinuum._scoreEntity(entity, ['read', 'file', 'write']);
+        const score2 = MateyContinuum._scoreEntity(entity, ['unrelated']);
+        log(score1 > score2 ? 'PASS: Relevance scoring (match > non-match)' : 'FAIL: Scoring', score1 > score2 ? 'pass' : 'fail');
+        log('  Score [read,file,write]: ' + score1.toFixed(4) + ' | [unrelated]: ' + score2.toFixed(4), 'info');
+      } catch (e) { log('FAIL: Scoring — ' + e.message, 'fail'); }
+      sep();
+
+      // Test 7: Empty prompt returns null
+      try {
+        const ctx = await MateyContinuum.recallContext('', 100);
+        log(ctx === null ? 'PASS: Empty prompt returns null' : 'FAIL: Empty prompt should return null', ctx === null ? 'pass' : 'fail');
+      } catch (e) { log('FAIL: Empty prompt — ' + e.message, 'fail'); }
+      sep();
+
+      // Test 8: touchEntity
+      try {
+        await MateyContinuum.recordEntity('touch-test', 'concept', 0.3, {});
+        const before = await MateyContinuum._relevantEntities(['touch'], 1);
+        const beforeScore = before.length > 0 ? before[0]._score : 0;
+        await MateyContinuum.touchEntity('touch-test', 'concept');
+        const after = await MateyContinuum._relevantEntities(['touch'], 1);
+        const afterScore = after.length > 0 ? after[0]._score : 0;
+        log(afterScore >= beforeScore ? 'PASS: touchEntity boosts relevance' : 'FAIL: touchEntity', afterScore >= beforeScore ? 'pass' : 'fail');
+        log('  Before: ' + beforeScore.toFixed(4) + ' -> After: ' + afterScore.toFixed(4), 'info');
+      } catch (e) { log('FAIL: touchEntity — ' + e.message, 'fail'); }
+
+      log('');
+      log('=== All tests complete ===', 'info');
+    };
+  </script>
+</body>
+</html>

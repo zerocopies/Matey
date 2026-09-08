@@ -14,26 +14,28 @@
 (function () {
   'use strict';
 
-   var micState = {
-     active: false,
-     isRecording: false,
-     isProcessing: false,
-     stream: null,
-     mediaRecorder: null,
-     audioChunks: [],
-     micBtn: null,
-     statusText: null,
-     targetInput: null,
-     autoStopTimer: null,
-     currentDomain: 'journal',
-     currentContextPayload: {},
-     _error: null,
+    var micState = {
+      active: false,
+      isRecording: false,
+      isProcessing: false,
+      stream: null,
+      mediaRecorder: null,
+      recordedMimeType: '',
+      audioChunks: [],
+      micBtn: null,
+      statusText: null,
+      targetInput: null,
+      autoStopTimer: null,
+      currentDomain: 'journal',
+      currentContextPayload: {},
+      _error: null,
      /* Rolling chunked streaming state */
      streamingTimer: null,
      streamText: '',
      streamChunkIndex: 0,
      streamInterimCallback: null,
      streamProcessedChunks: 0,
+     _streamLiveWritten: false,
      /* Live speech recognition config — continuous session that never drops
         sentences and always reports interim results while speaking. */
      recognitionConfig: {
@@ -190,6 +192,7 @@
           }
         }
         micState.mediaRecorder = mediaRecorder;
+        micState.recordedMimeType = mediaRecorder.mimeType || mime;
 
         mediaRecorder.ondataavailable = function (e) {
           if (e.data && e.data.size > 0) {
@@ -200,10 +203,10 @@
           }
         };
 
-         mediaRecorder.onstop = function () {
-           console.log('[MateyMic] Recording stopped, chunks:', micState.audioChunks.length);
-           var blob = new Blob(micState.audioChunks, { type: mime });
-           console.log('[MateyMic] Combined blob:', blob.size, 'bytes, type:', blob.type);
+          mediaRecorder.onstop = function () {
+            console.log('[MateyMic] Recording stopped, chunks:', micState.audioChunks.length);
+            var blob = new Blob(micState.audioChunks, { type: micState.recordedMimeType });
+            console.log('[MateyMic] Combined blob:', blob.size, 'bytes, type:', blob.type);
            micState.isRecording = false;
            micState.active = false;
            updateMicButtonVisual(micBtn, false);
@@ -264,8 +267,9 @@
                 if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
                 return;
               }
-            }
-            micState.mediaRecorder = mediaRecorder;
+             }
+        micState.mediaRecorder = mediaRecorder;
+        micState.recordedMimeType = mediaRecorder.mimeType || mime;
             mediaRecorder.ondataavailable = function (e) {
               if (e.data && e.data.size > 0) {
                 micState.audioChunks.push(e.data);
@@ -274,7 +278,7 @@
               }
             };
             mediaRecorder.onstop = function () {
-              var blob = new Blob(micState.audioChunks, { type: mime });
+              var blob = new Blob(micState.audioChunks, { type: micState.recordedMimeType });
               micState.isRecording = false;
               micState.active = false;
               updateMicButtonVisual(micBtn, false);
@@ -377,6 +381,7 @@
     micState.streamChunkIndex = 0;
     micState.streamProcessedChunks = 0;
     micState.streamInterimCallback = onInterim || null;
+    micState._streamLiveWritten = false;
 
     console.log('[MateyMic] Streaming started (2.5s chunks)');
 
@@ -407,7 +412,7 @@
 
     if (chunksToProcess.length === 0) return;
 
-    var mime = micState.mediaRecorder ? (micState.mediaRecorder.mimeType || 'audio/webm') : 'audio/webm';
+    var mime = micState.recordedMimeType || (micState.mediaRecorder ? (micState.mediaRecorder.mimeType || 'audio/webm') : 'audio/webm');
     var blob = new Blob(chunksToProcess, { type: mime });
     micState.streamProcessedChunks++;
 
@@ -435,58 +440,88 @@
     });
   }
 
+  function _detectAudioMimeType(arrayBuffer) {
+    if (!arrayBuffer || arrayBuffer.byteLength < 12) return 'audio/webm';
+    var view = new Uint8Array(arrayBuffer);
+    var riff = String.fromCharCode.apply(null, view.subarray(0, 4));
+    if (riff === 'RIFF' && String.fromCharCode.apply(null, view.subarray(8, 12)) === 'WAVE') return 'audio/wav';
+    if (view[0] === 0x1A && view[1] === 0x45 && view[2] === 0xDF && view[3] === 0xA3) return 'audio/webm';
+    if (view[4] === 0x66 && view[5] === 0x74 && view[6] === 0x79 && view[7] === 0x70) return 'audio/mp4';
+    if (view[0] === 0x4F && view[1] === 0x67 && view[2] === 0x67 && view[3] === 0x53) return 'audio/ogg';
+    return 'audio/webm';
+  }
+
+  function _normalizeBlobForDecode(blob) {
+    if (!blob || !blob.type) return blob;
+    var supported = ['audio/wav', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/ogg'];
+    if (supported.indexOf(blob.type) !== -1) return blob;
+    return new Blob([blob], { type: 'audio/webm' });
+  }
+
   function _transcribeMicChunk(blob, domain, contextPayload) {
     domain = domain || 'journal';
     contextPayload = contextPayload || {};
 
     return new Promise(function (resolve, reject) {
+      var normalizedBlob = _normalizeBlobForDecode(blob);
       var reader = new FileReader();
       reader.onload = function () {
-        var audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-        audioCtx.decodeAudioData(reader.result, function (buffer) {
-          var channelData = buffer.getChannelData(0);
-          var sampleRate = buffer.sampleRate;
+        var detectedMime = _detectAudioMimeType(reader.result);
+        var retryBlob = new Blob([reader.result], { type: detectedMime });
+        var retryReader = new FileReader();
+        retryReader.onload = function () {
+          var audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          audioCtx.decodeAudioData(retryReader.result, function (buffer) {
+            var channelData = buffer.getChannelData(0);
+            var sampleRate = buffer.sampleRate;
 
-          /* VAD hard-wired always-on */
-          var cleanPCM = SileroVADProcessor.filterSilence(channelData);
-          if (cleanPCM.length < 100) {
-            resolve('');
-            return;
-          }
-          var finalBlob = SileroVADProcessor.encodeFloat32ToWav(cleanPCM, sampleRate);
-          console.debug('[MateyMic] Chunk VAD: ' + channelData.length + ' → ' + cleanPCM.length + ' samples');
+            /* VAD hard-wired always-on */
+            var cleanPCM = SileroVADProcessor.filterSilence(channelData);
+            if (cleanPCM.length < 100) {
+              resolve('');
+              return;
+            }
+            var finalBlob = SileroVADProcessor.encodeFloat32ToWav(cleanPCM, sampleRate);
+            console.debug('[MateyMic] Chunk VAD: ' + channelData.length + ' → ' + cleanPCM.length + ' samples');
 
-          if (window.MateyWhisper && window.MateyWhisper.transcribe && window.MateyWhisper.getState && window.MateyWhisper.getState().ready) {
-            MateyWhisper.transcribe(finalBlob).then(function (result) {
-              var rawText = '';
-              if (typeof result === 'string') rawText = result;
-              else if (Array.isArray(result)) rawText = result.map(function (r) { return (r && r.text) ? r.text : ''; }).join(' ').trim();
-              else if (result && result.text) rawText = result.text;
-              else if (result && result.transcription) rawText = result.transcription;
+            if (window.MateyWhisper && window.MateyWhisper.transcribe && window.MateyWhisper.getState && window.MateyWhisper.getState().ready) {
+              MateyWhisper.transcribe(finalBlob).then(function (result) {
+                var rawText = '';
+                if (typeof result === 'string') rawText = result;
+                else if (Array.isArray(result)) rawText = result.map(function (r) { return (r && r.text) ? r.text : ''; }).join(' ').trim();
+                else if (result && result.text) rawText = result.text;
+                else if (result && result.transcription) rawText = result.transcription;
 
-              /* GC: destroy chunk data */
-              try {
-                if (blob && blob.type) URL.revokeObjectURL(blob);
-                channelData = null;
-                buffer = null;
-                if (audioCtx) { audioCtx.close(); audioCtx = null; }
-              } catch (gcErr) { /* silent */ }
+                /* GC: destroy chunk data */
+                try {
+                  if (blob && blob.type) URL.revokeObjectURL(blob);
+                  channelData = null;
+                  buffer = null;
+                  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+                } catch (gcErr) { /* silent */ }
 
-              resolve(rawText.trim());
-            }).catch(function (e) {
-              console.warn('[MateyMic] Whisper chunk error:', e);
+                resolve(rawText.trim());
+              }).catch(function (e) {
+                console.warn('[MateyMic] Whisper chunk error:', e);
+                try { if (blob && blob.type) URL.revokeObjectURL(blob); } catch (e3) {}
+                resolve('');
+              });
+            } else {
+              console.debug('[MateyMic] Whisper not ready for chunk, deferring');
               try { if (blob && blob.type) URL.revokeObjectURL(blob); } catch (e3) {}
               resolve('');
-            });
-          } else {
-            console.debug('[MateyMic] Whisper not ready for chunk, deferring');
+            }
+          }, function (decodeErr) {
+            console.error('[MateyMic] decodeAudioData failed:', decodeErr);
             try { if (blob && blob.type) URL.revokeObjectURL(blob); } catch (e3) {}
             resolve('');
-          }
-        }, reject);
+          });
+        };
+        retryReader.readAsArrayBuffer(retryBlob);
       };
       reader.onerror = reject;
-      reader.readAsArrayBuffer(blob);
+      reader.readAsArrayBuffer(normalizedBlob);
     });
   }
 
@@ -505,9 +540,10 @@
      /* If streaming was active and produced text, use streaming result to avoid duplication */
      if (micState.streamText && micState.streamText.trim()) {
        console.log('[MateyMic] Using streaming text (' + micState.streamText.length + ' chars) instead of full blob transcription');
-       if (input) {
+       if (input && !micState._streamLiveWritten) {
          insertTextAtCursor(input, micState.streamText.trim());
        }
+       micState._streamLiveWritten = false;
        if (micState.statusText) micState.statusText.textContent = 'Done';
        setTimeout(function () { if (micState.statusText) micState.statusText.textContent = ''; }, 1000);
        if (sttResolve) sttResolve(micState.streamText.trim());
@@ -611,28 +647,41 @@
      var vadEnabled = true;  /* Hard-wired: VAD always active */
 
      if (window.MateySpeech && window.MateySpeech.SileroVADProcessor) {
+       var normalizedBlob = _normalizeBlobForDecode(blob);
        var reader = new FileReader();
-       reader.onload = function () {
-         var audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-         audioCtx.decodeAudioData(reader.result, function (buffer) {
-           var channelData = buffer.getChannelData(0);
-           var sampleRate = buffer.sampleRate;
-           var cleanPCM = window.MateySpeech.SileroVADProcessor.filterSilence(channelData);
-           if (cleanPCM.length < 100) {
-             console.warn('[MateyMic] VAD removed all audio (too silent)');
-             if (micState.statusText) micState.statusText.textContent = 'No speech detected';
-             setTimeout(function () { if (micState.statusText) micState.statusText.textContent = ''; }, 1500);
-             if (micState._sttResolve) micState._sttResolve('');
-            /* GC: clean audio even on VAD-reject path */
-            try { if (blob && blob.type) URL.revokeObjectURL(blob); micState.audioChunks = []; } catch (e3) {}
-             return;
-           }
-           var finalBlob = window.MateySpeech.SileroVADProcessor.encodeFloat32ToWav(cleanPCM, sampleRate);
-           console.debug('[MateyMic] VAD truncated ' + (channelData.length - cleanPCM.length) + ' silence samples (' + (channelData.length / sampleRate).toFixed(1) + 's → ' + (cleanPCM.length / sampleRate).toFixed(1) + 's)');
-           doSendToWhisper(finalBlob, input, startTime);
-         });
+        reader.onload = function () {
+          var detectedMime = _detectAudioMimeType(reader.result);
+          var retryBlob = new Blob([reader.result], { type: detectedMime });
+          var retryReader = new FileReader();
+          retryReader.onload = function () {
+            var audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            audioCtx.decodeAudioData(retryReader.result, function (buffer) {
+              var channelData = buffer.getChannelData(0);
+              var sampleRate = buffer.sampleRate;
+
+              /* VAD hard-wired always-on */
+             var cleanPCM = SileroVADProcessor.filterSilence(channelData);
+             if (cleanPCM.length < 100) {
+               console.warn('[MateyMic] VAD removed all audio (too silent)');
+               if (micState.statusText) micState.statusText.textContent = 'No speech detected';
+               setTimeout(function () { if (micState.statusText) micState.statusText.textContent = ''; }, 1500);
+               if (micState._sttResolve) micState._sttResolve('');
+               /* GC: clean audio even on VAD-reject path */
+               try { if (blob && blob.type) URL.revokeObjectURL(blob); micState.audioChunks = []; } catch (e3) {}
+               return;
+             }
+             var finalBlob = window.MateySpeech.SileroVADProcessor.encodeFloat32ToWav(cleanPCM, sampleRate);
+             console.debug('[MateyMic] VAD truncated ' + (channelData.length - cleanPCM.length) + ' silence samples (' + (channelData.length / sampleRate).toFixed(1) + 's → ' + (cleanPCM.length / sampleRate).toFixed(1) + 's)');
+             doSendToWhisper(finalBlob, input, startTime);
+           }, function (decodeErr) {
+             console.error('[MateyMic] decodeAudioData failed:', decodeErr);
+             if (micState._sttReject) micState._sttReject(decodeErr);
+           });
+         };
+         retryReader.readAsArrayBuffer(retryBlob);
        };
-       reader.readAsArrayBuffer(blob);
+       reader.readAsArrayBuffer(normalizedBlob);
      } else {
        doSendToWhisper(blob, input, startTime);
      }
@@ -799,6 +848,19 @@
         micState.statusText = document.getElementById('md-voice-status');
         micState.currentDomain = detectDomain(micState.targetInput);
         micState.currentContextPayload = {};
+        micState._streamLiveWritten = false;
+        /* Enable live streaming — inject interim chunks straight into #md-compose-input */
+        micState._streamInterimCallback = function (evt) {
+          if (!evt || evt.isFinal) return;  /* final write is handled post-stop */
+          var agentInput = document.getElementById('md-compose-input');
+          if (agentInput && evt.fullText) {
+            agentInput.value = evt.fullText;
+            agentInput.dispatchEvent(new Event('input', { bubbles: true }));
+            var end = agentInput.value.length;
+            agentInput.setSelectionRange(end, end);
+            micState._streamLiveWritten = true;
+          }
+        };
         startRecording();
       });
     }

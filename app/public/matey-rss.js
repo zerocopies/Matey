@@ -6,11 +6,14 @@
   function saveFeeds(d) { localStorage.setItem(FEEDS_KEY, JSON.stringify(d)); }
 
   function fetchWithProxy(url) {
+    if (window.MateyNetworkLog) { try { window.MateyNetworkLog.log(url, { method: 'GET' }); } catch (e) {} }
     return fetch(url).then(function (r) {
       if (!r.ok) throw new Error('http ' + r.status);
       return r.text();
     }).catch(function () {
-      return fetch('https://api.allorigins.dev/raw?url=' + encodeURIComponent(url)).then(function (r) {
+      var proxyUrl = 'https://api.allorigins.dev/raw?url=' + encodeURIComponent(url);
+      if (window.MateyNetworkLog) { try { window.MateyNetworkLog.log(proxyUrl, { method: 'GET' }); } catch (e) {} }
+      return fetch(proxyUrl).then(function (r) {
         if (!r.ok) throw new Error('proxy ' + r.status);
         return r.text();
       });

@@ -113,8 +113,78 @@
     return base + endpoint;
   }
 
-  function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
-  function save(list) { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {} }
+  /* ---- Provider storage: IndexedDB (keys never persisted to localStorage) ---- */
+  var _providersCache = null;   /* null = not yet seeded */
+  var _providersDB = null;
+  var _providersReady = null;
+
+  function _providersOpenDB() {
+    if (_providersReady) return _providersReady;
+    _providersReady = new Promise(function (resolve) {
+      if (typeof indexedDB === 'undefined') { _providersCache = _providersCache || []; resolve(); return; }
+      var req = indexedDB.open('MateyByokDB', 1);
+      req.onupgradeneeded = function () {
+        if (!req.result.objectStoreNames.contains('kv')) req.result.createObjectStore('kv');
+      };
+      req.onsuccess = function () {
+        _providersDB = req.result;
+        try {
+          var q = _providersDB.transaction('kv', 'readonly').objectStore('kv').get(KEY);
+          q.onsuccess = function () {
+            var stored = q.result;
+            var legacy = null;
+            try { var raw = localStorage.getItem(KEY); if (raw) legacy = JSON.parse(raw); } catch (e) {}
+            if (Array.isArray(stored) && stored.length) {
+              _providersCache = stored;
+              try { localStorage.removeItem(KEY); } catch (e) {}
+            } else if (Array.isArray(legacy) && legacy.length) {
+              _providersCache = legacy;
+              try {
+                _providersDB.transaction('kv', 'readwrite').objectStore('kv').put(legacy, KEY);
+                localStorage.removeItem(KEY);
+              } catch (e) {}
+            } else {
+              _providersCache = _providersCache || [];
+            }
+            resolve();
+          };
+          q.onerror = function () { _providersCache = _providersCache || []; resolve(); };
+        } catch (e) { _providersCache = _providersCache || []; resolve(); }
+      };
+      req.onerror = function () { _providersCache = _providersCache || []; resolve(); };
+    });
+    return _providersReady;
+  }
+
+  function load() {
+    if (_providersCache !== null) return _providersCache;
+    /* First synchronous call before IDB seeding completes — fall back to a legacy
+       read, then let the seed take over ownership once open resolves. */
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) { var p = JSON.parse(raw); if (Array.isArray(p)) { _providersCache = p; return p; } }
+    } catch (e) {}
+    return [];
+  }
+
+  function save(list) {
+    _providersCache = Array.isArray(list) ? list : [];
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    if (_providersDB) {
+      try {
+        var tx = _providersDB.transaction('kv', 'readwrite');
+        tx.objectStore('kv').put(_providersCache, KEY);
+      } catch (e) {}
+      return Promise.resolve();
+    }
+    return _providersReady ? _providersReady.then(function () {
+      if (!_providersDB) return;
+      try {
+        var tx = _providersDB.transaction('kv', 'readwrite');
+        tx.objectStore('kv').put(_providersCache, KEY);
+      } catch (e) {}
+    }) : Promise.resolve();
+  }
 
   /* Migrate legacy single-provider keys into the generic BYOK list */
   function migrateLegacyProviders() {
@@ -276,20 +346,22 @@
           var url = 'https://api.anthropic.com/v1/messages';
           return nativeFetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+            headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerously-allow-browser': 'true' },
             body: JSON.stringify({ model: anthModel, max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] })
           }).then(function (r) {
-            if (r.status === 401 || r.status === 403) throw new Error('Invalid API key (HTTP ' + r.status + ')');
-            if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 120)); });
-            return r.json().then(function () { return anthModel; });
+            return r.text().then(function (t) {
+              if (r.status === 401 || r.status === 403) throw new Error('Invalid API key (HTTP ' + r.status + '): ' + t.slice(0, 120));
+              if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 120));
+              return r.json().then(function () { return anthModel; });
+            });
           });
         }
         if (isGemini) {
          var geminiModel = modelToUse || 'gemini-1.5-flash';
-         var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(geminiModel) + ':generateContent?key=' + encodeURIComponent(apiKey);
+         var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(geminiModel) + ':generateContent';
          return nativeFetch(url, {
            method: 'POST',
-           headers: { 'Content-Type': 'application/json' },
+           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'hi' }] }], generationConfig: { maxOutputTokens: 1 } })
          }).then(function (r) {
            rateLimit = readRateLimitHeaders(r.headers);
@@ -569,6 +641,10 @@
     var clearBtn = document.getElementById('byok-clear-credentials');
     if (clearBtn) clearBtn.addEventListener('click', function () {
       if (!confirm('Clear all saved provider credentials? This cannot be undone.')) return;
+      _providersCache = [];
+      if (_providersDB) {
+        try { _providersDB.transaction('kv', 'readwrite').objectStore('kv').delete(KEY); } catch (e) {}
+      }
       try { localStorage.removeItem('matey-providers'); } catch (e) {}
       try { localStorage.removeItem('matey_gemini_key'); } catch (e) {}
       try { localStorage.removeItem('matey_openai_key'); } catch (e) {}
@@ -618,10 +694,10 @@
   }
 
    /* Gemini API — clean vanilla JS REST fetch implementation.
-      Endpoint: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}
+      Endpoint: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent (auth via x-goog-api-key header)
       Body schema: {"contents":[{"parts":[{"text":userPrompt}]}]} */
   function sendToGemini(apiKey, userPrompt) {
-    var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + encodeURIComponent(apiKey);
+    var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
     var body = JSON.stringify({
       contents: [{
         parts: [{ text: userPrompt }]
@@ -629,7 +705,7 @@
     });
     return fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: body
     }).then(function (r) {
       if (!r.ok) {
@@ -717,7 +793,7 @@
   function doGeminiRequest(p, messages, timeoutMs) {
     var model = p.model || 'gemini-1.5-flash';
     var apiKey = p.apiKey;
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(apiKey);
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent';
 
     /* Convert messages to Gemini contents format */
     var systemParts = [];
@@ -757,7 +833,7 @@
     var timer = setTimeout(function () { controller.abort(new Error('Request timed out after ' + timeoutMs + 'ms')); }, timeoutMs);
     return nativeFetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify(body),
       signal: controller.signal
     }).finally(function () { clearTimeout(timer); }).then(function (r) {
@@ -779,6 +855,7 @@
   /* Create a persistent instance reference for internal use before window.MateyByok is set */
   var MateyByok_instance = { getProvider: null, resolveProvider: null };
   function initInstanceRef() {
+    _providersOpenDB();
     MateyByok_instance.getProvider = function(cap) {
       var providers = load();
       if (providers.length > 0) {

@@ -11,6 +11,7 @@ import {
   Repeat,
   Check,
   Plus,
+  Trash2,
 } from "lucide-react";
 import { NeuralState } from "./types/mlInsight";
 import {
@@ -20,6 +21,7 @@ import {
   getNextThemePresetId,
 } from "./services/themeEngine";
 import { CustomTabWizard } from "./CustomTabWizard";
+import { getNetworkLog, clearNetworkLog } from "./lib/networkLog";
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -347,6 +349,37 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <ChevronRight size={16} className="text-bg/20" />
               </button>
             ))}
+          </div>
+        </section>
+
+        {/* Matey1.txt §3 — Transparency: Network Activity log */}
+        <section className="space-y-2">
+          <label className="text-[9px] font-bold uppercase tracking-[0.2em] text-bg/40 px-2 block">
+            Network Activity
+          </label>
+          <div className="space-y-1">
+            {/*
+              Log of outbound URLs the app has contacted.
+              Real hostnames only — no packet-level inspection.
+              Manually clearable from this screen.
+            */}
+            <div className="h-96 overflow-auto rounded-xl border border-border-hard/10 bg-[var(--theme-surface-elevated)] p-4 text-[9px] text-bg/60">
+              {getNetworkLog().map((entry, i) => (
+                <div key={i} className="flex items-center justify-between pb-1 border-b border-border-hard/5">
+                  <span className="truncate text-[9px]">{entry.hostname}</span>
+                  <span className="text-[9px] text-bg/40">{new Date(entry.timestamp).toLocaleTimeString()}</span>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={clearNetworkLog}
+              className="mt-2 w-full flex items-center justify-center gap-2 p-2 rounded-xl border border-dashed border-border-hard/10 text-bg/50 hover:border-bg hover:text-bg transition-all"
+            >
+              <Trash2 size={14} />
+              <span className="text-[10px] font-black uppercase tracking-wider">
+                Clear log
+              </span>
+            </button>
           </div>
         </section>
       </main>

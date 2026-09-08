@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
     <style>
       html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
       .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; }
@@ -31,49 +32,31 @@
     <script src="./matey-boot.js?v=101"></script>
     <script src="./matey-sentry.js?v=101"></script>
     <script src="./matey-vector-search.js?v=101"></script>
+    <script src="./matey-behavior.js?v=101"></script>
     <script src="./matey-shell-guard.js?v=101"></script>
     <script src="./matey-native-shell.js?v=101"></script>
   </head>
-  <body>
-     <div class="app-shell">
-      <header class="header">
-        <div class="header-top">
-          <img class="matey-logo" src="./images/matey-logo.png" alt="Matey" />
-          <div class="workspace-display-container" id="workspace-display-container">
-            <div class="workspace-dropdown" id="workspace-dropdown">
-              <span class="workspace-name" id="workspace-display">Workspace</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </div>
-            <div class="workspace-selector" id="workspace-selector"></div>
-          </div>
-          <button type="button" id="agent-ide-toggle" class="ide-toggle-btn" aria-label="Toggle IDE Mode">
-            <span class="ide-toggle-text">IDE</span>
-          </button>
-           <div class="header-actions">
-             <svg class="usage-ring" viewBox="0 0 36 36" id="usage-ring" aria-hidden="true"><circle class="usage-ring-track" cx="18" cy="18" r="15"></circle><g id="usage-ring-segments"><circle class="usage-ring-segment s1" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(0 18 18)"></circle><circle class="usage-ring-segment s2" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(90 18 18)"></circle><circle class="usage-ring-segment s3" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(180 18 18)"></circle><circle class="usage-ring-segment s4" cx="18" cy="18" r="15" stroke-dasharray="23.6 94.2" transform="rotate(270 18 18)"></circle></g></svg>
-             <button class="incognito-trigger" type="button" aria-label="Incognito" title="Incognito">
-              <svg class="incognito-ghost" viewBox="0 0 100 120" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path class="ghost-body" d="M 50 4 C 20 4 5 28 5 52 L 5 92 C 5 105 15 105 20 98 C 25 105 35 105 40 98 C 45 105 55 105 60 98 C 65 105 75 105 80 98 C 85 105 95 105 95 92 L 95 52 C 95 28 80 4 50 4 Z"/>
-                <ellipse class="ghost-eye" cx="35" cy="50" rx="10" ry="15"/>
-                <ellipse class="ghost-pupil" cx="35" cy="52" rx="4" ry="8"/>
-                <ellipse class="ghost-eye" cx="65" cy="50" rx="10" ry="15"/>
-                <ellipse class="ghost-pupil" cx="65" cy="52" rx="4" ry="8"/>
-                <path class="ghost-eyebrow" d="M 26 34 L 38 40"/>
-                <path class="ghost-eyebrow" d="M 74 34 L 62 40"/>
-                <path class="ghost-mouth" d="M 38 78 Q 50 94 62 78 Q 50 88 38 78 Z"/>
-                <path class="ghost-teeth" d="M 40 80 L 43 85 L 46 80 L 49 85 L 52 80 L 55 85 L 58 80 L 60 82"/>
-              </svg>
-            </button>
-             <button class="icon-btn settings-trigger" type="button" aria-label="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                 <line x1="3" y1="6" x2="21" y2="6"/>
-                 <line x1="3" y1="12" x2="21" y2="12"/>
-                 <line x1="3" y1="18" x2="21" y2="18"/>
-               </svg></button>
-           </div>
-        </div>
-      </header>
+   <body>
+      <div class="app-shell">
+       <div class="header">
+         <!-- LEFT: Logo, Folder Workspace, ID -->
+         <div class="header-left">
+           <img src="images/matey-logo.png" class="matey-logo" alt="Logo" />
+           <button id="workspace-folder-btn" class="header-icon-btn" title="Workspace">📁</button>
+           <div class="header-icon-btn id-icon" title="ID">🪪</div>
+         </div>
 
-            <nav class="tabs-wrap" id="tabs-wrap">
+         <!-- RIGHT: Usage, Theme, Vault, Incognito, Menu -->
+         <div class="header-actions">
+           <div class="header-icon-btn usage-ring" title="Token Meter"></div>
+           <button id="lux-theme-toggle" class="header-icon-btn" title="Theme">🎨</button>
+           <div id="vault-launcher" class="header-icon-btn" title="Vault">🗄️</div>
+           <div class="header-icon-btn incognito-trigger" title="Incognito">👻</div>
+           <button class="header-icon-btn menu-btn" title="Menu">☰</button>
+         </div>
+       </div>
+
+      <nav class="tabs-wrap" id="tabs-wrap">
         <div class="tabs">
           <a class="tab" href="./lifestyle.html">Lifestyle</a>
           <a class="tab" href="./vots.html">My-VOTS</a>
@@ -110,6 +93,21 @@
             <button class="md-attach-btn" id="md-attach" type="button" aria-label="Attach file">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             </button>
+            <button class="md-model-btn" id="md-model-btn" type="button" aria-label="Select model" title="Select model">⚡ Auto</button>
+            <div class="md-model-menu" id="md-model-menu" hidden>
+              <div class="md-model-menu-head" id="md-model-menu-head">AI Model</div>
+              <div class="md-model-group">
+                <div class="md-model-group-label">⚡ Fast &amp; Cheap</div>
+                <div class="md-model-options" id="md-model-fast"></div>
+              </div>
+              <div class="md-model-group">
+                <div class="md-model-group-label">🧠 Heavy &amp; Reasoning</div>
+                <div class="md-model-options" id="md-model-heavy"></div>
+              </div>
+              <div class="md-model-group">
+                <button type="button" class="md-model-auto" id="md-model-auto" data-model="auto">Reset to Auto</button>
+              </div>
+            </div>
             <div class="md-attach-pills" id="md-attach-pills" style="display:none"></div>
             <button class="md-voice-btn" id="md-voice" type="button" aria-label="Voice input">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
@@ -123,11 +121,48 @@
             </div>
           </div>
         </div>
+        <style id="mty-model-picker-styles">
+          /* Solid Model Picker — fully theme-aware via Luxury tokens */
+          #md-composer { position: relative; }
+          .md-model-btn {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 6px 10px; border-radius: 10px; flex-shrink: 0; white-space: nowrap;
+            background: var(--surface-main, #17171b); color: var(--accent-primary, #B583FC);
+            border: 1px solid var(--border-subtle, #3A3A3A);
+            font: inherit; font-size: 12px; font-weight: 600; line-height: 1; cursor: pointer;
+          }
+          .md-model-btn:hover { border-color: var(--accent-primary, #B583FC); opacity: 0.92; }
+          .md-model-menu {
+            position: absolute; right: 12px; bottom: calc(100% - 24px);
+            width: 240px; max-height: 320px; overflow-y: auto;
+            background: var(--surface-main, #17171b); border: 1px solid var(--border-subtle, #2A2A2A); border-radius: 14px;
+            padding: 10px; z-index: 220; color: var(--text-primary, #FFFFFF); font-size: 13px;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+          }
+          .md-model-menu[hidden] { display: none; }
+          .md-model-menu-head {
+            font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+            color: var(--text-muted, #6B6B6B); padding: 4px 6px 8px; border-bottom: 1px solid var(--border-subtle, #242424); margin-bottom: 8px;
+          }
+          .md-model-group-label { font-size: 11px; font-weight: 700; color: var(--text-muted, #8A8A8A); padding: 6px 6px 4px; }
+          .md-model-options { display: flex; flex-direction: column; gap: 2px; }
+          .md-model-opt, .md-model-auto {
+            display: flex; align-items: center; gap: 6px; width: 100%;
+            padding: 8px 10px; border: 1px solid transparent; border-radius: 8px;
+            background: transparent; color: var(--text-primary, #DDDDDD); font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+          }
+          .md-model-opt:hover, .md-model-auto:hover { background: var(--surface-secondary, #232329); border-color: var(--border-subtle, #333339); color: var(--text-primary, #FFFFFF); }
+          .md-model-opt.is-active { background: var(--accent-dim); border-color: var(--accent-primary, #B583FC); color: var(--accent-primary, #FFFFFF); }
+          .md-model-auto { color: var(--text-muted, #B3B3B3); justify-content: center; margin-top: 2px; }
+          .mty-live-text { font-size: 14px; line-height: 1.55; white-space: pre-wrap; word-wrap: break-word; color: var(--text-primary, #FFFFFF); }
+          .mty-diff-line { opacity: 0.55; font-size: 12px; margin-top: 6px; color: var(--text-secondary, #B3B3B3); }
+        </style>
       </main>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.2/mammoth.min.js"></script>
     <script src="./matey-themes.js?v=101"></script>
+    <script src="./matey-theme-toggle.js?v=101"></script>
     <script src="./matey-swipe.js?v=101"></script>
     <script src="./matey-profile.js?v=101"></script>
     <script src="./matey-greet.js?v=101"></script>
@@ -137,9 +172,10 @@
     <script src="./matey-byok.js?v=101"></script>
     <script src="./matey-provider-presets.js?v=101"></script>
      <script src="./matey-saf.js?v=101"></script>
-     <script type="module" src="./matey-agent-bundle.js?v=101"></script>
-     <script src="./matey-agent-init.js?v=101"></script>
-     <script src="./matey-agent-harness.js?v=101"></script>
+      <script src="./matey-agent.js?v=102"></script>
+            <script src="./matey-agent.js?v=102"></script>
+      <script src="./matey-agent-init.js?v=102"></script>
+      <script src="./matey-agent-harness.js?v=102"></script>
     <script src="./matey-beat.js?v=101"></script>
     <script type="module">import { mateyCoach } from './matey-coach.js'; window.mateyCoach = mateyCoach;</script>
     <script src="./matey-lifestyle.js?v=101"></script>
@@ -152,6 +188,130 @@
       var pillsBar = document.getElementById('md-attach-pills');
       var pendingFiles = [];
       var convHistory = [];
+
+      /* ===== Visual Model Picker (TASK 1) — solid dark, no glass effects ===== */
+      var modelBtn = document.getElementById('md-model-btn');
+      var modelMenu = document.getElementById('md-model-menu');
+      var modelFast = document.getElementById('md-model-fast');
+      var modelHeavy = document.getElementById('md-model-heavy');
+      var modelHead = document.getElementById('md-model-menu-head');
+      var modelAutoBtn = document.getElementById('md-model-auto');
+
+      function _providersList() {
+        try { return JSON.parse(localStorage.getItem('matey-providers') || '[]'); } catch (e) { return []; }
+      }
+      function _saveProviders(list) {
+        try { localStorage.setItem('matey-providers', JSON.stringify(list)); } catch (e) {}
+      }
+      function _textProviderIndex(list) {
+        for (var i = 0; i < list.length; i++) {
+          var caps = list[i].capabilities || [];
+          if (caps.indexOf('text') !== -1 || caps.indexOf('text-gen') !== -1 || !caps.length) return i;
+        }
+        return list.length ? 0 : -1;
+      }
+      function _prettyModel(model) {
+        var m = String(model || '').toLowerCase();
+        if (m.indexOf('haiku') !== -1) return '⚡ Haiku';
+        if (m.indexOf('flash') !== -1) return '⚡ Flash';
+        if (m.indexOf('mini') !== -1) return '⚡ Mini';
+        if (m.indexOf('sonnet') !== -1) return '🧠 Sonnet';
+        if (m.indexOf('opus') !== -1) return '🧠 Opus';
+        if (m.indexOf('pro') !== -1) return '🧠 Pro';
+        if (m.indexOf('grok') !== -1) return '⚡ Grok';
+        if (m.indexOf('command') !== -1) return '⚡ Command';
+        if (m.indexOf('llama') !== -1) return '⚡ Llama';
+        if (m.indexOf('qwen') !== -1) return '⚡ Qwen';
+        if (!m || m === 'auto' || m === 'auto:free' || m === 'default') return '⚡ Auto';
+        var short = String(model).replace(/^[a-z0-9._-]+\/[^/]+\//, '').replace(/^models\//, '');
+        return '⚡ ' + short;
+      }
+      function _renderModelRow(container, model, current) {
+        var row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'md-model-opt' + (current === model ? ' is-active' : '');
+        row.textContent = _prettyModel(model);
+        row.title = model;
+        row.addEventListener('click', function () {
+          var l2 = _providersList();
+          var i2 = _textProviderIndex(l2);
+          if (i2 === -1) return;
+          l2[i2].model = model;
+          _saveProviders(l2);
+          if (modelBtn) modelBtn.textContent = _prettyModel(model);
+          if (modelMenu) modelMenu.hidden = true;
+          if (window.AgentToast) window.AgentToast.show('Agent model → ' + _prettyModel(model), false);
+        });
+        container.appendChild(row);
+      }
+      function _openModelMenu() {
+        var list = _providersList();
+        var idx = _textProviderIndex(list);
+        var p = idx !== -1 ? list[idx] : null;
+        var preset = null;
+        if (p && window.MateyProviderPresets) {
+          try { preset = window.MateyProviderPresets.detect(p.apiKey); } catch (e) { preset = null; }
+        }
+        if (modelHead) {
+          modelHead.textContent = p
+            ? (preset && preset.name ? preset.name + ' · ' : '') + String(p.baseUrl || 'custom').replace(/^https?:\/\//, '').split('/')[0]
+            : 'No AI provider configured';
+        }
+        var fast = [];
+        var heavy = [];
+        if (preset && preset.fastOptions) fast = fast.concat(preset.fastOptions);
+        if (preset && preset.heavyOptions) heavy = heavy.concat(preset.heavyOptions);
+        if (p && p.model && p.model !== 'auto' && p.model !== 'auto:free' && p.model !== 'default') {
+          if (fast.indexOf(p.model) === -1 && heavy.indexOf(p.model) === -1) {
+            (String(p.model).match(/haiku|flash|mini|turbo|fast|lite|grok|command|llama|qwen/i) ? fast : heavy).push(p.model);
+          }
+        }
+        if (modelFast && modelHeavy) {
+          modelFast.innerHTML = '';
+          modelHeavy.innerHTML = '';
+          var current = p ? p.model : '';
+          if (fast.length) fast.forEach(function (m) { _renderModelRow(modelFast, m, current); });
+          if (heavy.length) heavy.forEach(function (m) { _renderModelRow(modelHeavy, m, current); });
+          if (!fast.length && !heavy.length) {
+            var note = document.createElement('div');
+            note.className = 'md-model-auto';
+            note.textContent = p ? 'Custom provider — set a model in Settings → BYOK Models.' : 'Add a provider in Settings → BYOK Models.';
+            modelFast.appendChild(note);
+          }
+        }
+        if (modelMenu) modelMenu.hidden = false;
+      }
+      function _syncModelButton() {
+        var list = _providersList();
+        var idx = _textProviderIndex(list);
+        var model = idx !== -1 ? list[idx].model : '';
+        if (modelBtn) modelBtn.textContent = _prettyModel(model);
+      }
+      if (modelBtn && modelMenu) {
+        modelBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (modelMenu.hidden) { _openModelMenu(); } else { modelMenu.hidden = true; }
+        });
+        if (modelAutoBtn) {
+          modelAutoBtn.addEventListener('click', function () {
+            var l = _providersList();
+            var i = _textProviderIndex(l);
+            if (i === -1) return;
+            l[i].model = 'auto';
+            _saveProviders(l);
+            if (modelBtn) modelBtn.textContent = '⚡ Auto';
+            if (modelMenu) modelMenu.hidden = true;
+            if (window.AgentToast) window.AgentToast.show('Agent model → Auto (fast default)', false);
+          });
+        }
+        document.addEventListener('click', function (e) {
+          if (!modelMenu.hidden && !modelBtn.contains(e.target) && !modelMenu.contains(e.target)) modelMenu.hidden = true;
+        });
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') { modelMenu.hidden = true; }
+        });
+        _syncModelButton();
+      }
       var pendingAttachmentText = null;
       var ideMode = false;
 
@@ -625,7 +785,7 @@
         if (welcome) welcome.style.display = 'none';
 
         if (window.MateyBehavior) MateyBehavior.record('user_prompt', { text: text });
-        if (window.MateyCoach) MateyCoach.recordPrompt(text);
+        if (window.mateyCoach && typeof window.mateyCoach.recordPrompt === 'function') window.mateyCoach.recordPrompt(text);
 
         buildUserMessage(text).then(function (userMsg) {
           convHistory.push(userMsg);
@@ -667,10 +827,41 @@
                 window.mateyAgent = new window.MateyAgent.AgentOrchestrator(provider);
               }
               resp.innerHTML = '<div style="opacity:0.7;">Agent is working... <span class="agent-thinking-dots">...</span></div>';
+              // Live streaming (TASK 2): paint tokens into the bubble via rAF +
+              // insertAdjacentText. NEVER innerHTML-per-token — that re-parses the
+              // whole bubble every frame and freezes the UI thread.
+              var liveEl = document.createElement('div');
+              liveEl.className = 'mty-live-text';
+              resp.appendChild(liveEl);
+              var tokenBuf = '';
+              var rafPending = false;
+              function paintTokens() {
+                rafPending = false;
+                if (!tokenBuf) return;
+                var text = tokenBuf;
+                tokenBuf = '';
+                var wrap = resp.firstChild;
+                if (wrap && wrap.textContent && wrap.textContent.indexOf('Agent is working') !== -1) {
+                  resp.removeChild(wrap);
+                }
+                liveEl.insertAdjacentText('beforeend', text);
+                scrollToBottom();
+              }
+              var onAgentToken = function (t) {
+                if (!t) return;
+                tokenBuf += t;
+                if (!rafPending) {
+                  rafPending = true;
+                  requestAnimationFrame(paintTokens);
+                }
+              };
               window.mateyAgent.executeTask(text, null, function (diff) {
-                var current = resp.innerHTML || '';
-                resp.innerHTML = current + '<div style="opacity:0.5; font-size:12px;">🔧 ' + (diff.search.substring(0, 60) || '') + '...</div>';
-              }).then(function (result) {
+                var d = document.createElement('div');
+                d.className = 'mty-diff-line';
+                d.textContent = '🔧 ' + (diff.search.substring(0, 60) || '') + '…';
+                resp.appendChild(d);
+                scrollToBottom();
+              }, onAgentToken).then(function (result) {
                 resp.innerHTML = renderMarkdown(result || 'Agent completed.');
                 convHistory.push({ role: 'assistant', content: result || '' });
                 var tid = window.mateyAgent._currentTaskId;
@@ -757,8 +948,6 @@
 <script src="./matey-rss.js?v=101"></script>
     <script src="./matey-license.js?v=101"></script>
     <script src="./matey-recall.js?v=101"></script>
-    <script src="./matey-behavior.js?v=101"></script>
-    <script src="./matey-adaptive.js?v=101"></script>
     <script src="./matey-init.js?v=101"></script>
     <script src="./matey-hooks.js?v=101"></script>
     <script src="./matey-keyboard.js?v=101"></script>

@@ -118,6 +118,20 @@ function pruneHistoryByTokens(history, maxTokens, preserveSystem = true) {
   return { pruned: messages, removed: Math.max(0, history.length - messages.length) };
 }
 
+function _openAgentChatDB() {
+  return new Promise(function (resolve, reject) {
+    var req = indexedDB.open('matey-chats', 1);
+    req.onupgradeneeded = function (e) {
+      var db = e.target.result;
+      if (!db.objectStoreNames.contains('sessions')) {
+        db.createObjectStore('sessions', { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = function (e) { resolve(e.target.result); };
+    req.onerror = function (e) { reject(e.target.error); };
+  });
+}
+
 class HarnessLogger {
   static log(step, action, details) {
     const timestamp = new Date().toISOString().split('T')[1];
@@ -146,25 +160,37 @@ class AgentToast {
   }
 }
 
-// Live progress indicator — shows step-by-step status in the chat UI instead of silence
+// Live progress indicator — shows step-by-step status in the chat UI instead of silence.
+// Writes are coalesced behind requestAnimationFrame so bursts of tokens never jank the UI thread.
 class AgentProgress {
+  static _ensureEl() {
+    if (AgentProgress._el) return AgentProgress._el;
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="agent-progress" style="position:fixed; top:70px; left:16px; right:16px; background:#0D0D0D; border:1px solid #2A2A2A; border-radius:12px; padding:8px 14px; color:#B3B3B3; font-size:12px; z-index:9999; display:none; align-items:center; gap:8px;">
+        <span class="agent-spinner" style="width:10px; height:10px; border:2px solid #B583FC; border-top-color:transparent; border-radius:50%; display:inline-block; animation:agent-spin 0.8s linear infinite;"></span>
+        <span id="agent-progress-text"></span>
+      </div>
+      <style>@keyframes agent-spin { to { transform: rotate(360deg); } }</style>
+    `);
+    AgentProgress._el = document.getElementById('agent-progress');
+    AgentProgress._textEl = document.getElementById('agent-progress-text');
+    return AgentProgress._el;
+  }
   static update(stepText) {
-    let el = document.getElementById('agent-progress');
-    if (!el) {
-      document.body.insertAdjacentHTML('beforeend', `
-        <div id="agent-progress" style="position:fixed; top:70px; left:16px; right:16px; background:#0D0D0D; border:1px solid #2A2A2A; border-radius:12px; padding:8px 14px; color:#B3B3B3; font-size:12px; z-index:9999; display:none; align-items:center; gap:8px;">
-          <span class="agent-spinner" style="width:10px; height:10px; border:2px solid #B583FC; border-top-color:transparent; border-radius:50%; display:inline-block; animation:agent-spin 0.8s linear infinite;"></span>
-          <span id="agent-progress-text"></span>
-        </div>
-        <style>@keyframes agent-spin { to { transform: rotate(360deg); } }</style>
-      `);
-      el = document.getElementById('agent-progress');
-    }
-    document.getElementById('agent-progress-text').innerText = stepText;
-    el.style.display = 'flex';
+    const el = AgentProgress._ensureEl();
+    AgentProgress._pendingText = stepText;
+    if (AgentProgress._rafPending) return;
+    AgentProgress._rafPending = true;
+    requestAnimationFrame(() => {
+      AgentProgress._rafPending = false;
+      if (AgentProgress._textEl) AgentProgress._textEl.innerText = AgentProgress._pendingText || '';
+      if (el) el.style.display = 'flex';
+    });
   }
   static hide() {
-    const el = document.getElementById('agent-progress');
+    AgentProgress._pendingText = null;
+    AgentProgress._rafPending = false;
+    const el = AgentProgress._el || document.getElementById('agent-progress');
     if (el) el.style.display = 'none';
   }
 }
@@ -371,10 +397,25 @@ class ContextRetriever {
       return f.name;
     });
 
+    // Stage 15: Semantic vector search for context augmentation
+    var searchResults = [];
+    try {
+      if (window.MateyVectorSearch && typeof window.MateyVectorSearch.search === 'function') {
+        var _stats = window.MateyVectorSearch.getStats();
+        if (_stats.totalChunks > 0) {
+          var _vsResults = window.MateyVectorSearch.search(prompt, 5);
+          searchResults = _vsResults.map(function(r) {
+            return { file: r.file, startLine: r.startLine, endLine: r.endLine, score: Math.round(r.score * 1000) / 1000, snippet: r.text.slice(0, 300) };
+          });
+        }
+      }
+    } catch (e) { /* non-critical */ }
+
     return {
       activeFileContext,
       mentionedFilesContext,
       workspaceTree,
+      searchResults: searchResults,
       truncated: files.length > this.MAX_TREE_ENTRIES ||
         (activeFileContext?.truncated) ||
         mentionedFilesContext.some(f => f.truncated)
@@ -455,6 +496,38 @@ function classifyError(err) {
   }
 
   return { code: 'UNKNOWN', reason: 'unrecognized' };
+}
+
+/* ---- Deterministic Stack-Trace Trimming ---- */
+function trimStackTrace(errorText) {
+  if (!errorText || typeof errorText !== 'string') return '';
+  var lines = errorText.split('\n');
+  var result = [];
+  var seen = new Set();
+  var noise = /node_modules|\/vite\/|\/@fs\/|\/capacitor\/|\/react-dom\/|\/react\/|\/lucide|\/codemirror\/|\/lezer|\/tailwind\/|chrome-extension:\/\/|^\s*at\s+.*\((?:node:|native)\)|^\s*at\s+https?:\/\/|Object\.next|__async|processTicksAndRejections|runMicrotasks|Promise\.resolve|Promise\.all|asyncGeneratorStep|_classCallCheck|regeneratorRuntime|__webpack_require|webpack:\/\/|__esModule|createRequire|import\.meta\.url|System\.register|hot\.(?:data|accept|dispose)/;
+  var userPath = /(?:^|[\s(])(?:\.\/|\.\.\/|src\/|public\/|app\/|components\/|services\/|lib\/|hooks\/|pages\/|utils\/|matey-[\w-]+\.js)/;
+  var inStack = false;
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var trimmed = line.trim();
+    if (!trimmed) continue;
+
+    if (/^\s*at\s+/.test(trimmed) || /^\s*\d+:/.test(trimmed) || /^Caused by:/.test(trimmed)) {
+      inStack = true;
+      if (noise.test(trimmed)) continue;
+      if (seen.has(trimmed)) continue;
+      seen.add(trimmed);
+      if (!userPath.test(trimmed) && !/:\d+:\d+/.test(trimmed)) continue;
+      result.push('  ' + trimmed);
+      continue;
+    }
+
+    if (!inStack || /^(?:Error|TypeError|ReferenceError|SyntaxError|RangeError|URIError|EvalError|InternalError|AggregateError|Warning|Exception|FAIL|FAILED)/.test(trimmed)) {
+      result.push(line);
+    }
+  }
+  return result.join('\n');
 }
 
 /* ==================== Per-Workspace Fix Memory (IndexedDB) ==================== */
@@ -673,10 +746,32 @@ class ToolDispatcher {
     });
 
     this.registry.set('search_codebase', {
-      schema: { name: 'search_codebase', description: 'Search the entire workspace for a specific text string or function name. Returns surrounding context lines around each match.',
+      schema: { name: 'search_codebase', description: 'Search the entire workspace for a specific text string or function name. Uses semantic vector search when available, falls back to substring match. Returns surrounding context lines around each match.',
         parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] } },
       handler: async (args) => {
         var cleanQuery = args.query || '';
+        // Stage 15: Try vector search first for semantic matching
+        if (window.MateyVectorSearch && typeof window.MateyVectorSearch.search === 'function') {
+          var vsStats = window.MateyVectorSearch.getStats();
+          if (vsStats.totalChunks > 0) {
+            try {
+              var vsResults = window.MateyVectorSearch.search(cleanQuery, 10);
+              if (vsResults.length > 0) {
+                return vsResults.map(function(r) {
+                  return {
+                    file: r.file,
+                    line: r.startLine,
+                    text: r.text.slice(0, 200).trim(),
+                    context: r.text.slice(0, 400),
+                    score: Math.round(r.score * 1000) / 1000,
+                    matchType: 'semantic'
+                  };
+                });
+              }
+            } catch (e) { /* fall through to substring */ }
+          }
+        }
+        // Fallback: substring search
         var fs = window.MateyFS || window.FileSystemManager;
         var files;
         if (fs && typeof fs.listFiles === 'function') {
@@ -729,6 +824,49 @@ class ToolDispatcher {
         return results;
       }
     });
+
+    // Stage 16: Native shell command execution
+    this.registry.set('run_terminal_command', {
+      schema: { name: 'run_terminal_command', description: 'Execute a shell command on the local device (Termux/Android shell). Returns stdout, stderr, and exit code. High-risk commands require user confirmation. Shell access must be enabled in Settings.',
+        parameters: { type: 'object', properties: { command: { type: 'string', description: 'The shell command to execute' }, stream: { type: 'boolean', description: 'Whether to stream output line by line (default false)' } }, required: ['command'] } },
+      handler: async (args) => {
+        var cmd = args.command || '';
+        if (!cmd.trim()) return { success: false, error: 'Empty command' };
+
+        // Check if shell is enabled in settings
+        if (window.MateyShellGuard && !window.MateyShellGuard.isShellEnabled()) {
+          return { success: false, error: 'Shell access is disabled. Enable it in Settings → Features → Native Shell.' };
+        }
+
+        // Classify risk and require confirmation for medium/high risk
+        var risk = 'low';
+        if (window.MateyShellGuard) {
+          risk = window.MateyShellGuard.classifyRisk(cmd);
+          if (risk !== 'low') {
+            var confirmed = window.MateyShellGuard.confirmExecution(cmd, risk);
+            if (!confirmed) return { success: false, error: 'Command cancelled by user (risk level: ' + risk + ')' };
+          }
+        }
+
+        // Execute via native shell bridge
+        if (window.MateyNativeShell) {
+          try {
+            if (args.stream) {
+              var lines = [];
+              var result = await window.MateyNativeShell.stream(cmd, function(line) { lines.push(line); });
+              return { success: true, stdout: result.stdout, exitCode: result.exitCode, risk: risk };
+            } else {
+              var res = await window.MateyNativeShell.execute(cmd);
+              return { success: true, stdout: res.stdout, stderr: res.stderr, exitCode: res.exitCode, risk: risk };
+            }
+          } catch (e) {
+            return { success: false, error: e.message || 'Shell execution failed', risk: risk };
+          }
+        }
+
+        return { success: false, error: 'Native shell bridge not available on this device' };
+      }
+    });
   }
 
   getSchemas() {
@@ -743,6 +881,115 @@ class ToolDispatcher {
 // Stage 4.5: Max retries when a diff produces syntactically broken code
 // (detected via ASTIndex.validateParse() before showing the diff to the user).
 const MAX_PREFLIGHT_RETRIES = 2;
+
+// Stage 13: Speculative Multi-Branch Repair
+const MAX_SPECULATIVE_REPAIR_BRANCHES = 3;
+const SPECULATIVE_REPAIR_STRATEGIES = [
+  { name: 'minimal_edit', prompt: 'Fix ONLY the syntax error at line {line}. Make the smallest possible change. Output the corrected SEARCH/REPLACE block.', temperature: 0.0 },
+  { name: 'structural_refactor', prompt: 'The code has a syntax error at line {line}: "{text}" (type: {type}). Reconstruct the surrounding block structure to fix it. Output the corrected SEARCH/REPLACE block.', temperature: 0.2 },
+  { name: 'import_fix', prompt: 'The code has {errorNodes} syntax error(s). Check for missing imports, mismatched brackets, or incorrect nesting. Output the corrected SEARCH/REPLACE block.', temperature: 0.1 }
+];
+
+export async function speculativeRepairDispatch(baseMessages, errCtx, errorNodes, activeFilePath, langHint, baseContent, searchBlock, replaceBlock) {
+  var branches = [];
+  var abortControllers = [];
+  var completed = false;
+  var results = [];
+
+  for (var i = 0; i < Math.min(SPECULATIVE_REPAIR_STRATEGIES.length, MAX_SPECULATIVE_REPAIR_BRANCHES); i++) {
+    var strategy = SPECULATIVE_REPAIR_STRATEGIES[i];
+    var repairMsg = strategy.prompt
+      .replace('{line}', errCtx ? errCtx.line : '?')
+      .replace('{text}', errCtx ? errCtx.text : '')
+      .replace('{type}', errCtx ? errCtx.type : '')
+      .replace('{errorNodes}', errorNodes);
+    var messages = baseMessages.concat([
+      { role: 'user', content: repairMsg }
+    ]);
+    var ac = new AbortController();
+    abortControllers.push(ac);
+    branches.push({ strategy: strategy, controller: ac, messages: messages, index: i });
+  }
+
+  var winner = null;
+  var pendingCount = branches.length;
+
+  var candidatePromises = branches.map(function(branch) {
+    return new Promise(function(resolve) {
+      var fullContent = '';
+      var onToken = function(token) { fullContent += token; };
+      routeRequest({
+        capability: 'text-gen',
+        messages: branch.messages,
+        tools: [],
+        tool_choice: 'none',
+        timeoutMs: 30000,
+        signal: branch.controller.signal,
+        temperature: branch.strategy.temperature,
+        onToken: onToken
+      }).then(function(result) {
+        if (completed) { resolve({ ok: false, cancelled: true, index: branch.index }); return; }
+        var diffMatch = /<<<<<<< SEARCH([\s\S]*?)=======\n([\s\S]*?)>>>>>>> REPLACE/.exec(result.content || '');
+        if (!diffMatch) {
+          resolve({ ok: false, index: branch.index, reason: 'no_diff' });
+          return;
+        }
+        var newSearch = diffMatch[1].trim();
+        var newReplace = diffMatch[2].trim();
+        var resultingContent = baseContent.replace(newSearch, newReplace);
+        if (resultingContent === baseContent) {
+          resolve({ ok: false, index: branch.index, reason: 'no_change' });
+          return;
+        }
+        ASTIndex.validateParse(resultingContent, langHint).then(function(validation) {
+          if (completed) { resolve({ ok: false, cancelled: true, index: branch.index }); return; }
+          if (validation.valid) {
+            resolve({ ok: true, index: branch.index, strategy: branch.strategy.name, search: newSearch, replace: newReplace, content: result.content });
+          } else {
+            resolve({ ok: false, index: branch.index, reason: 'ast_fail', errors: validation.errorNodes });
+          }
+        }).catch(function() {
+          resolve({ ok: false, index: branch.index, reason: 'validate_error' });
+        });
+      }).catch(function(err) {
+        if (err.message && err.message.indexOf('ABORTED') !== -1) {
+          resolve({ ok: false, cancelled: true, index: branch.index });
+        } else {
+          resolve({ ok: false, index: branch.index, reason: 'api_error', error: (err.message || '').slice(0, 100) });
+        }
+      });
+    });
+  });
+
+  return new Promise(function(resolve) {
+    var checkWinner = function() {
+      if (completed) return;
+      var winnerResult = results.find(function(r) { return r.ok; });
+      if (winnerResult) {
+        completed = true;
+        for (var j = 0; j < abortControllers.length; j++) {
+          if (j !== winnerResult.index) {
+            try { abortControllers[j].abort(); } catch (_) {}
+          }
+        }
+        resolve({ success: true, winner: winnerResult, cancelled: true });
+        return;
+      }
+      var allDone = results.length >= branches.length;
+      if (allDone) {
+        completed = true;
+        resolve({ success: false, results: results });
+      }
+    };
+
+    candidatePromises.forEach(function(p) {
+      p.then(function(result) {
+        results.push(result);
+        checkWinner();
+      });
+    });
+  });
+}
 
 export class AgentOrchestrator {
   constructor() {
@@ -759,6 +1006,23 @@ export class AgentOrchestrator {
 
   clearHistory() {
     this.conversationHistory = [];
+  }
+
+  async saveChatSession(title) {
+    try {
+      var db = await _openAgentChatDB();
+      if (!db) return;
+      var store = db.transaction('sessions', 'readwrite').objectStore('sessions');
+      var session = {
+        id: 'session_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        title: title || 'Chat ' + new Date().toLocaleString(),
+        messages: this.conversationHistory.slice(),
+        createdAt: Date.now()
+      };
+      store.put(session);
+    } catch (e) {
+      console.warn('[AgentOrchestrator] Failed to save chat session:', e);
+    }
   }
 
   setCursorLine(line) {
@@ -799,10 +1063,14 @@ export class AgentOrchestrator {
     this.conversationHistory = pruned;
   }
 
-  async executeTask(userPrompt, activeFilePath, onDiff) {
+  async executeTask(userPrompt, activeFilePath, onDiff, onToken) {
      mateyCoach.evaluate(userPrompt, { previousReply: this.lastReply });
      HarnessLogger.log(0, 'INIT', `Starting task: "${userPrompt}"`);
      AgentProgress.update('Reading context…');
+
+     var taskId = 'task_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+     this._currentTaskId = taskId;
+     this._modifiedFiles = [];
 
      const context = await ContextRetriever.assemble(userPrompt, activeFilePath, this._cursorLine);
 
@@ -822,7 +1090,19 @@ export class AgentOrchestrator {
            false
          );
        }
-     }
+      }
+
+// Stage 15: Index workspace files for semantic vector search
+      if (window.MateyVectorSearch && typeof window.MateyVectorSearch.indexWorkspace === 'function') {
+        try {
+          var _vsStats = window.MateyVectorSearch.getStats();
+          if (_vsStats.totalChunks === 0 && context.workspaceTree.length > 0) {
+            window.MateyVectorSearch.indexWorkspace(context.workspaceTree.map(function(p) {
+              return { path: p, name: p, type: 'file' };
+            }));
+          }
+        } catch (e) { /* non-critical */ }
+      }
 
 // Stage 4.3: Continuum — cross-session memory recall
       let continuumContext = null;
@@ -936,6 +1216,10 @@ export class AgentOrchestrator {
                if (!this._streamBuffer) this._streamBuffer = '';
                this._streamBuffer += token;
                AgentProgress.update('Step ' + stepCount + ': receiving… ' + this._streamBuffer.slice(-60));
+               // Forward raw tokens to the host UI (chat bubble) for live rendering
+               if (typeof onToken === 'function') {
+                 try { onToken(token); } catch (_) {}
+               }
              }
            }),
            new Promise((_, reject) =>
@@ -1008,7 +1292,20 @@ export class AgentOrchestrator {
              groups.push(group);
            }
 
-           var allResults = [];
+            // Stage 12: Pre-task workspace snapshot for rollback
+            var _snapshotFiles = [];
+            for (var si = 0; si < choice.tool_calls.length; si++) {
+              var _sn = choice.tool_calls[si].function.name;
+              if (_sn === 'write_file' || _sn === 'edit_file' || _sn === 'create_file') {
+                try { var _sa = JSON.parse(choice.tool_calls[si].function.arguments); _snapshotFiles.push(_sa.filePath || _sa.path || ''); } catch (_) {}
+              }
+            }
+            if (_snapshotFiles.length > 0 && window.MateyWorkspaceManager && window.MateyWorkspaceManager.createTaskSnapshot) {
+              await window.MateyWorkspaceManager.createTaskSnapshot(taskId, _snapshotFiles);
+              HarnessLogger.log(stepCount, 'SNAPSHOT', 'Pre-task snapshot created for ' + _snapshotFiles.length + ' file(s)');
+            }
+
+            var allResults = [];
            for (var gi = 0; gi < groups.length; gi++) {
              if (groups[gi].length === 0) continue;
              var G = groups[gi];
@@ -1108,7 +1405,12 @@ export class AgentOrchestrator {
                    ).catch(function() {});
                  }
                }
-               const errPayload = JSON.stringify({ error: errMsg, code: errCode, instruction: errCode === 'PERMANENT' ? 'This file operation cannot be retried. Check the file path or workspace permissions.' : 'Retry with corrected arguments.' });
+                var rawErrMsg = errMsg;
+                if (err.stack && typeof err.stack === 'string') {
+                  rawErrMsg = err.message + '\n' + trimStackTrace(err.stack);
+                }
+                var trimmedStackMsg = rawErrMsg.length > 2000 ? trimStackTrace(rawErrMsg) : rawErrMsg;
+                const errPayload = JSON.stringify({ error: trimmedStackMsg, code: errCode, instruction: errCode === 'PERMANENT' ? 'This file operation cannot be retried. Check the file path or workspace permissions.' : 'Retry with corrected arguments.' });
                const truncatedErr = errPayload.length > MAX_TOOL_RESULT_CHARS
                  ? errPayload.slice(0, MAX_TOOL_RESULT_CHARS) + '\n...(truncated)'
                  : errPayload;
@@ -1205,47 +1507,95 @@ export class AgentOrchestrator {
                    HarnessLogger.log(stepCount, 'DIFF_MATCHED',
                      `Tier: ${matchResult.tier}, Confidence: ${confidence.confidence}(${confidence.score}), Reasons: ${confidence.reasons.join(',')}`);
 
-                   // Stage 4.5: Pre-flight AST validation — parse resulting content before showing to user
-                   var preflightFail = null;
-                   if (this.preflightRetryCount < MAX_PREFLIGHT_RETRIES && activeFilePath) {
-                     try {
-                       var baseContent = context.activeFileContext?.fullContent || context.activeFileContext?.content || '';
-                       var resultingContent = baseContent.replace(searchBlock, replaceBlock);
-                       var langHint = ASTIndex.detectLanguage(activeFilePath);
-                       var validation = await ASTIndex.validateParse(resultingContent, langHint);
-                       if (!validation.valid) {
-                         preflightFail = validation;
-                         HarnessLogger.log(stepCount, 'PREFLIGHT_FAIL',
-                           `Diff produces ${validation.errorNodes} syntax error node(s). ` +
-                           `First error: type="${validation.firstError?.type}", line=${validation.firstError?.line}, text="${validation.firstError?.text}"`);
-                       } else {
-                         HarnessLogger.log(stepCount, 'PREFLIGHT_OK',
-                           `AST validation passed (${validation.parseTime?.toFixed(1)}ms)`);
-                       }
-                     } catch (e) {
-                       HarnessLogger.log(stepCount, 'PREFLIGHT_SKIPPED', `validateParse threw: ${e.message}`);
-                     }
-                   }
+// Stage 4.5: Pre-flight AST validation — parse resulting content before showing to user
+                    // When offline, still validate locally via tree-sitter but skip cloud retry flow
+                    var preflightFail = null;
+                    if (this.preflightRetryCount < MAX_PREFLIGHT_RETRIES && activeFilePath && navigator.onLine) {
+                      try {
+                        var baseContent = context.activeFileContext?.fullContent || context.activeFileContext?.content || '';
+                        var resultingContent = baseContent.replace(searchBlock, replaceBlock);
+                        var langHint = ASTIndex.detectLanguage(activeFilePath);
+                        var validation = await ASTIndex.validateParse(resultingContent, langHint);
+                        if (!validation.valid) {
+                          preflightFail = validation;
+                          HarnessLogger.log(stepCount, 'PREFLIGHT_FAIL',
+                            `Diff produces ${validation.errorNodes} syntax error node(s). ` +
+                            `First error: type="${validation.firstError?.type}", line=${validation.firstError?.line}, text="${validation.firstError?.text}"`);
+                        } else {
+                          HarnessLogger.log(stepCount, 'PREFLIGHT_OK',
+                            `AST validation passed (${validation.parseTime?.toFixed(1)}ms)`);
+                        }
+                      } catch (e) {
+                        HarnessLogger.log(stepCount, 'PREFLIGHT_SKIPPED', `validateParse threw: ${e.message}`);
+                      }
+                    } else if (activeFilePath && !navigator.onLine) {
+                      // Stage 8: Offline AST staging — local validation when no network
+                      try {
+                        var baseContent = context.activeFileContext?.fullContent || context.activeFileContext?.content || '';
+                        var resultingContent = baseContent.replace(searchBlock, replaceBlock);
+                        var langHint = ASTIndex.detectLanguage(activeFilePath);
+                        var validation = await ASTIndex.validateParse(resultingContent, langHint);
+                        if (!validation.valid) {
+                          // Show offline syntax issue locally, no cloud retry attempted
+                          HarnessLogger.log(stepCount, 'OFFLINE_LINT',
+                            `Offline syntax issue: ${validation.errorNodes} error node(s). First error at line ${validation.firstError?.line}`);
+                          // Set offline status visible in IDE
+                          if (window.MateyIDE && window.MateyIDE.setOfflineStatus) {
+                            window.MateyIDE.setOfflineStatus(`Syntax issue at line ${validation.firstError?.line} — ${validation.errorNodes} error node(s)`, 'warn');
+                          }
+                        } else {
+                          HarnessLogger.log(stepCount, 'OFFLINE_LINT_OK',
+                            `Offline AST validation passed (${validation.parseTime?.toFixed(1)}ms)`);
+                        }
+                      } catch (e) {
+                        HarnessLogger.log(stepCount, 'OFFLINE_LINT_SKIPPED', `validateParse threw: ${e.message}`);
+                      }
+                    }
 
                    if (preflightFail) {
-                     // Feed the syntax error back to the LLM and retry (respecting MAX_STEPS)
-                     this.conversationHistory.push({ role: 'assistant', content: finalReplyText });
-                     this.trimHistory();
-                     var errCtx = preflightFail.firstError;
-                     var retryMsg =
-                       `Your proposed diff introduces a syntax error that AST parsing caught before display. ` +
-                       `Parse found ${preflightFail.errorNodes} error node(s). ` +
-                       (errCtx ? `First error at line ${errCtx.line}: "${errCtx.text}" (type: ${errCtx.type}). ` : '') +
-                       `Please regenerate the SEARCH/REPLACE block with corrected syntax.`;
-                     this.conversationHistory.push({ role: 'user', content: retryMsg });
-                     this.trimHistory();
-                     this.preflightRetryCount++;
-                     HarnessLogger.log(stepCount, 'PREFLIGHT_RETRY',
-                       `Retry ${this.preflightRetryCount}/${MAX_PREFLIGHT_RETRIES}: feeding error back to LLM`);
-                     AgentToast.show(`Pre-flight caught syntax error — retrying (${this.preflightRetryCount}/${MAX_PREFLIGHT_RETRIES})`, true);
-                     preflightRetryRequested = true;
-                     break; // exit inner diff loop; outer loop will check the flag
-                   }
+                      // Stage 13: Speculative Multi-Branch Repair — dispatch parallel repair strategies
+                      this.conversationHistory.push({ role: 'assistant', content: finalReplyText });
+                      this.trimHistory();
+                      var errCtx = preflightFail.firstError;
+                      var _baseMsgs = this.conversationHistory.slice(-10);
+                      HarnessLogger.log(stepCount, 'SPECULATIVE_REPAIR',
+                        `Dispatching ${Math.min(SPECULATIVE_REPAIR_STRATEGIES.length, MAX_SPECULATIVE_REPAIR_BRANCHES)} parallel repair branches for ${preflightFail.errorNodes} error(s)`);
+                      AgentToast.show(`Speculative repair: trying ${Math.min(SPECULATIVE_REPAIR_STRATEGIES.length, MAX_SPECULATIVE_REPAIR_BRANCHES)} strategies in parallel…`, true);
+
+                      try {
+                        var repairResult = await speculativeRepairDispatch(
+                          _baseMsgs, errCtx, preflightFail.errorNodes, activeFilePath, langHint, baseContent, searchBlock, replaceBlock
+                        );
+                        if (repairResult.success) {
+                          var w = repairResult.winner;
+                          HarnessLogger.log(stepCount, 'SPECULATIVE_WIN',
+                            `Branch "${w.strategy}" passed AST validation — applying fix`);
+                          AgentToast.show(`Repair succeeded via "${w.strategy}" strategy`, false);
+                          searchBlock = w.search;
+                          replaceBlock = w.replace;
+                          preflightFail = null;
+                          var _matchResult2 = TieredDiffMatcher.match(baseContent, searchBlock, replaceBlock);
+                          if (_matchResult2.matched) {
+                            var _confidence2 = ConfidenceScorer.score(_matchResult2);
+                            if (onDiff) onDiff({ search: searchBlock, replace: replaceBlock, matchTier: _matchResult2.tier, confidence: _confidence2.confidence, confidenceScore: _confidence2.score });
+                          }
+                        } else {
+                          HarnessLogger.log(stepCount, 'SPECULATIVE_FAIL',
+                            `All ${repairResult.results.length} repair branches failed — falling back to sequential retry`);
+                          var retryMsg = `Your proposed diff introduces a syntax error that AST parsing caught before display. Parse found ${preflightFail.errorNodes} error(s). ` + (errCtx ? `First error at line ${errCtx.line}: "${errCtx.text}" (type: ${errCtx.type}). ` : '') + `Please regenerate the SEARCH/REPLACE block with corrected syntax.`;
+                          this.conversationHistory.push({ role: 'user', content: retryMsg });
+                          this.trimHistory();
+                          this.preflightRetryCount++;
+                          preflightRetryRequested = true;
+                          break;
+                        }
+                      } catch (_srErr) {
+                        HarnessLogger.log(stepCount, 'SPECULATIVE_ERROR', `Speculative repair error: ${_srErr.message}`);
+                        this.preflightRetryCount++;
+                        preflightRetryRequested = true;
+                        break;
+                      }
+                    }
 
                    AgentToast.show(
                      `Diff applied [${matchResult.tier} match, ${confidence.confidence} confidence]` +
@@ -1350,9 +1700,10 @@ export class AgentOrchestrator {
        }
      }
 
-     AgentProgress.hide();
-     return finalReplyText;
-   }
-}
+      AgentProgress.hide();
+      try { this.saveChatSession(userPrompt); } catch (_) {}
+      return finalReplyText;
+    }
+  }
 
-export { HarnessLogger, AgentToast, AgentProgress, ContextRetriever, ToolDispatcher, ToolError, safeToolCall, classifyError, FixMemory, MateyContinuum, TieredDiffMatcher, ConfidenceScorer, StyleProfiler, sanitizePath, estimateTokenCount, pruneHistoryByTokens, DEFAULT_MODEL_CONTEXT_WINDOW, getModelContextWindow };
+export { HarnessLogger, AgentToast, AgentProgress, ContextRetriever, ToolDispatcher, ToolError, safeToolCall, classifyError, FixMemory, MateyContinuum, TieredDiffMatcher, ConfidenceScorer, StyleProfiler, sanitizePath, estimateTokenCount, pruneHistoryByTokens, DEFAULT_MODEL_CONTEXT_WINDOW, getModelContextWindow, trimStackTrace };

@@ -11,6 +11,7 @@
   /* --- Navigation cache: id -> mainHtml --- */
   var _navCache = {};
   var _currentTab = null;
+  var _activeObserver = null;  /* Track IntersectionObserver for cleanup */
 
   function loadOrder() {
     try {
@@ -44,6 +45,9 @@
   function switchTab(id) {
     if (id === _currentTab) return;
 
+    /* Event listener teardown: clean up heavy listeners before view switch */
+    teardownViewListeners();
+
     /* Cached: instant DOM swap, no page reload */
     if (_navCache[id]) {
       var mainEl = document.querySelector('main.content') || document.querySelector('main');
@@ -76,6 +80,27 @@
 
     /* Not cached: full page load (page will cache itself on load) */
     window.location.href = tabUrl(id) + (id === 'agent' ? '#agent' : '');
+  }
+
+  /* Teardown heavy listeners before view switch — prevents memory leaks */
+  function teardownViewListeners() {
+    /* Clear STT streaming callback */
+    if (window.MateyMic && window.MateyMic.setStreamInterimCallback) {
+      window.MateyMic.setStreamInterimCallback(null);
+    }
+    /* Stop any active recording */
+    if (window.MateyMic && window.MateyMic.getState && window.MateyMic.getState().active) {
+      try { window.MateyMic.stopRecording(); } catch (e) {}
+    }
+    /* Stop MateySpeech streaming */
+    if (window.MateySpeech && window.MateySpeech.stopStreaming) {
+      try { window.MateySpeech.stopStreaming(); } catch (e) {}
+    }
+    /* Disconnect any active IntersectionObserver */
+    if (_activeObserver) {
+      try { _activeObserver.disconnect(); } catch (e) {}
+      _activeObserver = null;
+    }
   }
 
   /* Cache current page's main content on load */
@@ -211,5 +236,17 @@
     });
   }
 
-  window.MateyTabs = { switchTab: switchTab, getCurrentTab: function() { return _currentTab; } };
+  window.MateyTabs = {
+    switchTab: switchTab,
+    getCurrentTab: function() { return _currentTab; },
+    teardown: teardownViewListeners
+  };
+
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+    window.Capacitor.Plugins.App.addListener('appStateChange', function(state) {
+      if (!state.isActive) {
+        try { window.MateyTabs.teardown(); } catch (e) {}
+      }
+    });
+  }
 })();

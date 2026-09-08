@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stage 4.5b — Worker Offload Test</title>
+  <style>
+    body { background: #0d0d0d; color: #e0e0e0; font-family: monospace; padding: 20px; font-size: 13px; }
+    .result { margin: 5px 0; padding: 10px; border-radius: 6px; }
+    .pass { background: #1a2e1a; border: 1px solid #4ade80; }
+    .fail { background: #2e1a1a; border: 1px solid #f87171; }
+    .info { background: #1a1a2e; border: 1px solid #6366f1; }
+    pre { background: #1a1a1a; padding: 10px; border-radius: 6px; overflow: auto; font-size: 11px; max-height: 200px; }
+    #scrollArea { height: 150px; overflow-y: auto; background: #1a1a1a; padding: 10px; border-radius: 6px; margin: 10px 0; border: 1px solid #333; }
+    .scrollItem { padding: 6px; border-bottom: 1px solid #222; }
+    button { background: #333; color: #fff; border: 1px solid #555; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin: 4px; }
+    button:active { background: #555; }
+  </style>
+</head>
+<body>
+  <h1>Stage 4.5b — Web Worker Offload Test</h1>
+  <div id="results"></div>
+  <h3>Scroll Test (scroll during heavy parse to verify UI responsiveness):</h3>
+  <div id="scrollArea"></div>
+  <button id="heavyBtn">Run Heavy Parse in Worker</button>
+  <button id="compareBtn">Compare Worker vs Direct</button>
+
+  <script type="module">
+    import { ASTIndexClient as ASTIndex } from './matey-ast-client.js';
+    import { ASTIndex as ASTIndexDirect } from './matey-ast-index.js';
+
+    const results = document.getElementById('results');
+    const scrollArea = document.getElementById('scrollArea');
+
+    function addResult(label, value, passed) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed ? 'pass' : 'fail');
+      div.innerHTML = '<strong>' + label + '</strong>: ' + value;
+      results.appendChild(div);
+    }
+    function addInfo(label, value) {
+      const div = document.createElement('div');
+      div.className = 'result info';
+      div.innerHTML = '<strong>' + label + '</strong>: ' + (typeof value === 'string' ? value : JSON.stringify(value, null, 2));
+      results.appendChild(div);
+    }
+
+    // Populate scroll area
+    for (let i = 0; i < 200; i++) {
+      const item = document.createElement('div');
+      item.className = 'scrollItem';
+      item.textContent = 'Scroll item ' + i + ' — UI should stay responsive during worker parse';
+      scrollArea.appendChild(item);
+    }
+
+    // Generate a large JS file for stress testing
+    function generateLargeFile(lines) {
+      let code = 'import { utils } from "./utils";\nimport { helper } from "./helper";\n\n';
+      for (let i = 0; i < lines; i++) {
+        if (i % 10 === 0) {
+          code += `function func${i}(a, b) {\n  return a + b + ${i};\n}\n\n`;
+        } else if (i % 10 === 5) {
+          code += `const result${i} = func${i - 5}(${i}, ${i + 1});\n`;
+        } else {
+          code += `// Line ${i}: some code here\nconst x${i} = ${i} * 2;\n`;
+        }
+      }
+      code += '\nexport { func0, func10, func20 };\n';
+      return code;
+    }
+
+    async function main() {
+      addInfo('=== Test 1: Worker Initialization ===', '');
+      const initStart = performance.now();
+      try {
+        await ASTIndex.ensureCore();
+        const initMs = performance.now() - initStart;
+        addResult('Worker initialized', `${initMs.toFixed(1)}ms`, true);
+      } catch (e) {
+        addResult('Worker init failed', e.message, false);
+        addInfo('Falling back to direct mode', 'tests will still run');
+      }
+
+      addInfo('=== Test 2: Lazy Grammar Loading via Worker ===', '');
+      ASTIndex.clearCache();
+      const jsStart = performance.now();
+      await ASTIndex.getLanguage('test.js');
+      const jsMs = performance.now() - jsStart;
+      const langs1 = await ASTIndex.getLoadedLanguages();
+      addResult('JS grammar loaded via worker', `${jsMs.toFixed(1)}ms, langs=${JSON.stringify(langs1)}`,
+        langs1.includes('javascript') && !langs1.includes('python'));
+
+      const pyStart = performance.now();
+      await ASTIndex.getLanguage('test.py');
+      const pyMs = performance.now() - pyStart;
+      const langs2 = await ASTIndex.getLoadedLanguages();
+      addResult('Python grammar loaded via worker', `${pyMs.toFixed(1)}ms, langs=${JSON.stringify(langs2)}`,
+        langs2.includes('python'));
+
+      addInfo('=== Test 3: Function Context via Worker ===', '');
+      const sampleCode = `import { foo } from './utils.js';\n\nfunction callerA() {\n  return targetFunction(1, 2);\n}\n\nfunction targetFunction(a, b) {\n  const x = a + b;\n  const y = x * 2;\n  return y;\n}\n`;
+      const ctxStart = performance.now();
+      const ctx = await ASTIndex.getFunctionContext('test.js', 6, sampleCode);
+      const ctxMs = performance.now() - ctxStart;
+      addResult('getFunctionContext via worker', `${ctxMs.toFixed(1)}ms, fn=${ctx.functionName}`,
+        ctx.functionName === 'targetFunction');
+
+      addInfo('=== Test 4: Pre-flight Validation via Worker ===', '');
+      const validCode = `function hello() { return "world"; }`;
+      const brokenCode = `function hello() { return "world"\n  {{{ broken`;
+
+      const v1 = await ASTIndex.validateParse(validCode, 'javascript');
+      addResult('Valid code passes', JSON.stringify({ valid: v1.valid, errorNodes: v1.errorNodes }), v1.valid === true);
+
+      const v2 = await ASTIndex.validateParse(brokenCode, 'javascript');
+      addResult('Broken code fails', JSON.stringify({ valid: v2.valid, errorNodes: v2.errorNodes }), v2.valid === false);
+
+      addInfo('=== Test 5: Heavy Parse — UI Responsiveness ===', '');
+      document.getElementById('heavyBtn').addEventListener('click', async () => {
+        const largeCode = generateLargeFile(2000);
+        addInfo(`Generated large file: ${largeCode.split('\n').length} lines, ${largeCode.length} bytes`, 'parsing in worker — scroll the area above NOW');
+
+        const start = performance.now();
+        const ctx = await ASTIndex.getFunctionContext('large-test.js', 100, largeCode);
+        const elapsed = performance.now() - start;
+        addResult('Heavy parse completed', `${elapsed.toFixed(1)}ms, fn=${ctx.functionName || 'null'}`, true);
+      });
+
+      addInfo('=== Test 6: Worker vs Direct Comparison ===', '');
+      document.getElementById('compareBtn').addEventListener('click', async () => {
+        const largeCode = generateLargeFile(1000);
+
+        // Direct (main thread)
+        ASTIndexDirect.clearCache();
+        const dStart = performance.now();
+        await ASTIndexDirect.ensureCore();
+        const dCtx = await ASTIndexDirect.getFunctionContext('large-test.js', 100, largeCode);
+        const dMs = performance.now() - dStart;
+
+        // Worker
+        ASTIndex.clearCache();
+        const wStart = performance.now();
+        await ASTIndex.ensureCore();
+        const wCtx = await ASTIndex.getFunctionContext('large-test.js', 100, largeCode);
+        const wMs = performance.now() - wStart;
+
+        addInfo(`Direct: ${dMs.toFixed(1)}ms, Worker: ${wMs.toFixed(1)}ms`, '');
+        addResult('Both produce same result', `direct_fn=${dCtx.functionName}, worker_fn=${wCtx.functionName}`,
+          dCtx.functionName === wCtx.functionName);
+      });
+
+      addInfo('=== All tests ready ===', 'Click "Run Heavy Parse" then scroll to verify UI stays responsive');
+    }
+
+    main().catch(e => {
+      const div = document.createElement('div');
+      div.className = 'result fail';
+      div.innerHTML = '<strong>FATAL ERROR</strong>: ' + e.message + '<pre>' + e.stack + '</pre>';
+      results.appendChild(div);
+    });
+  </script>
+</body>
+</html>

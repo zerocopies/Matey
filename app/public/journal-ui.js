@@ -34,6 +34,7 @@
   var _activeFilterTag = null;
   var _isRecording = false;
   var _mediaRecorder = null;
+  var _activeMediaUrls = [];
   var _audioChunks = [];
   var _recordingStartTime = 0;
   var _autoSaveTimer = null;
@@ -78,6 +79,14 @@
       ((d.getHours() % 12) || 12) + ':' + String(d.getMinutes()).padStart(2, '0') + (d.getHours() >= 12 ? ' PM' : ' AM');
   }
 
+  function ensureDefaultJournal() {
+    return MateyJournal.getAllJournals().then(function (journals) {
+      var main = journals.find(function (j) { return j.name === 'Main'; });
+      if (main) return main.id;
+      return MateyJournal.createJournal('Main', '--journal-cover-1').then(function (j) { return j.id; });
+    });
+  }
+
   function showToast(msg) {
     var t = $('jnl-toast');
     if (!t) return;
@@ -120,11 +129,12 @@
   }
 
   function goToLibrary() {
-    _currentJournalId = null;
-    _activeFilterTag = null;
-    showScreen(libraryEl);
-    renderLibrary();
-    activateIncognitoIcon();
+    ensureDefaultJournal().then(function (id) {
+      _currentJournalId = id;
+      showScreen(entryListEl);
+      renderEntries();
+      activateIncognitoIcon();
+    });
   }
 
   function goToEntryList(journalId) {
@@ -276,9 +286,8 @@
   }
 
   function createNewJournal() {
-    var name = prompt('Journal name:');
-    if (!name || !name.trim()) return;
-    MateyJournal.createJournal(name.trim(), COVERS[Math.floor(Math.random() * COVERS.length)]).then(function () {
+    ensureDefaultJournal().then(function (id) {
+      _currentJournalId = id;
       goToEditor(null);
     });
   }
@@ -339,9 +348,13 @@
   }
 
   function loadPhotoIntoCard(card, photoMeta) {
+    while (_activeMediaUrls.length) {
+      try { URL.revokeObjectURL(_activeMediaUrls.pop()); } catch (e) {}
+    }
     MateyJournal.getMediaBlob(photoMeta.id).then(function (blob) {
       if (!blob || !card.isConnected) return;
       var url = URL.createObjectURL(blob);
+      _activeMediaUrls.push(url);
       var placeholder = card.querySelector('.jnl-entry-photo-placeholder');
       if (placeholder) {
         var img = document.createElement('img');
@@ -460,15 +473,46 @@
   }
 
   /* ==================== Photo Attach ==================== */
+  function compressImage(file, maxSide, quality) {
+    return new Promise(function (resolve) {
+      var img = new Image();
+      var objectUrl = URL.createObjectURL(file);
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight;
+        var scale = Math.min(1, maxSide / Math.max(w, h));
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.round(w * scale);
+        canvas.height = Math.round(h * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(objectUrl);
+        canvas.toBlob(function (blob) {
+          resolve(blob || file);
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = function () { URL.revokeObjectURL(objectUrl); resolve(file); };
+      img.src = objectUrl;
+    });
+  }
+
   function handlePhotoSelect(e) {
     var files = e.target.files;
     if (!files || !files.length) return;
+    if (_currentPhotos.length >= 4) {
+      showToast('Max 4 photos allowed');
+      e.target.value = '';
+      return;
+    }
+    var remaining = 4 - _currentPhotos.length;
+    var accepted = Array.from(files).slice(0, remaining);
+    if (accepted.length < files.length) showToast('Max 4 photos allowed');
     var processed = 0;
-    Array.from(files).forEach(function (file) {
-      MateyJournal.saveMedia(file, { name: file.name }).then(function (media) {
+    accepted.forEach(function (file) {
+      compressImage(file, 1280, 0.8).then(function (compressed) {
+        return MateyJournal.saveMedia(compressed, { name: file.name });
+      }).then(function (media) {
         _currentPhotos.push({ id: media.id, name: media.name, type: media.type });
         processed++;
-        if (processed === files.length) renderMediaStack();
+        if (processed === accepted.length) renderMediaStack();
       });
     });
     e.target.value = '';
@@ -737,7 +781,7 @@
         if (type === 'journal') {
           MateyJournal.updateJournal(targetId, { coverStyle: cover }).then(function () {
             hideOverlay('jnl-cover-overlay');
-            renderLibrary();
+            goToLibrary();
           });
         }
       });
@@ -756,6 +800,9 @@
   }
 
   function renderMediaStack() {
+    while (_activeMediaUrls.length) {
+      try { URL.revokeObjectURL(_activeMediaUrls.pop()); } catch (e) {}
+    }
     var stack = $('jnl-media-stack');
     if (!stack) return;
     var html = '';
@@ -794,6 +841,7 @@
       MateyJournal.getMediaBlob(photo.id).then(function (blob) {
         if (!blob || !card.isConnected) return;
         var url = URL.createObjectURL(blob);
+        _activeMediaUrls.push(url);
         img.src = url;
         img.style.display = 'block';
         img.onload = function () {
@@ -805,6 +853,10 @@
     stack.querySelectorAll('[data-remove]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var idx = parseInt(this.getAttribute('data-remove'), 10);
+        var photo = _currentPhotos[idx];
+        if (photo && photo.id) {
+          MateyJournal.deleteMedia(photo.id).catch(function (err) { console.error('[Journal] media delete failed:', err); });
+        }
         _currentPhotos.splice(idx, 1);
         renderMediaStack();
         renderEditorAttachments();
@@ -819,6 +871,10 @@
     stack.querySelectorAll('[data-remove-voice]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var idx = parseInt(this.getAttribute('data-remove-voice'), 10);
+        var voice = _currentVoiceNotes[idx];
+        if (voice && voice.id) {
+          MateyJournal.deleteMedia(voice.id).catch(function (err) { console.error('[Journal] media delete failed:', err); });
+        }
         _currentVoiceNotes.splice(idx, 1);
         renderMediaStack();
         renderEditorAttachments();
@@ -905,7 +961,13 @@
     hideOverlay('jnl-settings-overlay');
     MateyJournal.getJournal(_currentJournalId).then(function (j) {
       showConfirm('Delete Journal?', 'This will permanently delete "' + (j ? j.name : 'this journal') + '" and all its entries.', function () {
-        MateyJournal.deleteJournal(_currentJournalId).then(function () { goToLibrary(); });
+        MateyJournal.deleteJournal(_currentJournalId).then(function () {
+          if (j && j.name === 'Main') {
+            ensureDefaultJournal().then(function () { goToLibrary(); });
+          } else {
+            goToLibrary();
+          }
+        });
       });
     });
   }
@@ -955,7 +1017,8 @@
     $('jnl-new-journal-btn').addEventListener('click', createNewJournal);
 
     /* Entry list */
-    $('jnl-entry-list-back').addEventListener('click', goToLibrary);
+    var entryListBack = $('jnl-entry-list-back');
+    if (entryListBack) entryListBack.style.display = 'none';
     $('jnl-new-entry-fab').addEventListener('click', function () { goToEditor(null); });
     $('jnl-search-btn').addEventListener('click', toggleSearch);
     $('jnl-journal-settings-btn').addEventListener('click', openJournalSettings);

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Stage 3.5 Test Harness</title></head>
+<body>
+<h1>Stage 3.5 — Oscillation Detection & Fix Memory Tests</h1>
+<pre id="log"></pre>
+<script type="module">
+import { FixMemory } from './matey-agent.js';
+
+const log = document.getElementById('log');
+function dump(...args) { log.textContent += args.join(' ') + '\n'; }
+function hr() { log.textContent += '\n' + '='.repeat(70) + '\n'; }
+
+let mockHistory = [];
+function pushMsg(role, content) { mockHistory.push({ role, content }); }
+
+// ─── TEST 1: Fix Memory ───────────────────────────────────
+async function test1_FixMemory() {
+  mockHistory = []; hr();
+  dump('TEST 1: Per-Workspace Fix Memory');
+  dump('Scenario: write_file fails (not_found), later succeeds with different path');
+  dump('Second task hits same error → remembered-fix hint injected.\n');
+
+  try { indexedDB.deleteDatabase('matey-fix-memory'); } catch(e) {}
+
+  // Task 1: fail then succeed
+  pushMsg('user', 'Task: write a header to README.md');
+  dump('── TASK 1 ──');
+  const sig = FixMemory.signature('write_file', 'PERMANENT', 'not_found');
+  dump('  Step 1: write_file FAILED. sig=' + sig);
+
+  // Later success with different args
+  await FixMemory.recordFix('write_file', 'PERMANENT', 'not_found',
+    'Used different arguments: {"filePath":"README.md"} instead of {"filePath":"/bad/README.md"}');
+  dump('  Step 3: write_file SUCCEEDED → fix recorded.\n');
+
+  hr();
+  dump('── TASK 2 (separate execution) ──');
+  mockHistory = [];
+  pushMsg('user', 'Task: write an index file');
+
+  const hint = await FixMemory.buildHint('write_file', 'PERMANENT', 'not_found');
+  if (hint) {
+    pushMsg('system', hint);
+    dump('  ✅ FIX MEMORY HINT INJECTED:\n  [system] ' + hint);
+  } else {
+    dump('  ❌ FAIL: No fix memory hint was injected.');
+  }
+
+  dump('\n── TASK 2 FULL CONVERSATION HISTORY ──');
+  mockHistory.forEach(m => dump('  [' + m.role + '] ' + m.content.slice(0, 200)));
+}
+
+// ─── TEST 2: Oscillation Detection ────────────────────────
+async function test2_Oscillation() {
+  mockHistory = []; hr();
+  dump('TEST 2: Error-Signature Oscillation Detection');
+  dump('Scenario: write_file fails, list_files succeeds, write_file fails SAME signature');
+  dump('This is NOT consecutive — a different tool ran in between → oscillation nudge.\n');
+
+  const errHistory = [];
+  const toolHistory = [];
+  let step = 0;
+  pushMsg('user', 'Task: write a config file');
+
+  // Step 1: write_file fails
+  step++; const sig = FixMemory.signature('write_file', 'PERMANENT', 'not_found');
+  errHistory.push({ signature: sig, tool: 'write_file', step, args: 'filePath:/bad/config.json' });
+  toolHistory.push({ tool: 'write_file', step, success: false, args: '/bad/config.json' });
+  dump('  Step ' + step + ': write_file FAILED. sig=' + sig);
+
+  // Step 2: list_files succeeds (DIFFERENT tool)
+  step++;
+  toolHistory.push({ tool: 'list_files', step, success: true, args: '""' });
+  dump('  Step ' + step + ': list_files SUCCEEDED');
+
+  // Step 3: write_file fails AGAIN with SAME signature
+  step++;
+  errHistory.push({ signature: sig, tool: 'write_file', step, args: 'filePath:config.json' });
+  toolHistory.push({ tool: 'write_file', step, success: false, args: 'config.json' });
+  dump('  Step ' + step + ': write_file FAILED AGAIN. sig=' + sig);
+
+  // Oscillation check
+  const sameSig = errHistory.filter(e => e.signature === sig && e.step !== step);
+  const earliest = sameSig[0].step;
+  const between = toolHistory.filter(e => e.step > earliest && e.step < step).map(e => e.tool);
+  const unique = [...new Set(between)];
+  const hasDifferent = unique.some(t => t !== 'write_file');
+  dump('  Tools between failures: [' + unique.join(',') + ']');
+  dump('  Has different tool? ' + hasDifferent);
+
+  if (hasDifferent) {
+    pushMsg('system', 'OSCILLATION DETECTED: exact error ' + sig + ' reappeared after trying ' + unique.join(', ') + '. Stop or ask for clarification.');
+    dump('  ✅ OSCILLATION NUDGE INJECTED');
+  } else {
+    dump('  ❌ FAIL: Oscillation not detected');
+  }
+
+  dump('\n── FULL CONVERSATION HISTORY ──');
+  mockHistory.forEach(m => dump('  [' + m.role + '] ' + m.content.slice(0, 200)));
+}
+
+try {
+  await test1_FixMemory();
+  await test2_Oscillation();
+  hr();
+  dump('✅ ALL TESTS COMPLETE');
+} catch(e) {
+  dump('❌ TEST ERROR: ' + e.message + '\n' + e.stack);
+}
+</script>
+</body>
+</html>

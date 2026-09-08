@@ -596,8 +596,8 @@
     var el = document.querySelector('.workspace-name, #workspace-display');
     console.log('[TRACE] updateDisplay: el found?', !!el);
     if (!el) {
-      if (!document.querySelector('.workspace-display-container')) {
-        console.log('[TRACE] updateDisplay: no workspace-display-container, calling injectWorkspaceUI');
+      if (!document.querySelector('.workspace-display-container, .workspace-folder-btn')) {
+        console.log('[TRACE] updateDisplay: no workspace-display-container or workspace-folder-btn, calling injectWorkspaceUI');
         injectWorkspaceUI();
         return updateDisplay(name);
       }
@@ -632,9 +632,9 @@
 
   function injectWorkspaceUI() {
     console.log('[TRACE] injectWorkspaceUI ENTER');
-    var existing = document.querySelector('.workspace-display-container');
+    var existing = document.querySelector('.workspace-folder-btn');
     var dropdown = document.getElementById('workspace-dropdown');
-    console.log('[TRACE] injectWorkspaceUI: .workspace-display-container found?', !!existing);
+    console.log('[TRACE] injectWorkspaceUI: .workspace-folder-btn found?', !!existing);
     console.log('[TRACE] injectWorkspaceUI: #workspace-dropdown found?', !!dropdown);
 
     if (existing) {

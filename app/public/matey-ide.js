@@ -18,6 +18,7 @@ import { tags as t } from '@lezer/highlight';
 import { readFile, writeFile } from './matey-fs-module.js';
 import { AgentOrchestrator } from './matey-agent.js';
 import { diffField, addDiffEffect, clearDiffEffect } from './matey-diff.js';
+import { ASTIndexClient as ASTIndex } from './matey-ast-client.js';
 import { zedThemeFromObject, zedThemeFromJsonString, applyGlobalZedTheme, clearGlobalZedTheme, convertZedThemeToCodeMirror } from './matey-zed-theme-bridge.js';
 
 const BINARY_REGEX = /[\x00-\x08\x0E-\x1F\x7F]/;
@@ -153,7 +154,7 @@ export class MateyIDE {
           <button id="ide-btn-theme" title="Pick editor theme" style="background:var(--app-surface, #262626);color:var(--app-fg, #d4d4d4);border:1px solid var(--app-border, #404040);border-radius:4px;padding:4px 8px;font-size:12px;cursor:pointer;">Theme\u2026</button>
           <div id="ide-theme-menu" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--app-surface, #1a1a1a);border:1px solid var(--app-border, #404040);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.55);padding:4px 0;z-index:9999;max-height:60vh;overflow-y:auto;min-width:220px;"></div>
           <button id="ide-btn-theme-reset" title="Revert to default theme" style="background:transparent;color:var(--app-muted, #9ca3af);border:1px solid var(--app-border, #404040);border-radius:4px;padding:4px 6px;font-size:11px;cursor:pointer;display:none;">\u2715</button>
-          <input type="file" id="ide-theme-file" accept=".json,application/json" style="display:none" />
+          <input type="file" id="ide-theme-file" accept="*" style="display:none" />
           <button id="ide-btn-save" title="Save (Cmd+S)" style="background:var(--app-accent, #4f46e5);color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">Save</button>
           <button id="ide-btn-saveas" title="Save As" style="background:var(--app-surface, #262626);color:var(--app-fg, #d4d4d4);border:1px solid var(--app-border, #404040);border-radius:4px;padding:4px 8px;font-size:12px;cursor:pointer;">Save As</button>
           <button id="ide-btn-delete" title="Delete file" style="background:transparent;color:#ef4444;border:1px solid #7f1d1d;border-radius:4px;padding:4px 8px;font-size:12px;cursor:pointer;">Delete</button>
@@ -381,6 +382,10 @@ export class MateyIDE {
       EditorView.updateListener.of((update) => {
          if (update.docChanged) {
            this.setDirty(true);
+           /* Stage 8: Offline AST analysis — when offline, run local lint */
+           if (!navigator.onLine) {
+             this.runOfflineLint(update.state.doc.toString());
+           }
            /* Stage 5: Shadow Twin — error pattern detection on content change */
            if (window.MateyShadowTwin && this._shadowTwinDebounce) {
              clearTimeout(this._shadowTwinDebounce);
@@ -729,6 +734,49 @@ export class MateyIDE {
     setTimeout(() => {
       if (bar.parentNode) bar.remove();
     }, 20000);
+  }
+
+  /* Stage 8: Offline AST lint — local static analysis via tree-sitter.
+   * Runs only when navigator.onLine is false. No network call is made. */
+  runOfflineLint(content) {
+    if (this._offlineLintDebounce) clearTimeout(this._offlineLintDebounce);
+    this._offlineLintDebounce = setTimeout(function () {
+      var self = this;
+      if (navigator.onLine) return;
+      var langHint = ASTIndex.detectLanguage(this.activeFilePath || '');
+      ASTIndex.validateParse(content, langHint).then(function (res) {
+        if (res.valid) {
+          self.setOfflineStatus('No syntax issues', 'ok');
+        } else {
+          var where = res.firstError ? ('line ' + res.firstError.line) : '';
+          self.setOfflineStatus('Syntax issue ' + where + ' — ' + (res.errorNodes || 1) + ' node(s)', 'warn');
+        }
+      }).catch(function () {
+        self.setOfflineStatus('', 'ok');
+      });
+    }.bind(this), 1200);
+  }
+
+  setOfflineStatus(text, kind) {
+    var el = document.getElementById('ide-offline-status');
+    if (!el) {
+      var header = document.getElementById('ide-header');
+      if (!header) return;
+      el = document.createElement('div');
+      el.id = 'ide-offline-status';
+      el.style.cssText = 'display:none;font-size:11px;padding:3px 12px;border-top:1px solid var(--app-border);';
+      header.parentNode.insertBefore(el, header.nextSibling);
+    }
+    if (!text) { el.style.display = 'none'; return; }
+    el.style.display = 'block';
+    el.textContent = '⚠ Offline · ' + text;
+    if (kind === 'warn') {
+      el.style.color = '#fbbf24';
+      el.style.background = '#2a1f00';
+    } else {
+      el.style.color = '#6ee7b7';
+      el.style.background = '#001f14';
+    }
   }
 
   acceptAgentDiff() {

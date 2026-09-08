@@ -694,7 +694,7 @@
         if (window.MateySyntax && typeof MateySyntax.parse === 'function') {
           var p = MateySyntax.parse(trimmed);
           if (p && p.type === 'math' && resultEl) {
-            resultEl.innerHTML = '<div class="md-math-result">= ' + (p.result !== null && p.result !== undefined ? p.result : 'Error') + '</div>';
+             resultEl.innerHTML = '<div class="md-math-result">= ' + escapeHtml(p.result !== null && p.result !== undefined ? p.result : 'Error') + '</div>';
           }
         }
       });

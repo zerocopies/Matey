@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Persist Test</title></head>
+<body><pre id="out"></pre>
+<script>
+(async function(){
+  var o = document.getElementById('out');
+  function log(s) { o.textContent += s + '\n'; }
+
+  log('=== PERSISTENCE TEST ===');
+
+  // 1. Delete old DB for clean test
+  await new Promise(function(r) { var req = indexedDB.deleteDatabase('matey-fix-memory'); req.onsuccess = r; req.onerror = r; });
+  log('1. Old DB cleared');
+
+  // 2. Open DB and record a fix
+  var db = await new Promise(function(r,j) {
+    var req = indexedDB.open('matey-fix-memory', 1);
+    req.onupgradeneeded = function(e) {
+      if (!e.target.result.objectStoreNames.contains('fixes'))
+        e.target.result.createObjectStore('fixes', {keyPath: 'id'});
+    };
+    req.onsuccess = function(e) { r(e.target.result); };
+    req.onerror = function(e) { j(e.target.error); };
+  });
+  log('2. DB opened');
+
+  var sig = 'write_file:permanent:not_found';
+  var key = 'persist-test::' + sig;
+  await new Promise(function(r) {
+    var tx = db.transaction('fixes', 'readwrite');
+    tx.objectStore('fixes').put({
+      id: key, workspace: 'persist-test', signature: sig,
+      whatFixed: 'Changed filePath from CamelCase to lowercase',
+      fixedAt: Date.now()
+    });
+    tx.oncomplete = function() { r(); };
+  });
+  db.close();
+  log('3. Fix recorded: ' + sig);
+  log('   whatFixed: Changed filePath from CamelCase to lowercase');
+  log('');
+  log('NOW FORCE-STOP THE APP AND RELAUNCH');
+  log('Then re-load this page to verify persistence.');
+})();
+</script>
+</body></html>

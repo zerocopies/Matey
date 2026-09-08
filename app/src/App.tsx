@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import {
   ArrowLeft,
   Mic,
@@ -13,13 +13,8 @@ import {
   Rss,
   Camera,
   ChevronRight,
+  Circle,
 } from "lucide-react";
-import { KnowledgeFeedScreen } from "./KnowledgeFeedScreen";
-import { SettingsScreen } from "./SettingsScreen";
-import { VigilanceScreen } from "./VigilanceScreen";
-import { LibraryScreen } from "./LibraryScreen";
-import { GhostIdeaPage } from "./GhostIdeaPage";
-import { CustomTabScreen } from "./CustomTabScreen";
 import { usePersona } from "./context/PersonaContext";
 import { synthesizeIdea, archiveIdea } from "./services/ideaIncubatorService";
 import { IdeaArtifact } from "./types/ideaIncubator";
@@ -35,6 +30,15 @@ import {
   activateThemePreset,
   getStoredThemePresetId,
 } from "./services/themeEngine";
+import { logOutboundUrl, getNetworkLog, clearNetworkLog } from "./lib/networkLog";
+
+// Stage 9 Part B: Lazy-load heavy secondary modules — don't bundle/parse at startup
+const KnowledgeFeedScreen = lazy(() => import("./KnowledgeFeedScreen"));
+const SettingsScreen = lazy(() => import("./SettingsScreen"));
+const VigilanceScreen = lazy(() => import("./VigilanceScreen"));
+const LibraryScreen = lazy(() => import("./LibraryScreen"));
+const GhostIdeaPage = lazy(() => import("./GhostIdeaPage"));
+const CustomTabScreen = lazy(() => import("./CustomTabScreen"));
 
 type Tab = "Starting" | "Hooks" | "Library" | "Custom" | "Recap";
 
@@ -48,6 +52,50 @@ export default function App() {
   const [isSettingsReady, setIsSettingsReady] = useState(false);
   const [unveiledIdea, setUnveiledIdea] = useState<IdeaArtifact | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [tokenUsage, setTokenUsage] = useState(0);
+
+  useEffect(() => {
+    // Initialize token usage from stored state or default to 0
+    try {
+      const stored = localStorage.getItem('matey_token_usage');
+      if (stored) setTokenUsage(parseInt(stored));
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    // Persist token usage changes
+    try {
+      localStorage.setItem('matey_token_usage', tokenUsage.toString());
+    } catch (e) {}
+  }, [tokenUsage]);
+
+  // Stage 9 Part A: Wrap native fetch to log outbound URLs for transparency
+  useEffect(() => {
+    const originalFetch = window.fetch;
+    if (typeof originalFetch !== 'function') return;
+
+    window.fetch = async (...args) => {
+      try {
+        const response = await originalFetch.apply(this, args);
+        const urlArg = args[0];
+        if (typeof urlArg === 'string') {
+          logOutboundUrl(urlArg);
+        } else if (urlArg && typeof urlArg === 'object' && urlArg.url) {
+          logOutboundUrl(urlArg.url);
+        }
+        return response;
+      } catch (e) {
+        // Preserve original fetch behavior on error
+        return originalFetch.apply(this, args);
+      }
+    };
+
+    // Clean up on unmount — restore original fetch
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
+
   const [geoContext, setGeoContext] = useState<GeoContext | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [manualRegion, setManualRegion] = useState<ManualRegionId>("global");
@@ -292,33 +340,41 @@ export default function App() {
         );
       case "Hooks":
         return (
-          <div className="flex-1 overflow-y-auto py-4">
-            <VigilanceScreen onBack={() => setActiveTab("Starting")} />
-          </div>
+          <Suspense fallback={<TabFallback />}>
+            <div className="flex-1 overflow-y-auto py-4">
+              <VigilanceScreen onBack={() => setActiveTab("Starting")} />
+            </div>
+          </Suspense>
         );
       case "Library":
         return (
-          <div className="flex-1 overflow-y-auto">
-            <LibraryScreen />
-          </div>
+          <Suspense fallback={<TabFallback />}>
+            <div className="flex-1 overflow-y-auto">
+              <LibraryScreen />
+            </div>
+          </Suspense>
         );
       case "Custom":
         if (!customTabEnabled) return null;
         return (
-          <div className="flex-1 overflow-hidden">
-            <CustomTabScreen
-              configBlob={customTabConfig}
-              onRequestConfigure={() => setCurrentScreen("settings")}
-            />
-          </div>
+          <Suspense fallback={<TabFallback />}>
+            <div className="flex-1 overflow-hidden">
+              <CustomTabScreen
+                configBlob={customTabConfig}
+                onRequestConfigure={() => setCurrentScreen("settings")}
+              />
+            </div>
+          </Suspense>
         );
       case "Recap":
         return (
-          <KnowledgeFeedScreen
-            onBack={() => setActiveTab("Starting")}
-            isPrivateMode={isPrivateMode}
-            geoContext={geoContext}
-          />
+          <Suspense fallback={<TabFallback />}>
+            <KnowledgeFeedScreen
+              onBack={() => setActiveTab("Starting")}
+              isPrivateMode={isPrivateMode}
+              geoContext={geoContext}
+            />
+          </Suspense>
         );
       default:
         return null;
@@ -329,27 +385,31 @@ export default function App() {
     <div className="flex min-h-screen w-full items-center justify-center bg-surface px-0 py-0 text-bg antialiased sm:p-3">
       <div className="mx-auto flex h-[100dvh] w-full max-w-[420px] flex-col overflow-hidden border border-border-hard/10 bg-surface text-bg shadow-[0_0_0_1px_rgba(250,248,245,0.04)] sm:h-[calc(100dvh-1.5rem)] sm:rounded-[30px]">
         {isSettingsScreen ? (
-          <SettingsScreen
-            onBack={() => setCurrentScreen("main")}
-            activeTheme={activeTheme}
-            onThemeChange={setActiveTheme}
-            customTabEnabled={customTabEnabled}
-            customTabConfig={customTabConfig}
-            onCustomTabChange={(enabled, config) => {
-              void settingsStore.setCustomTabConfig(enabled, config);
-              setCustomTabEnabled(enabled);
-              setCustomTabConfig(config);
-            }}
-            onCustomTabConfigured={syncCustomTab}
-          />
+          <Suspense fallback={<TabFallback />}>
+            <SettingsScreen
+              onBack={() => setCurrentScreen("main")}
+              activeTheme={activeTheme}
+              onThemeChange={setActiveTheme}
+              customTabEnabled={customTabEnabled}
+              customTabConfig={customTabConfig}
+              onCustomTabChange={(enabled, config) => {
+                void settingsStore.setCustomTabConfig(enabled, config);
+                setCustomTabEnabled(enabled);
+                setCustomTabConfig(config);
+              }}
+              onCustomTabConfigured={syncCustomTab}
+            />
+          </Suspense>
         ) : (
           <>
             {unveiledIdea && (
-              <GhostIdeaPage
-                idea={unveiledIdea}
-                onDismiss={() => setUnveiledIdea(null)}
-                onArchive={(idea) => archiveIdea(idea)}
-              />
+              <Suspense fallback={<TabFallback />}>
+                <GhostIdeaPage
+                  idea={unveiledIdea}
+                  onDismiss={() => setUnveiledIdea(null)}
+                  onArchive={(idea) => archiveIdea(idea)}
+                />
+              </Suspense>
             )}
 
             {toast && (
@@ -380,7 +440,31 @@ export default function App() {
                           nextPrivateMode
                             ? "Privacy Active · Geo Locked"
                             : "Synthesis Active"
-                        );
+);
+}
+
+// Stage 9 Part B: Lightweight loading fallback for lazy-loaded screens
+function TabFallback() {
+  return (
+    <div className="flex flex-1 items-center justify-center">
+      <div className="flex flex-col items-center gap-2">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-bg/20 border-t-bg" />
+        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-bg/30">Loading…</span>
+      </div>
+    </div>
+  );
+}
+
+// Stage 9 Part B: Cold-start measurement — logs app boot timing for before/after comparison
+const COLD_START_KEY = 'matey_cold_start_ms';
+const _appStartTime = performance.now();
+// Log cold-start time once initial render is complete
+queueMicrotask(() => {
+  const elapsed = performance.now() - _appStartTime;
+  try {
+    localStorage.setItem(COLD_START_KEY, Math.round(elapsed).toString());
+  } catch { /* ignore */ }
+});
 
                         try {
                           await settingsStore.set({
@@ -390,7 +474,40 @@ export default function App() {
                           console.error(
                             "Failed to persist private mode:",
                             error
-                          );
+);
+}
+
+function TokenGauge({ usage }: { usage: number }) {
+  const capped = Math.max(0, Math.min(100, usage));
+  const percentage = capped / 100;
+  const strokeDasharray = `${2 * Math.PI * 28} ${2 * Math.PI * 28}`;
+  const dashOffset = 2 * Math.PI * 28 * (1 - percentage);
+
+  return (
+    <svg
+      className="w-6 h-6 inline-block"
+      viewBox="0 0 56 56"
+      style={{ marginLeft: 4 }}
+    >
+      <circle
+        cx="28"
+        cy="28"
+        r="25"
+        fill="none"
+        stroke="var(--app-accent,#B583FC)"
+        strokeWidth="6"
+        strokeLinecap="round"
+        style={{ strokeDasharray, strokeDashoffset: dashOffset }}
+      />
+      <circle
+        cx="28"
+        cy="28"
+        r="25"
+        fill="var(--app-bg,#0e0e0e)"
+      />
+    </svg>
+  );
+}
                           setIsPrivateMode(!nextPrivateMode);
                           privacyController.setActive(!nextPrivateMode);
                           setToast("Unable to update privacy mode");
@@ -441,13 +558,7 @@ export default function App() {
                 <div className="mt-5 rounded-full border border-border-hard/10 bg-[var(--theme-surface-elevated)] px-3 py-2">
                   <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-[0.28em] text-bg/55">
                     <span>Rev Meter</span>
-                    <span>65% Limit</span>
-                  </div>
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-bg/8">
-                    <div
-                      className="h-full rounded-full bg-bg transition-all duration-700 ease-out"
-                      style={{ width: "65%" }}
-                    />
+                    <TokenGauge usage={tokenUsage} />
                   </div>
                 </div>
 

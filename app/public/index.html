@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
     <style>
       html, body, #app, .app-container, .settings-page {
         background-color: var(--app-bg) !important;
@@ -23,6 +24,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <script src="./version.js"></script>
     <link rel="stylesheet" href="./matey-preview.css?v=103">
+    <link rel="stylesheet" href="./matey-vault.css">
+    <script src="./matey-vault.js"></script>
     <script src="./matey-boot.js?q=94"></script>
     <script src="./matey-sentry.js?v=101"></script>
   </head>
@@ -32,35 +35,32 @@
         <div class="header-top">
           <img class="matey-logo" src="./images/matey-logo.png" alt="Matey" />
           <div class="workspace-display-container" id="workspace-display-container">
-            <div class="workspace-dropdown" id="workspace-dropdown">
-              <svg class="ws-folder-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-              <span class="workspace-name" id="workspace-display">Select workspace</span>
-              <svg class="ws-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            <div class="workspace-folder-btn workspace-dropdown" id="workspace-dropdown" title="Select Workspace">
+              <span class="ws-ico ws-folder">&#x1F4C1;</span>
+              <span class="ws-ico ws-usb">&#x1F50C;</span>
+              <span class="workspace-name" id="workspace-display" style="display:none">Select workspace</span>
             </div>
             <div class="workspace-selector" id="workspace-selector"></div>
           </div>
-          <div class="header-actions">
-            <svg class="usage-ring" viewBox="0 0 36 36" id="usage-ring" aria-hidden="true"><circle class="usage-ring-track" cx="18" cy="18" r="15"></circle><path class="usage-ring-segment" d="" /></svg>
-            <button class="incognito-trigger" type="button" aria-label="Incognito" title="Incognito">
-              <svg class="incognito-ghost" viewBox="0 0 100 120" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path class="ghost-body" d="M 50 4 C 20 4 5 28 5 52 L 5 92 C 5 105 15 105 20 98 C 25 105 35 105 40 98 C 45 105 55 105 60 98 C 65 105 75 105 80 98 C 85 105 95 105 95 92 L 95 52 C 95 28 80 4 50 4 Z"/>
-                <ellipse class="ghost-eye" cx="35" cy="50" rx="10" ry="15"/>
-                <ellipse class="ghost-pupil" cx="35" cy="52" rx="4" ry="8"/>
-                <ellipse class="ghost-eye" cx="65" cy="50" rx="10" ry="15"/>
-                <ellipse class="ghost-pupil" cx="65" cy="52" rx="4" ry="8"/>
-                <path class="ghost-eyebrow" d="M 26 34 L 38 40"/>
-                <path class="ghost-eyebrow" d="M 74 34 L 62 40"/>
-                                <path class="ghost-mouth" d="M 38 78 Q 50 94 62 78 Q 50 88 38 78 Z"/>
-                                <path class="ghost-teeth" d="M 40 80 L 43 85 L 46 80 L 49 85 L 52 80 L 55 85 L 58 80 L 60 82"/>
-
-              </svg>
-            </button>
-            <button class="icon-btn settings-trigger" type="button" aria-label="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <line x1="3" y1="12" x2="21" y2="12"/>
-                <line x1="3" y1="18" x2="21" y2="18"/>
-              </svg></button>
-          </div>
+          <button class="ide-btn" type="button" title="IDE" aria-label="IDE">IDE</button>
+          <svg class="usage-ring" viewBox="0 0 36 36" id="usage-ring" aria-hidden="true"><circle class="usage-ring-track" cx="18" cy="18" r="15"></circle><path class="usage-ring-segment" d="" /></svg>
+          <button class="incognito-trigger" type="button" aria-label="Incognito" title="Incognito">
+               <svg class="incognito-ghost" viewBox="0 0 100 120" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                 <path class="ghost-body" d="M 50 4 C 20 4 5 28 5 52 L 5 92 C 5 105 15 105 20 98 C 25 105 35 105 40 98 C 45 105 55 105 60 98 C 65 105 75 105 80 98 C 85 105 95 105 95 92 L 95 52 C 95 28 80 4 50 4 Z"/>
+                 <ellipse class="ghost-eye" cx="35" cy="50" rx="10" ry="15"/>
+                 <ellipse class="ghost-pupil" cx="35" cy="52" rx="4" ry="8"/>
+                 <ellipse class="ghost-eye" cx="65" cy="50" rx="10" ry="15"/>
+                 <ellipse class="ghost-pupil" cx="65" cy="52" rx="4" ry="8"/>
+                 <path class="ghost-eyebrow" d="M 26 34 L 38 40"/>
+                 <path class="ghost-eyebrow" d="M 74 34 L 62 40"/>
+                  <path class="ghost-mouth" d="M 38 78 Q 50 94 62 78 Q 50 88 38 78 Z"/>
+                  <path class="ghost-teeth" d="M 40 80 L 43 85 L 46 80 L 49 85 L 52 80 L 55 85 L 58 80 L 60 82"/>
+                </svg>
+          </button>
+          <button class="icon-btn menu-btn" type="button" aria-label="Menu" title="Menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+</svg>
+          </button>
         </div>
       </header>
 
@@ -109,6 +109,7 @@
       </main>
     </div>
     <script src="./matey-themes.js?v=101"></script>
+    <script src="./matey-theme-toggle.js?v=101"></script>
     <script src="./matey-swipe.js?v=101"></script>
     <script src="./matey-profile.js?v=101"></script>
     <script src="./matey-greet.js?v=101"></script>
@@ -132,8 +133,6 @@
     <script src="./matey-license.js?v=101"></script>
     <script src="./matey-settings.js?v=101"></script>
     <script src="./matey-recall.js?v=101"></script>
-    <script src="./matey-behavior.js?v=101"></script>
-    <script src="./matey-adaptive.js?v=101"></script>
     <script src="./matey-init.js?v=101"></script>
     <script src="./matey-keyboard.js?v=101"></script>
     <script src="./matey-mic.js?v=101"></script>

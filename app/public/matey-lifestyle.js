@@ -49,18 +49,108 @@
 
   function readFile(file) {
     return new Promise(function (resolve) {
-      var reader = new FileReader();
-      reader.onload = function (e) { resolve(e.target.result); };
-      reader.readAsDataURL(file);
+      var img = new Image();
+      var objectUrl = URL.createObjectURL(file);
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight;
+        var scale = Math.min(1, 1024 / Math.max(w, h));
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.round(w * scale);
+        canvas.height = Math.round(h * scale);
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(objectUrl);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = function () {
+        /* Fallback: plain read if the file can't be decoded as an image */
+        URL.revokeObjectURL(objectUrl);
+        var reader = new FileReader();
+        reader.onload = function (e) { resolve(e.target.result); };
+        reader.onerror = function () { resolve(null); };
+        reader.readAsDataURL(file);
+      };
+      img.src = objectUrl;
     });
   }
 
-  function getStorage(key, fallback) {
-    try { var v = JSON.parse(localStorage.getItem(key)); return (v === null || v === undefined) ? fallback : v; }
-    catch (e) { return fallback; }
+  /* ---------- IndexedDB KV — single source of truth for domain data ---------- */
+  var _lfDB = null;
+  var _lfCache = {};   /* synchronous read-through cache, seeded from IndexedDB */
+  var _lfReady = null;
+  var LF_IDB_KEYS = [
+    'matey-body-profile', 'matey-grooming-likes', 'matey-grooming-dislikes',
+    'matey-wardrobe-items', 'matey-wardrobe-likes', 'matey-culinary-prefs',
+    'matey-culinary-likes', 'matey-lifestyle-usage'
+  ];
+
+  function lfOpenDB() {
+    if (_lfReady) return _lfReady;
+    _lfReady = new Promise(function (resolve) {
+      if (typeof indexedDB === 'undefined') { resolve(); return; }
+      var req = indexedDB.open('MateyLifestyleDB', 1);
+      req.onupgradeneeded = function () {
+        if (!req.result.objectStoreNames.contains('kv')) req.result.createObjectStore('kv');
+      };
+      req.onsuccess = function () {
+        _lfDB = req.result;
+        /* Migrate any legacy localStorage payloads into IndexedDB (one-time) */
+        try {
+          var migTx = _lfDB.transaction('kv', 'readwrite');
+          var migStore = migTx.objectStore('kv');
+          LF_IDB_KEYS.forEach(function (k) {
+            var raw = null;
+            try { raw = localStorage.getItem(k); } catch (e) {}
+            if (raw !== null) {
+              try {
+                migStore.put(JSON.parse(raw), k);
+                try { localStorage.removeItem(k); } catch (e) {}
+              } catch (e) {}
+            }
+          });
+        } catch (e) {}
+        /* Seed the synchronous cache from IndexedDB (never overwrite newer cache values) */
+        try {
+          var tx = _lfDB.transaction('kv', 'readonly');
+          var os = tx.objectStore('kv');
+          var getAll = os.getAll();
+          var getKeys = os.getAllKeys();
+          getAll.onsuccess = function () {
+            var keys = getKeys.result || [], vals = getAll.result || [];
+            keys.forEach(function (k, i) { if (_lfCache[k] === undefined) _lfCache[k] = vals[i]; });
+            resolve();
+          };
+          getAll.onerror = function () { resolve(); };
+        } catch (e) { resolve(); }
+      };
+      req.onerror = function () { resolve(); };
+    });
+    return _lfReady;
   }
 
-  function setStorage(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+  function getStorage(key, fallback) {
+    var v = _lfCache[key];
+    return (v === null || v === undefined) ? fallback : v;
+  }
+
+  function setStorage(key, val) {
+    _lfCache[key] = val;
+    var write = function () {
+      return new Promise(function (resolve) {
+        if (!_lfDB) return resolve();
+        try {
+          var tx = _lfDB.transaction('kv', 'readwrite');
+          tx.objectStore('kv').put(val, key);
+          tx.oncomplete = function () { resolve(); };
+          tx.onerror = function () { resolve(); };
+          tx.onabort = function () { resolve(); };
+        } catch (e) { resolve(); }
+      });
+    };
+    return _lfReady ? _lfReady.then(write) : write();
+  }
 
   /* ---------- persistence (localStorage, same keys as before) ---------- */
   var store = {
@@ -68,13 +158,13 @@
     groomingLikes: function () { return getStorage('matey-grooming-likes', []); },
     groomingDislikes: function () { return getStorage('matey-grooming-dislikes', []); },
     wardrobeItems: function () { return getStorage('matey-wardrobe-items', []); },
-    saveWardrobeItems: function (v) { setStorage('matey-wardrobe-items', v); },
+    saveWardrobeItems: function (v) { return setStorage('matey-wardrobe-items', v); },
     wardrobeLikes: function () { return getStorage('matey-wardrobe-likes', []); },
     culinaryPrefs: function () { return getStorage('matey-culinary-prefs', {}); },
-    saveCulinaryPrefs: function (p) { setStorage('matey-culinary-prefs', p); },
+    saveCulinaryPrefs: function (p) { return setStorage('matey-culinary-prefs', p); },
     culinaryLikes: function () { return getStorage('matey-culinary-likes', []); },
     likes: function (type) { return getStorage('matey-' + type + '-likes', []); },
-    setLikes: function (type, arr) { setStorage('matey-' + type + '-likes', arr); },
+    setLikes: function (type, arr) { return setStorage('matey-' + type + '-likes', arr); },
     toggleLike: function (type, id) {
       var arr = store.likes(type);
       var idx = arr.indexOf(id);
@@ -536,13 +626,20 @@
         editor.innerHTML = '';
       });
       modal.querySelector('#lf-ward-save').addEventListener('click', function () {
+        var saveBtn = this;
         var catLabel = modal.querySelector('#lf-ward-cat').value;
         var cat = WARDROBE_CATEGORIES.find(function (c) { return c.label === catLabel; }) || WARDROBE_CATEGORIES[0];
         var items = store.wardrobeItems();
         items.push({ id: Date.now(), type: cat.type, name: cat.label, image: dataUrl, color: '', pattern: '', tags: [] });
-        store.saveWardrobeItems(items);
-        editor.innerHTML = '';
-        renderGrid();
+        saveBtn.disabled = true;
+        store.saveWardrobeItems(items).then(function () {
+          editor.innerHTML = '';
+          renderGrid();
+        }).catch(function () {
+          saveBtn.disabled = false;
+        }).finally(function () {
+          saveBtn.disabled = false;
+        });
       });
     }
 
@@ -556,8 +653,17 @@
       grid.innerHTML = items.map(function (it) {
         return '<div class="lf-wthumb">' +
           (it.image ? '<img src="' + it.image + '" alt="' + esc(it.name) + '" />' : '') +
-          '<span class="lf-wlabel">' + esc(it.name || it.type || 'Item') + '</span></div>';
+          '<span class="lf-wlabel">' + esc(it.name || it.type || 'Item') + '</span>' +
+          '<button type="button" class="lf-chip-x" data-id="' + it.id + '" aria-label="Delete item">&times;</button></div>';
       }).join('');
+      grid.querySelectorAll('.lf-chip-x[data-id]').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var delId = this.getAttribute('data-id');
+          var items = store.wardrobeItems().filter(function (x) { return String(x.id) !== String(delId); });
+          store.saveWardrobeItems(items).then(renderGrid);
+        });
+      });
     }
 
     function createOutfit() {
@@ -869,9 +975,12 @@
     trackUsage: trackUsage
   };
   function boot() {
-    wire();
-    /* Inject Matey's Corner after the primary layout render pass */
-    injectCoachCard();
+    /* Seed the IndexedDB-backed cache before wiring UI reads */
+    lfOpenDB().then(function () {
+      wire();
+      /* Inject Matey's Corner after the primary layout render pass */
+      injectCoachCard();
+    });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

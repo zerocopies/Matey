@@ -1,3 +1,100 @@
+export class MateyCoachDB {
+  constructor() {
+    this.dbName = 'matey-coach-vault';
+    this.version = 1;
+    this.storeName = 'coach_history';
+    this.db = null;
+    this.init();
+  }
+
+  init() {
+    try {
+      const req = indexedDB.open(this.dbName, this.version);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(this.storeName)) {
+          const store = db.createObjectStore(this.storeName, { keyPath: 'id', autoIncrement: true });
+          store.createIndex('stage', 'stage', { unique: false });
+          store.createIndex('createdAt', 'createdAt', { unique: false });
+        }
+      };
+      req.onsuccess = (e) => {
+        this.db = e.target.result;
+      };
+      req.onerror = (e) => {
+        console.warn('[MateyCoachDB] Init failed:', e.target.error);
+      };
+    } catch (e) {
+      console.warn('[MateyCoachDB] Init error:', e);
+    }
+  }
+
+  _tx(mode) {
+    if (!this.db) return null;
+    try {
+      return this.db.transaction(this.storeName, mode).objectStore(this.storeName);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  saveTip(tipObj) {
+    return new Promise((resolve) => {
+      try {
+        const store = this._tx('readwrite');
+        if (!store) return resolve(null);
+        const record = {
+          stage: tipObj.stage || 1,
+          tipText: tipObj.tipText || '',
+          context: tipObj.context || '',
+          isStarred: !!tipObj.isStarred,
+          createdAt: Date.now()
+        };
+        const req = store.add(record);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  }
+
+  getAllTips() {
+    return new Promise((resolve) => {
+      try {
+        const store = this._tx('readonly');
+        if (!store) return resolve([]);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve([]);
+      } catch (e) {
+        resolve([]);
+      }
+    });
+  }
+
+  toggleStar(id) {
+    return new Promise((resolve) => {
+      try {
+        const store = this._tx('readwrite');
+        if (!store) return resolve(false);
+        const getReq = store.get(id);
+        getReq.onsuccess = () => {
+          const record = getReq.result;
+          if (!record) return resolve(false);
+          record.isStarred = !record.isStarred;
+          const putReq = store.put(record);
+          putReq.onsuccess = () => resolve(record.isStarred);
+          putReq.onerror = () => resolve(false);
+        };
+        getReq.onerror = () => resolve(false);
+      } catch (e) {
+        resolve(false);
+      }
+    });
+  }
+}
+
 export class MateyCoach {
   constructor() {
     this.state = this.loadState();
@@ -5,6 +102,7 @@ export class MateyCoach {
     this.pendingTip = null;
     this.dragState = { dragging: false, offsetX: 0, offsetY: 0 };
     this.posKey = 'matey_coach_badge_pos';
+    this.db = new MateyCoachDB();
     this.initUI();
   }
 
@@ -40,19 +138,30 @@ export class MateyCoach {
     const pos = this.loadPosition();
 
     const html = `
-      <div id="coach-badge" style="position:fixed; bottom:${pos.bottom}px; right:${pos.right}px; width:26px; height:26px; background:transparent; border:none; border-radius:50%; display:none; align-items:center; justify-content:center; z-index:200; -webkit-tap-highlight-color:transparent; touch-action:none; cursor:grab; box-shadow:0 1px 3px rgba(0,0,0,0.15);">
-        <span style="font-size:16px; line-height:1; display:block; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">💡</span>
-        <div id="coach-tooltip" style="position:absolute; bottom:40px; right:0; transform:translateX(0); background:#0D0D0D; border:1px solid #2A2A2A; border-radius:12px; padding:14px 16px; min-width:220px; max-width:280px; color:#FFFFFF; font-family:inherit; font-size:13px; line-height:1.5; color:#B3B3B3; display:none; box-shadow:0 10px 30px rgba(0,0,0,0.5); z-index:201; text-align:left;">
-          <div style="font-size:10px; color:#B583FC; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:6px;">Quick Tip</div>
-          <div id="coach-tip-text"></div>
+      <div id="coach-badge" style="position:fixed; bottom:${pos.bottom}px; right:${pos.right}px; width:56px; height:56px; background:var(--accent, #FFD166); border:none; border-radius:50%; display:none; align-items:center; justify-content:center; z-index:200; -webkit-tap-highlight-color:transparent; touch-action:none; cursor:grab; box-shadow:0 4px 12px rgba(0,0,0,0.35); opacity:0; transform:scale(0.8); transition:opacity 0.3s ease, transform 0.3s ease;">
+        <span style="font-size:24px; line-height:1; display:block; width:100%; height:100%; display:flex; align-items:center; justify-content:center; pointer-events:none;">💡</span>
+      </div>
+      <div id="coach-drawer" style="position:fixed; bottom:${pos.bottom}px; right:${pos.right + 66}px; width:300px; max-width:calc(100vw - 80px); background:var(--card-bg, #0D0D0D); border:1px solid var(--border, #2A2A2A); border-radius:16px; padding:18px 20px; color:#FFFFFF; font-family:inherit; font-size:14px; line-height:1.6; box-shadow:0 10px 40px rgba(0,0,0,0.6); z-index:201; display:none; opacity:0; transform:translateY(12px); transition:opacity 0.25s ease, transform 0.25s ease;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+          <div style="font-size:10px; color:var(--accent, #B583FC); font-weight:700; text-transform:uppercase; letter-spacing:0.6px;">Quick Tip</div>
+        </div>
+        <div id="coach-tip-text" style="color:#e8e8e8; margin-bottom:14px;"></div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <button id="coach-star-btn" type="button" style="background:none; border:1px solid var(--border, #2A2A2A); border-radius:10px; padding:8px 12px; color:#FFD166; font-size:18px; cursor:pointer; display:flex; align-items:center; gap:6px; transition:background 0.15s ease;">
+            <span id="coach-star-icon">☆</span>
+            <span id="coach-star-label" style="font-size:12px; color:#B3B3B3;">Save</span>
+          </button>
+          <button id="coach-dismiss-btn" type="button" style="background:var(--accent, #B583FC); border:none; border-radius:10px; padding:8px 14px; color:#1c1c20; font-size:13px; font-weight:600; cursor:pointer; transition:opacity 0.15s ease;">
+            Got it
+          </button>
         </div>
       </div>`;
     document.body.insertAdjacentHTML('beforeend', html);
 
     const badge = document.getElementById('coach-badge');
-    const tooltip = document.getElementById('coach-tooltip');
+    const drawer = document.getElementById('coach-drawer');
 
-    if (badge && tooltip) {
+    if (badge && drawer) {
       badge.style.cursor = 'grab';
       badge.style.userSelect = 'none';
 
@@ -67,26 +176,38 @@ export class MateyCoach {
           this.dragState.dragging = false;
           return;
         }
-        const tip = this.pendingTip;
-        if (tip) {
-          const tipText = document.getElementById('coach-tip-text');
-          if (tipText) tipText.innerText = tip.message;
-          tooltip.style.display = tooltip.style.display === 'block' ? 'none' : 'block';
-          if (tooltip.style.display === 'block') {
-            this.shownTipIds.add(tip.tipId);
-            this.saveState();
-            clearTimeout(this._tooltipTimer);
-            this._tooltipTimer = setTimeout(() => {
-              tooltip.style.display = 'none';
-            }, 30000);
-          }
-        }
+        drawer.style.display = 'flex';
+        requestAnimationFrame(() => {
+          drawer.style.opacity = '1';
+          drawer.style.transform = 'translateY(0)';
+        });
       };
       badge.addEventListener('click', this._badgeClick);
 
+      const dismissBtn = document.getElementById('coach-dismiss-btn');
+      if (dismissBtn) {
+        dismissBtn.addEventListener('click', () => this.dismissCurrentTip());
+      }
+
+      const starBtn = document.getElementById('coach-star-btn');
+      if (starBtn) {
+        starBtn.addEventListener('click', () => this._toggleStarUI());
+      }
+
       document.addEventListener('click', this._outsideClick);
-      this._outsideClick = () => {
-        if (tooltip) tooltip.style.display = 'none';
+      this._outsideClick = (e) => {
+        const badge = document.getElementById('coach-badge');
+        if (badge && !badge.contains(e.target) && drawer && !drawer.contains(e.target)) {
+          if (this.pendingTip) {
+            this.dismissCurrentTip();
+          } else {
+            if (drawer) {
+              drawer.style.opacity = '0';
+              drawer.style.transform = 'translateY(12px)';
+              setTimeout(() => { drawer.style.display = 'none'; }, 250);
+            }
+          }
+        }
       };
     }
   }
@@ -191,33 +312,84 @@ export class MateyCoach {
 
   show(tipId, message) {
     if (this.shownTipIds.has(tipId)) return;
-    this.pendingTip = { tipId, message };
+    this.pendingTip = { tipId, message, isStarred: false };
     if (!document.getElementById('coach-badge')) this.initUI();
 
     const badge = document.getElementById('coach-badge');
+    const drawer = document.getElementById('coach-drawer');
+    const tipText = document.getElementById('coach-tip-text');
+    const starIcon = document.getElementById('coach-star-icon');
+    const starLabel = document.getElementById('coach-star-label');
+
     if (badge) {
       const pos = this.loadPosition();
       badge.style.bottom = pos.bottom + 'px';
       badge.style.right = pos.right + 'px';
       badge.style.display = 'flex';
-      clearTimeout(this._autoHideTimer);
-      this._autoHideTimer = setTimeout(() => {
-        if (this.pendingTip && this.pendingTip.tipId === tipId) {
-          badge.style.display = 'none';
-          this.pendingTip = null;
-        }
-      }, 60000);
+      requestAnimationFrame(() => {
+        badge.style.opacity = '1';
+        badge.style.transform = 'scale(1)';
+      });
+
+      if (drawer && tipText) {
+        tipText.innerText = message;
+        drawer.style.display = 'flex';
+        requestAnimationFrame(() => {
+          drawer.style.opacity = '1';
+          drawer.style.transform = 'translateY(0)';
+        });
+      }
+
+      if (starIcon) starIcon.textContent = '☆';
+      if (starLabel) starLabel.textContent = 'Save';
+      this._currentStarred = false;
     }
   }
 
-  hide() {
-    clearTimeout(this._autoHideTimer);
-    clearTimeout(this._tooltipTimer);
+  _toggleStarUI() {
+    this._currentStarred = !this._currentStarred;
+    const starIcon = document.getElementById('coach-star-icon');
+    const starLabel = document.getElementById('coach-star-label');
+    if (starIcon) starIcon.textContent = this._currentStarred ? '★' : '☆';
+    if (starLabel) starLabel.textContent = this._currentStarred ? 'Saved' : 'Save';
+  }
+
+  async dismissCurrentTip() {
+    const tip = this.pendingTip;
+    if (tip) {
+      try {
+        await this.db.saveTip({
+          stage: this.state.stage,
+          tipText: tip.message,
+          context: tip.tipId,
+          isStarred: this._currentStarred || false
+        });
+      } catch (e) {
+        console.warn('[MateyCoach] Failed to save tip:', e);
+      }
+      this.shownTipIds.add(tip.tipId);
+      this.saveState();
+    }
+
     const badge = document.getElementById('coach-badge');
-    const tooltip = document.getElementById('coach-tooltip');
-    if (badge) badge.style.display = 'none';
-    if (tooltip) tooltip.style.display = 'none';
+    const drawer = document.getElementById('coach-drawer');
+
+    if (drawer) {
+      drawer.style.opacity = '0';
+      drawer.style.transform = 'translateY(12px)';
+    }
+    if (badge) {
+      badge.style.opacity = '0';
+      badge.style.transform = 'scale(0.8)';
+    }
+
+    setTimeout(() => {
+      if (badge) badge.style.display = 'none';
+      if (drawer) drawer.style.display = 'none';
+    }, 300);
+
     this.pendingTip = null;
+    this._currentStarred = false;
   }
 
   // ---- STAGE DEFINITIONS ----
@@ -299,6 +471,21 @@ export class MateyCoach {
   }
 
   // ---- GENERIC ATTACH API ----
+
+  /** Record a user prompt from any UI (agent chat, etc.) and feed it through
+   *  the stage/streak evaluator. Safe no-op for empty/very short input. */
+  recordPrompt(text) {
+    if (!text || typeof text !== 'string') return;
+    try {
+      this.evaluate(text, {});
+    } catch (e) {
+      /* Never break the caller if evaluation throws */
+      if (this.show) {
+        try { this.show('record-prompt-error', 'Coach evaluation paused.'); } catch (_) {}
+      }
+      console.warn('[MateyCoach] recordPrompt evaluation failed:', e);
+    }
+  }
 
   attach(inputEl, { onSubmitEvent = 'keydown', getPreviousReply = () => null } = {}) {
     if (!inputEl) return;

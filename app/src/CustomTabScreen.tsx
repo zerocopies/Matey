@@ -4,6 +4,38 @@ import { usePersona } from "./context/PersonaContext";
 import { CustomTabConfig, decodeCustomTabConfig } from "./types/customTab";
 import { knowledgeBank, KnowledgeNote } from "./services/knowledgeBank";
 
+// CapacitorHttp native HTTP wrapper — bypasses WebView CORS blocks on mobile
+function nativeFetch(url, options) {
+  var opts = options || {};
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp) {
+    var reqOpts = {
+      method: (opts.method || 'GET').toUpperCase(),
+      url: url,
+      headers: opts.headers || {}
+    };
+    if (opts.body) {
+      if (typeof opts.body === 'string') {
+        try { reqOpts.data = JSON.parse(opts.body); }
+        catch (e) { reqOpts.data = opts.body; reqOpts.headers['Content-Type'] = reqOpts.headers['Content-Type'] || 'application/json'; }
+      } else {
+        reqOpts.data = opts.body;
+      }
+    }
+    return window.Capacitor.Plugins.CapacitorHttp.request(reqOpts).then(function (resp) {
+      return {
+        ok: resp.status >= 200 && resp.status < 300,
+        status: resp.status,
+        statusText: resp.status,
+        headers: resp.headers || {},
+        url: resp.url || url,
+        json: function () { return Promise.resolve(resp.data); },
+        text: function () { return Promise.resolve(typeof resp.data === 'string' ? resp.data : JSON.stringify(resp.data)); }
+      };
+    });
+  }
+  return fetch(url, opts);
+}
+
 export interface CustomTabScreenProps {
   configBlob: string | null;
   onRequestConfigure: () => void;
@@ -364,7 +396,7 @@ function ConnectTrackTemplate({ config }: { config: CustomTabConfig }) {
     setLoading(true);
     setErr(null);
     try {
-      const res = await fetch(config.webhookUrl, {
+      const res = await nativeFetch(config.webhookUrl, {
         method: "GET",
         headers: config.webhookUrl.startsWith("http://")
           ? {}

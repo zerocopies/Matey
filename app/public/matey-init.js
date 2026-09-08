@@ -226,18 +226,34 @@
     row.querySelector('#upgrade-btn').addEventListener('click',function(){MateyLicense.unlock();row.remove();initLicenseUI();});card.appendChild(row);
   }
 
-   async function init(){
-      try { await _loadBrain(); if (typeof BrainState !== 'undefined' && BrainState.init) { await BrainState.init(); } } catch (e) { console.warn('[MateyInit] BrainState init failed:', e); }
-      initWhisperUI();initLicenseUI();
-      // Track page visit for adaptive ML
-      if (window.MateyBehavior) {
-        var page = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
-        MateyBehavior.trackPage(page);
+   
+  /* ---- STT Model Warm-Loading (silent, non-blocking) ---- */
+  function preloadSTT() {
+    setTimeout(function () {
+      if (window.MateyWhisper && typeof window.MateyWhisper.preloadEngine === 'function') {
+        window.MateyWhisper.preloadEngine().then(function () {
+          console.log('[MateyInit] STT engine warmed up successfully');
+        }).catch(function (err) {
+          console.warn('[MateyInit] STT preload skipped:', err && err.message ? err.message : err);
+        });
       }
-      // Gate the app with PIN/biometric lock if enabled
-      appLockScreen();
-      measureColdStart();
-     }
+    }, 1500);
+  }
+
+    async function init(){
+       try { await _loadBrain(); if (typeof BrainState !== 'undefined' && BrainState.init) { await BrainState.init(); } } catch (e) { console.warn('[MateyInit] BrainState init failed:', e); }
+       try { if (window.MateyVault && typeof MateyVault.init === 'function') { await MateyVault.init(); } } catch (e) { console.warn('[MateyInit] Vault init failed:', e); }
+       initWhisperUI();initLicenseUI();
+       preloadSTT();
+       // Track page visit for adaptive ML
+       if (window.MateyBehavior) {
+         var page = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
+         MateyBehavior.trackPage(page);
+       }
+       // Gate the app with PIN/biometric lock if enabled
+       appLockScreen();
+       measureColdStart();
+      }
    window.MateyInit = { initWhisperUI: initWhisperUI, initLicenseUI: initLicenseUI, getColdStartMs: function () { return _coldStartMs != null ? _coldStartMs : measureColdStart(); } };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

@@ -162,7 +162,7 @@
       document.getElementById('journal-title-input') ||
       document.getElementById('journal-tags-input') ||
       document.getElementById('md-editor') ||
-      document.getElementById('vots-content-input');
+      document.getElementById('vts-entry-content');
     if (!textarea) {
       var active = document.activeElement;
       if (active && (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT')) textarea = active;

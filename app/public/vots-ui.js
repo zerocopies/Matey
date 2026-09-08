@@ -493,9 +493,28 @@
     }
     promise.then(function () {
       showToast('Entry saved');
+      flashSaveFeedback();
       resetEditor();
       showHistory();
+    }).catch(function (err) {
+      console.error('[VOTS] save failed:', err);
+      showToast('Save failed');
     });
+  }
+
+  /* Lightweight visual confirmation that a manual save committed */
+  function flashSaveFeedback() {
+    var btn = $('vts-save-entry-btn');
+    if (!btn) return;
+    if (btn._saveFlashTimer) clearTimeout(btn._saveFlashTimer);
+    var original = btn.textContent;
+    btn.textContent = 'Saved!';
+    btn.style.opacity = '0.5';
+    btn._saveFlashTimer = setTimeout(function () {
+      btn.textContent = original;
+      btn.style.opacity = '1';
+      btn._saveFlashTimer = null;
+    }, 900);
   }
 
   function resetEditor() {
@@ -516,57 +535,6 @@
     });
     var card = $('vts-link-card');
     if (card) card.style.display = 'none';
-  }
-
-  /* ==================== Settings ==================== */
-  function openSettings() {
-    showOverlay('vts-settings-overlay');
-  }
-
-  function closeSettings() {
-    hideOverlay('vts-settings-overlay');
-  }
-
-  function changePin() {
-    closeSettings();
-    showLockScreen();
-    var hasPin = MateyLock.isPinEnabled(NAMESPACE);
-    $('vts-lock-mode-setup').style.display = 'block';
-    $('vts-pin-input').placeholder = 'Enter new 6-digit PIN';
-    var unlockBtn = $('vts-unlock-btn');
-    if (unlockBtn) {
-      unlockBtn.textContent = 'Set New PIN';
-      unlockBtn.onclick = function () {
-        var pin = $('vts-pin-input').value;
-        if (!pin || pin.length < 6) {
-          showToast('PIN must be 6 digits');
-          return;
-        }
-        MateyLock.setPin(NAMESPACE, pin).then(function () {
-          showToast('PIN updated');
-          $('vts-pin-input').value = '';
-          $('vts-pin-input').placeholder = '••••••';
-          if (unlockBtn) {
-            unlockBtn.textContent = 'Unlock';
-            unlockBtn.onclick = tryUnlockPin;
-          }
-          updateLockUI();
-          showMain();
-        });
-      };
-    }
-  }
-
-  function deleteAllData() {
-    closeSettings();
-    showConfirm('Delete All Data?', 'This will permanently delete all VOTS entries and reset your PIN.', function () {
-      MateyLock.removeLock(NAMESPACE).then(function () {
-        return MateyVots.deleteAllEntries();
-      }).then(function () {
-        showToast('All data deleted');
-        showLockScreen();
-      });
-    });
   }
 
   /* ==================== Debounce ==================== */
@@ -616,19 +584,23 @@
     initHeadlineForm();
 
     // Editor buttons
-    $('vts-save-entry-btn').addEventListener('click', saveEntry);
+    $('vts-save-entry-btn').addEventListener('click', function () {
+      saveEntry();
+    });
     $('vts-back-to-landing').addEventListener('click', function () {
       showConfirm('Discard entry?', 'Your current entry will be lost.', function () {
         resetEditor();
         showMain();
       });
     });
-    $('vts-settings-btn').addEventListener('click', openSettings);
-    $('vts-settings-close').addEventListener('click', closeSettings);
-    $('vts-settings-change-pin').addEventListener('click', changePin);
-    $('vts-settings-delete').addEventListener('click', deleteAllData);
     $('vts-confirm-cancel').addEventListener('click', function () { hideOverlay('vts-confirm'); });
     $('vts-confirm-ok').addEventListener('click', function () { hideOverlay('vts-confirm'); });
+
+    // Double-stack keyboard + mic toolbar (mirrors journal's md-composer).
+    // The toolbar injects both symbol keyboard and a mic button bound to matey-mic.js.
+    if (window.MateyToolbar && typeof window.MateyToolbar.init === 'function') {
+      window.MateyToolbar.init('vots', '#vots-composer.vots-toolbar');
+    }
 
     // Listen for lock events
     MateyLock.onLockChange(function (event, ns) {

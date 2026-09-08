@@ -99,3 +99,77 @@ async function openSingleFile() {
 }
 
 export { WorkspaceManager as mt, readFile as qi, writeFile as Kf, listFiles as ra, openSingleFile as openSingleFile };
+
+/* ==================== Task-Level Workspace Snapshot & Rollback ==================== */
+const _taskSnapshots = new Map();
+
+async function _readFileSafe(filePath) {
+  try { return await readFile(filePath); }
+  catch (e) { return null; }
+}
+
+async function _fileExists(filePath) {
+  try { await readFile(filePath); return true; }
+  catch (e) { return false; }
+}
+
+async function _deleteFile(filePath) {
+  try {
+    if (WorkspaceManager.mode === 'usb' && WorkspaceManager.usbRootUri) {
+      if (window.CapacitorSAF && typeof window.CapacitorSAF.deleteFile === 'function') {
+        await window.CapacitorSAF.deleteFile({ rootUri: WorkspaceManager.usbRootUri, path: filePath });
+        return;
+      }
+    }
+    const { Filesystem, Directory } = await import('@capacitor/filesystem');
+    await Filesystem.deleteFile({ path: `workspace/${filePath}`, directory: Directory.Data });
+  } catch (e) { /* file may not exist */ }
+}
+
+export async function createTaskSnapshot(taskId, targetFiles) {
+  if (!taskId || !targetFiles || !targetFiles.length) return null;
+  var snapshot = { taskId, timestamp: Date.now(), files: [], createdFiles: [] };
+  for (var i = 0; i < targetFiles.length; i++) {
+    var fp = targetFiles[i];
+    var existed = await _fileExists(fp);
+    if (existed) {
+      var content = await _readFileSafe(fp);
+      snapshot.files.push({ path: fp, content: content });
+    } else {
+      snapshot.createdFiles.push(fp);
+    }
+  }
+  _taskSnapshots.set(taskId, snapshot);
+  try { localStorage.setItem('matey_snapshot_' + taskId, JSON.stringify(snapshot)); } catch (e) {}
+  return snapshot;
+}
+
+export async function rollbackTask(taskId) {
+  if (!taskId) return false;
+  var snapshot = _taskSnapshots.get(taskId);
+  if (!snapshot) {
+    try {
+      var raw = localStorage.getItem('matey_snapshot_' + taskId);
+      if (raw) snapshot = JSON.parse(raw);
+    } catch (e) {}
+  }
+  if (!snapshot) return false;
+  for (var i = 0; i < snapshot.files.length; i++) {
+    var f = snapshot.files[i];
+    await writeFile(f.path, f.content);
+  }
+  for (var j = 0; j < snapshot.createdFiles.length; j++) {
+    await _deleteFile(snapshot.createdFiles[j]);
+  }
+  _taskSnapshots.delete(taskId);
+  try { localStorage.removeItem('matey_snapshot_' + taskId); } catch (e) {}
+  return true;
+}
+
+export function getTaskSnapshot(taskId) {
+  return _taskSnapshots.get(taskId) || null;
+}
+
+export function clearAllSnapshots() {
+  _taskSnapshots.clear();
+}

@@ -20,7 +20,7 @@ Matey/
 ## Frontend modules (app/public)
 
 | File | Responsibility |
-|---|---|
+|------|----------------|
 | matey-boot.js | Native detection + one-time legacy snap→matey data migration |
 | matey-themes.js | 6 dark themes, CSS-variable application, theme picker |
 | matey-settings.js | Single-source settings panel + BYOK dialog injection, recap renderer |
@@ -71,7 +71,6 @@ No subscriptions, no recurring fees. A single **one-time** purchase unlocks Mate
 - Ask Matey — deep memory retrieval across your vault (recall)
 - Proactive actions — daily brief, priority board, scheduled reminders (agent)
 - Encrypted multi-device sync (sync)
-- BYOK providers + local model support (keys)
 - All themes
 
 Free tier keeps note-taking, the daily brief feed, RSS reading, the default theme, and on-device Whisper. BYOK stays bring-your-own-spend — Matey never resells tokens.
