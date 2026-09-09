@@ -38,8 +38,8 @@
       btn.type = 'button';
       btn.className = 'lux-theme-toggle';
       btn.innerHTML = '🎨';
-      var vaultBtn = document.getElementById('vault-launcher');
-      actions.insertBefore(btn, vaultBtn ? vaultBtn.nextSibling : null);
+      var burgerBtn = document.querySelector('.burger-menu-btn');
+      actions.insertBefore(btn, burgerBtn || null);
     }
     btn.addEventListener('click', function (e) {
       e.preventDefault();

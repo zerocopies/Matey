@@ -49,7 +49,7 @@
    * tabs can never silently unpin a deliberate manual lock.
    */
   function getIncognitoBtn() {
-    return document.querySelector('.incognito-trigger');
+    return document.querySelector('.incognito-trigger, .incognito-btn');
   }
 
   function setIncognitoVisual(on) {

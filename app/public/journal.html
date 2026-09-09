@@ -48,6 +48,7 @@
               <path d="M40 80 L43 85 L46 80 L49 85 L52 80 L55 85 L58 80 L60 82"/>
             </svg>
           </button>
+          <button id="lux-theme-toggle" class="theme-toggle-btn" type="button" title="Theme" aria-label="Theme">🎨</button>
           <button class="burger-menu-btn" type="button" title="Menu" aria-label="Menu">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="4" y1="6" x2="20" y2="6"></line>
@@ -313,11 +314,77 @@
     <script src="./matey-hooks-manager.js?v=100"></script>
     <script src="./journal-ui.js?v=100"></script>
     <script>
-      document.querySelectorAll('.burger-menu-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          alert('Menu clicked');
+    (function() {
+      /* Logo -> home */
+      var logo = document.querySelector(".matey-logo");
+      if (logo && !logo._wired) {
+        logo._wired = true;
+        logo.style.cursor = "pointer";
+        logo.addEventListener("click", function() {
+          window.location.href = "./index.html";
+        });
+      }
+
+      /* Workspace folder -> open picker */
+      var folderBtn = document.querySelector(".workspace-folder-btn");
+      if (folderBtn && !folderBtn._wired) {
+        folderBtn._wired = true;
+        folderBtn.addEventListener("click", function(e) {
+          e.preventDefault();
+          if (window.MateyFS && MateyFS.selectWorkspace) {
+            MateyFS.selectWorkspace();
+          }
+        });
+      }
+
+      /* IDE badge -> focus editor if present */
+      var ideBadge = document.querySelector(".ide-text-badge");
+      if (ideBadge && !ideBadge._wired) {
+        ideBadge._wired = true;
+        ideBadge.addEventListener("click", function() {
+          var editor = document.querySelector("#edit-editor-container, #md-ide-container");
+          if (editor) {
+            editor.scrollIntoView({ behavior: "smooth", block: "center" });
+          } else {
+            alert("IDE mode active on this screen");
+          }
+        });
+      }
+
+      /* Status circle -> toggle usage demo */
+      var statusCircle = document.querySelector(".status-circle");
+      if (statusCircle && !statusCircle._wired) {
+        statusCircle._wired = true;
+        var usageOn = true;
+        statusCircle.addEventListener("click", function() {
+          usageOn = !usageOn;
+          if (window.MateyUsage && MateyUsage.update) {
+            MateyUsage.update(usageOn ? 100 : 0);
+          }
+          statusCircle.style.opacity = usageOn ? "1" : "0.5";
+        });
+      }
+
+      /* Burger menu -> toggle settings overlay if present */
+      var burgerBtns = document.querySelectorAll(".burger-menu-btn");
+      burgerBtns.forEach(function(btn) {
+        if (btn._wired) return;
+        btn._wired = true;
+        btn.addEventListener("click", function(e) {
+          e.preventDefault();
+          var settings = document.getElementById("settings");
+          if (settings) {
+            var willOpen = !settings.classList.contains("open");
+            settings.classList[willOpen ? "add" : "remove"]("open");
+            if (willOpen && window.MateyThemes && MateyThemes.build) {
+              MateyThemes.build(settings);
+            }
+          } else {
+            alert("Menu tapped");
+          }
         });
       });
-    </script>
+    })();
+  </script>
   </body>
 </html>

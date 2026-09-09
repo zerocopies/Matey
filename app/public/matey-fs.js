@@ -638,7 +638,17 @@
     console.log('[TRACE] injectWorkspaceUI: #workspace-dropdown found?', !!dropdown);
 
     if (existing) {
-      if (!dropdown) return;
+      if (!dropdown) {
+        console.log('[TRACE] injectWorkspaceUI: button found, no dropdown — attaching direct picker');
+        existing.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (window.MateyFS && MateyFS.selectWorkspace) {
+            MateyFS.selectWorkspace();
+          }
+        });
+        return;
+      }
       console.log('[TRACE] injectWorkspaceUI: existing container found, attaching click listeners to existing dropdown');
       dropdown.addEventListener('click', function (e) {
         e.stopPropagation();
