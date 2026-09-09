@@ -557,43 +557,22 @@ body {
   color: var(--app-accent) !important;
 }
 
-/* EXACT UNIFORM ICON BOX SIZING (32px x 32px SQUARE BOUNDS) */
-.workspace-folder-btn,
-.id-icon,
-.usage-ring,
-.theme-toggle-btn,
-.vault-btn,
-#vault-launcher,
-.incognito-trigger,
-.menu-btn {
-  width: 32px !important;
-  height: 32px !important;
-  min-width: 32px !important;
-  min-height: 32px !important;
-  max-width: 32px !important;
-  max-height: 32px !important;
-  box-sizing: border-box !important;
+/* ===== UNIFIED HEADER ACROSS ALL SCREENS ===== */
+.header {
   display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
   align-items: center !important;
-  justify-content: center !important;
-  border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  font-size: 15px !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  height: 54px !important;
+  margin-top: 36px !important;
+  padding: 0 12px !important;
+  box-sizing: border-box !important;
+  background: var(--app-bg, #0B0B0E) !important;
   flex-shrink: 0 !important;
 }
-.incognito-trigger svg {
-  display: block !important;
-  width: 26px !important;
-  height: 30px !important;
-}
-.menu-btn svg {
-  display: block !important;
-}
 
-/* EVENLY SPACED LEFT & RIGHT GROUPS */
 .header-left {
   display: flex !important;
   align-items: center !important;
@@ -604,32 +583,194 @@ body {
 .header-actions {
   display: flex !important;
   align-items: center !important;
-  gap: 10px !important;
+  gap: 8px !important;
   justify-content: flex-end !important;
   flex-shrink: 0 !important;
 }
 
 .matey-logo {
-  height: 32px !important;
-  width: 32px !important;
+  height: 42px !important;
+  width: auto !important;
   object-fit: contain !important;
   flex-shrink: 0 !important;
 }
 
-.header-icon-btn {
-  width: 32px !important;
-  height: 32px !important;
-  min-width: 32px !important;
-  display: flex !important;
+.workspace-plug-box {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 4px !important;
+  width: 56px !important;
+  height: 34px !important;
+  padding: 0 6px !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease !important;
+}
+
+.workspace-plug-box svg {
+  display: block !important;
+  flex-shrink: 0 !important;
+}
+
+.workspace-plug-box:active {
+  transform: scale(0.96) !important;
+}
+
+.ide-text-badge {
+  height: 34px !important;
+  padding: 0 10px !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background: transparent !important;
-  border: none !important;
-  font-size: 18px !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.5px !important;
+  color: var(--app-fg) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease !important;
+}
+
+.ide-text-badge:active {
+  transform: scale(0.96) !important;
+}
+
+.status-circle {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  background-color: #A855F7 !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease !important;
+}
+
+.status-circle:active {
+  transform: scale(0.96) !important;
+}
+
+.theme-toggle-btn,
+.vault-btn {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
   padding: 0 !important;
   margin: 0 !important;
   cursor: pointer !important;
+  transition: transform 0.15s ease !important;
 }
+
+.theme-toggle-btn svg,
+.vault-btn svg {
+  display: block !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.theme-toggle-btn:active,
+.vault-btn:active {
+  transform: scale(0.96) !important;
+}
+
+.incognito-btn {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease !important;
+}
+
+.incognito-btn svg {
+  display: block !important;
+  width: 22px !important;
+  height: 22px !important;
+}
+
+.incognito-btn:active {
+  transform: scale(0.96) !important;
+}
+
+.burger-menu-btn {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease !important;
+}
+
+.burger-menu-btn svg {
+  display: block !important;
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.burger-menu-btn:active {
+  transform: scale(0.96) !important;
+}
+
+/* Override legacy classes from old header structures */
+.header-icon-btn,
+.id-icon,
+.usage-ring,
+.incognito-trigger,
+.menu-btn,
+.workspace-folder-btn {
+  background: none !important;
+  border: none !important;
+  font-size: inherit !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  border-radius: 0 !important;
+}
+
+/* Hide old header-top structure from markdown.html/index.html */
+.header-top {
+  display: none !important;
+}
+
+/* ===== END UNIFIED HEADER ===== */
 
 .ide-toggle-btn {
   background: var(--accent);
