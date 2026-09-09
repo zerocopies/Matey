@@ -588,24 +588,25 @@ body {
   flex-shrink: 0 !important;
 }
 
+/* Ensure Logo stands out */
 .matey-logo {
   height: 42px !important;
   width: auto !important;
-  object-fit: contain !important;
-  flex-shrink: 0 !important;
 }
 
+/* Force Folder+Plug box to render as a wide rectangle */
 .workspace-plug-box {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 4px !important;
-  width: 56px !important;
+  width: 68px !important;
   height: 34px !important;
-  padding: 0 6px !important;
+  min-width: 68px !important;
+  aspect-ratio: auto !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-evenly !important;
+  background: rgba(255, 255, 255, 0.08) !important;
   border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding: 0 4px !important;
   box-sizing: border-box !important;
   flex-shrink: 0 !important;
   cursor: pointer !important;
@@ -621,19 +622,19 @@ body {
   transform: scale(0.96) !important;
 }
 
+/* Force IDE Badge to render as a wide rectangular pill */
 .ide-text-badge {
+  width: 52px !important;
   height: 34px !important;
-  padding: 0 10px !important;
-  border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  display: inline-flex !important;
+  min-width: 52px !important;
+  aspect-ratio: auto !important;
+  display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px !important;
   font-weight: 700 !important;
   font-size: 12px !important;
-  letter-spacing: 0.5px !important;
-  color: var(--app-fg) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   box-sizing: border-box !important;
   flex-shrink: 0 !important;
   cursor: pointer !important;
@@ -642,6 +643,12 @@ body {
 
 .ide-text-badge:active {
   transform: scale(0.96) !important;
+}
+
+/* Ensure Logo stands out */
+.matey-logo {
+  height: 42px !important;
+  width: auto !important;
 }
 
 .status-circle {
