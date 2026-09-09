@@ -566,8 +566,11 @@ body {
   justify-content: space-between !important;
   width: 100% !important;
   height: 54px !important;
-  margin-top: 36px !important;
-  padding: 0 12px !important;
+  padding-top: clamp(16px, 4vh, 24px) !important;
+  padding-bottom: 8px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  margin-top: 0 !important;
   box-sizing: border-box !important;
   background: var(--app-bg, #0B0B0E) !important;
   flex-shrink: 0 !important;
@@ -1070,6 +1073,7 @@ body {
 }
 
 .tab {
+  touch-action: manipulation;
   transition: transform 0.15s ease, opacity 0.15s ease, flex 0.15s ease;
 }
 
