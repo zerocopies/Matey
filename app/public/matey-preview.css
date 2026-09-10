@@ -474,24 +474,6 @@ body {
   }
 }
 
-.header {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  width: 100% !important;
-  height: 56px !important;
-  /* Force large top offset to clear notch/status bar completely */
-  margin-top: 40px !important;
-  padding-top: env(safe-area-inset-top, 10px) !important;
-  padding-bottom: 8px !important;
-  padding-left: 14px !important;
-  padding-right: 14px !important;
-  box-sizing: border-box !important;
-  background: var(--app-bg, #0B0B0E) !important;
-}
-
 /* .header-top is the single flex child of .header that holds the logo,
    workspace selector and action buttons in a horizontal row. Without this
    rule it defaults to display:block, stacking its children vertically and
@@ -1070,11 +1052,6 @@ body {
   border-radius: 8px;
   background: transparent;
   min-height: 42px;
-}
-
-.tab {
-  touch-action: manipulation;
-  transition: transform 0.15s ease, opacity 0.15s ease, flex 0.15s ease;
 }
 
 .content-section {
