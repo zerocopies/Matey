@@ -65,16 +65,16 @@
 
       /* Editor State */
       .editor-view { flex: 1; display: flex; flex-direction: column; min-height: 0; height: 100%; }
-      .edit-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--surface); }
+      .edit-header { display: flex; align-items: center; justify-content: space-between; padding: 0 !important; border: none !important; background: transparent !important; }
       .edit-header .file-path { color: var(--text-dim); font-family: monospace; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
       .edit-header .lang-badge { background: #312e81; color: #a5b4fc; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; white-space: nowrap; }
       .edit-header .actions { display: flex; gap: 6px; flex-shrink: 0; }
-      .edit-header button { background: #4f46e5; color: #fff; border: none; border-radius: 4px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
-      .edit-header button.secondary { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
-      .edit-header button.danger { background: transparent; color: #ef4444; border: 1px solid #7f1d1d; }
+.edit-header button { background: transparent; color: var(--text); border: none; padding: 4px 6px; font-size: inherit; cursor: pointer; }
+.edit-header button.secondary { color: var(--text-dim); }
+.edit-header button.danger { color: #ef4444; }
       .edit-viewport { flex: 1; min-height: 0; overflow: hidden; position: relative; }
       .edit-viewport .cm-editor { height: 100% !important; }
-      .edit-footer { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-top: 1px solid var(--border); background: var(--surface); }
+      .edit-footer { display: flex; align-items: center; justify-content: space-between; padding: 0 !important; border: none !important; background: transparent !important; }
       .edit-footer .status { color: var(--text-dim); font-size: 12px; font-family: monospace; }
       .edit-footer .voice-controls { display: flex; align-items: center; gap: 8px; }
       .edit-footer .voice-controls button { background: #262626; color: var(--text); border: 1px solid #404040; border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
@@ -128,7 +128,6 @@
               <path d="M40 80 L43 85 L46 80 L49 85 L52 80 L55 85 L58 80 L60 82"/>
             </svg>
           </button>
-          <button id="lux-theme-toggle" class="theme-toggle-btn" type="button" title="Theme" aria-label="Theme">🎨</button>
           <button class="burger-menu-btn" type="button" title="Menu" aria-label="Menu">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="4" y1="6" x2="20" y2="6"></line>
@@ -140,6 +139,13 @@
       </header>
 
     <nav class="tabs-wrap" id="tabs-wrap">
+      <div class="tabs">
+        <a class="tab active" href="./lifestyle.html">Lifestyle</a>
+        <a class="tab" href="./vots.html">My-VOTS</a>
+        <a class="tab" href="./raw-editor.html">>edit</a>
+        <a class="tab" href="./journal.html">Journal</a>
+        <a class="tab" href="./preview.html#agent">>agent</a>
+      </div>
 
         <!-- Editor State (hidden by default) -->
         <div id="editor-view" class="editor-view" style="display: none;">
@@ -151,7 +157,6 @@
             </div>
             <div class="actions">
               <button id="edit-btn-back" class="secondary">Back</button>
-              <button id="edit-btn-save">Save</button>
               <button id="edit-btn-saveas" class="secondary">Save As</button>
               <button id="edit-btn-delete" class="danger">Delete</button>
             </div>
@@ -163,9 +168,6 @@
 
           <div class="edit-footer">
             <div class="status" id="edit-status">Ready — Cmd/Ctrl+K for command palette</div>
-            <div class="voice-controls">
-              <button id="edit-mic-btn" type="button">Voice Input</button>
-            </div>
           </div>
         </div>
       </div>
@@ -222,7 +224,6 @@
     <input type="file" id="file-input" style="display: none;" multiple>
 
     <script src="./matey-themes.js?v=100"></script>
-    <script src="./matey-theme-toggle.js?v=101"></script>
     <script src="./matey-swipe.js?v=100"></script>
     <script src="./matey-profile.js?v=100"></script>
     <script src="./matey-greet.js?v=100"></script>

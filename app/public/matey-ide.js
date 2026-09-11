@@ -134,6 +134,8 @@ export class MateyIDE {
     this.readOnlyCompartment = new Compartment();
     this.themeCompartment = new Compartment();
     this.currentDiff = null;
+    this.useFallback = false;
+    this.elFallbackTextarea = null;
 
     injectFloatingActionStyle();
     this.initHeaderUI();
@@ -408,7 +410,7 @@ export class MateyIDE {
    * alone leaves stale CSS rules from the previous theme. Dispatch
    * a clear first, then the new theme in a second transaction. */
   setTheme(themeExtension) {
-    if (!this.view) return;
+    if (!this.view || this.useFallback) return;
     const ext = [].concat(themeExtension).flat(Infinity);
     /* Step 1: clear the compartment */
     this.view.dispatch({
@@ -418,7 +420,7 @@ export class MateyIDE {
      * the browser has processed the clear before the new theme's
      * CSS rules land in the StyleModule. */
     requestAnimationFrame(() => {
-      if (!this.view) return;
+      if (!this.view || this.useFallback) return;
       this.view.dispatch({
         effects: this.themeCompartment.reconfigure(ext),
       });
@@ -464,20 +466,44 @@ export class MateyIDE {
   }
 
   initEditor() {
-    this.view = new EditorView({
-      state: EditorState.create({
-        doc: '',
-        extensions: this.buildBaseExtensions(),
-      }),
-      parent: this.elEditorTarget,
-    });
+    try {
+      this.view = new EditorView({
+        state: EditorState.create({
+          doc: '',
+          extensions: this.buildBaseExtensions(),
+        }),
+        parent: this.elEditorTarget,
+      });
 
-    this.view.dispatch({
-      effects: this.readOnlyCompartment.reconfigure(EditorState.readOnly.of(true)),
-    });
-    this.isReadOnly = true;
+      this.view.dispatch({
+        effects: this.readOnlyCompartment.reconfigure(EditorState.readOnly.of(true)),
+      });
+      this.isReadOnly = true;
+      this.useFallback = false;
+      this.restoreStoredTheme();
+    } catch (err) {
+      console.error('[MateyIDE] Failed to initialize CodeMirror:', err);
+      this.createFallbackEditor();
+    }
+  }
 
-    this.restoreStoredTheme();
+  createFallbackEditor() {
+    this.useFallback = true;
+    this.elFallbackTextarea = document.createElement('textarea');
+    this.elFallbackTextarea.style.width = '100%';
+    this.elFallbackTextarea.style.height = '100%';
+    this.elFallbackTextarea.style.boxSizing = 'border-box';
+    this.elFallbackTextarea.style.padding = '8px';
+    this.elFallbackTextarea.style.fontFamily = 'monospace';
+    this.elFallbackTextarea.style.fontSize = '13px';
+    this.elFallbackTextarea.style.color = '#e5e5e5';
+    this.elFallbackTextarea.style.backgroundColor = '#080808';
+    this.elFallbackTextarea.style.border = 'none';
+    this.elFallbackTextarea.style.resize = 'none';
+    this.elFallbackTextarea.style.outline = 'none';
+    this.elFallbackTextarea.style.whiteSpace = 'pre';
+    this.elFallbackTextarea.value = '';
+    this.elEditorTarget.appendChild(this.elFallbackTextarea);
   }
 
   setDirty(state) {
@@ -488,22 +514,31 @@ export class MateyIDE {
 
   setReadOnly(state) {
     this.isReadOnly = state;
-    this.view.dispatch({
-      effects: this.readOnlyCompartment.reconfigure(EditorState.readOnly.of(state)),
-    });
+    if (this.view && !this.useFallback) {
+      this.view.dispatch({
+        effects: this.readOnlyCompartment.reconfigure(EditorState.readOnly.of(state)),
+      });
+    } else if (this.elFallbackTextarea) {
+      this.elFallbackTextarea.readOnly = state;
+    }
   }
 
   setWarningMessage(message) {
     this.isReadOnly = true;
     this.setDirty(false);
-    this.view.dispatch({
-      effects: this.readOnlyCompartment.reconfigure(EditorState.readOnly.of(true)),
-    });
     const warningText = `// ${message}\n// This file is read-only due to size or binary content.`;
-    this.view.setState(EditorState.create({
-      doc: warningText,
-      extensions: this.buildBaseExtensions(),
-    }));
+    if (this.view && !this.useFallback) {
+      this.view.dispatch({
+        effects: this.readOnlyCompartment.reconfigure(EditorState.readOnly.of(true)),
+      });
+      this.view.setState(EditorState.create({
+        doc: warningText,
+        extensions: this.buildBaseExtensions(),
+      }));
+    } else if (this.elFallbackTextarea) {
+      this.elFallbackTextarea.value = warningText;
+      this.elFallbackTextarea.readOnly = true;
+    }
   }
 
   async openFile(filePath) {
@@ -530,15 +565,12 @@ export class MateyIDE {
 
       this.setReadOnly(false);
 
-      const tr = this.view.state.update({
-        changes: { from: 0, to: this.view.state.doc.length, insert: content },
-      });
-      this.view.dispatch(tr);
-
-      this.view.dispatch({
-        effects: this.languageCompartment.reconfigure(langExt),
-      });
-
+      this.setContent(content);
+      if (this.view && !this.useFallback) {
+        this.view.dispatch({
+          effects: this.languageCompartment.reconfigure(langExt),
+        });
+      }
       this.setDirty(false);
     } catch (e) {
       console.error('Failed to open file:', e);
@@ -547,10 +579,7 @@ export class MateyIDE {
       this.elLangBadge.innerText = 'ERR';
       this.setReadOnly(true);
       const errText = `// Error: Could not open ${filePath}\n// ${e.message}`;
-      this.view.setState(EditorState.create({
-        doc: errText,
-        extensions: this.buildBaseExtensions(),
-      }));
+      this.setContent(errText);
     }
   }
 

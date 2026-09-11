@@ -547,13 +547,16 @@ body {
   align-items: center !important;
   justify-content: space-between !important;
   width: 100% !important;
-  height: 54px !important;
-  padding-top: max(24px, env(safe-area-inset-top, 24px)) !important;
+  min-height: 54px !important;
+  padding-top: calc(max(48px, env(safe-area-inset-top, 24px)) + 15px) !important;
   padding-bottom: 8px !important;
-  padding-left: 12px !important;
-  padding-right: 12px !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
   margin-top: 0 !important;
   box-sizing: border-box !important;
+  border: none !important;
+  outline: none !important;
+  color: #ffffff !important;
   background: var(--app-bg, #0B0B0E) !important;
   flex-shrink: 0 !important;
 }
@@ -620,7 +623,8 @@ body {
   justify-content: center !important;
   background: rgba(255, 255, 255, 0.08) !important;
   border-radius: 8px !important;
-  font-weight: 700 !important;
+  font-weight: 900 !important;
+    color: #ffff00 !important;
   font-size: 12px !important;
   box-sizing: border-box !important;
   flex-shrink: 0 !important;
@@ -930,76 +934,67 @@ body {
 .tabs-wrap,
 .tab-navigation,
 .sub-nav {
-  margin-top: 12px !important;
-  margin-bottom: 16px !important;
-  padding-top: 2px !important;
-  padding-bottom: 4px !important;
-  padding-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
-  padding-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
-  flex-shrink: 0;
-  width: 100%;
-  background: var(--app-surface, #080808);   /* solid premium dark — no blur */
-  border-bottom: 0.5px solid var(--border);
+   margin-top: 20px !important;
+   margin-bottom: 16px !important;
+   padding-top: 2px !important;
+   padding-bottom: 4px !important;
+   padding-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
+   padding-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
+   flex-shrink: 0;
+   width: 100%;
+   background: transparent !important;
+   border-bottom: none !important;
 }
 
 .tabs {
+    height: auto !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    height: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  gap: clamp(5px, 1.6vw, 10px);        /* Segmented bar — label sits on the bar */
+  gap: 0;        /* Segmented bar — label sits on the bar */
   box-sizing: border-box;
 }
 
 /* Segmented tab bar — each tab is a horizontal rounded bar.
    Only the active tab's label is visible (coral, over its bar);
    inactive labels are hidden so they render as plain bars. */
-  .tab {
-  flex: 1 1 0;
-  min-width: 30px;
-  max-width: 130px;
-  height: 16px;                       /* inactive = short navy bar */
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  margin: 0;
-  border: none;
-  border-radius: 2px;               /* slightly rounded ends for thin line */
-  background: #1e2a44;                /* plain dark navy / slate */
-  box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.05);
-  color: transparent;                 /* hide label text unless active */
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  text-decoration: none;
-  white-space: nowrap;
-  text-align: center;
-  position: relative;
-  transition: flex-grow 0.28s var(--ease-out), max-width 0.28s var(--ease-out),
-              color 0.18s ease, background 0.18s ease;
-  touch-action: manipulation;
+.tab {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 800 !important;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+    text-align: center;
+    position: relative;
+    transition: color 0.18s ease;
+    touch-action: manipulation;
 }
 
 /* Active tab: visibly wider gradient bar with its coral label on it. */
 .tab.active {
-  flex-grow: 3;                       /* ~3x wider than inactive bars */
-  max-width: 220px;
-  min-width: 86px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, #3D7BFF 0%, #8A5CFF 100%);  /* blue -> purple */
-  box-shadow: 0 2px 12px rgba(90, 100, 255, 0.35);
-  color: #FF7A6E;                     /* active label in coral / salmon */
-  text-shadow: 0 0 4px rgba(255,122,110,0.7);
-  font-size: 16px;
-  font-weight: 900;
+    color: #ff7a6e; /* coral for active label */
 }
 
-.tab::after {
-  content: "";
-}
+
 
 
 /* Draggable tabs */
@@ -8073,26 +8068,23 @@ body {
    Per-section accent injected via --lf-accent (and --lf-accent-deep). */
 
 /* ---------- Home screen ---------- */
-.lf-home { padding-bottom: 140px !important; }
+.lf-home {
+  padding: 0 !important;
+  margin: 0 !important;
+}
 .lf-home-title { font-size: 22px; font-weight: 500; color: var(--text-primary); margin: 16px 0 12px; }
 .lf-home-sub { font-size: 13px; font-weight: 400; color: var(--text-dim); margin: 0 0 20px; }
 .lf-rows { display: flex; flex-direction: column; gap: 10px; padding-bottom: 40px !important; }
 .lf-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: var(--card-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-card);
-  padding: 14px 16px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  backdrop-filter: var(--glass-blur-light);
-  -webkit-backdrop-filter: var(--glass-blur-light);
-}
+   display: flex;
+   align-items: center;
+   gap: 14px;
+   cursor: pointer;
+   touch-action: manipulation;
+   word-break: break-word;
+   overflow-wrap: anywhere;
+   margin-bottom: 12px;
+ }
 .lf-row:active { opacity: 0.75; }
 .lf-row-icon {
   width: 40px;
@@ -8482,3 +8474,57 @@ body {
 .lf-stat-bar { flex: 1; height: 8px; border-radius: 20px; background: #1c1c20; overflow: hidden; }
 .lf-stat-fill { height: 100%; background: #AFA9EC; border-radius: 20px; min-width: 0; }
 .lf-stat-count { font-size: 12px; font-weight: 400; color: #8b8b90; min-width: 62px; text-align: right; }
+
+
+
+.tabs::after,
+.tabs::before,
+.tab-border,
+.tab-border::after,
+.tab-border::before,
+.nav-bar,
+.nav-bar::after,
+.nav-bar::before {
+    border-bottom: none !important;
+    box-shadow: none !important;
+    display: none !important;
+}
+
+.tab:not(.active) {
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      letter-spacing: 0 !important;
+      color: #ffffff !important;
+  }
+  
+  .cm-editor {
+    background: var(--app-surface) !important;
+    color: var(--app-fg) !important;
+  }
+  
+  #edit-editor-container,
+  .cm-editor,
+.cm-scroller {
+     height: 100% !important;
+     width: 100% !important;
+     display: block !important;
+   }
+   /* Ensure editor container takes full visible space */
+   .editor-view {
+        height: calc(100vh - 160px) !important;
+        min-height: 400px !important;
+        width: 100% !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+   }
+   /* Ensure tab bar is visible and above content */
+   .tabs-wrap {
+        position: relative;
+        z-index: 1000 !important;
+   }
+   /* Improve toolbar contrast */
+   .file-path,
+   #edit-status {
+        color: #cccccc !important;
+   }
