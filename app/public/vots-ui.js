@@ -549,6 +549,9 @@
 
   /* ==================== Init ==================== */
   function init() {
+    /* Cached tab switch: skip when the VOTS region was swapped away —
+       the DOMContentLoaded re-dispatch must not crash on missing nodes. */
+    if (!document.getElementById('vts-landing')) return;
     // Check lock state
     MateyLock.isLocked(NAMESPACE).then(function (locked) {
       if (locked) {

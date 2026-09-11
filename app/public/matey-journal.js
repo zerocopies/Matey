@@ -382,6 +382,10 @@
   var _autoLockTimer = null;
 
   function startAutoLockWatcher() {
+    /* Guard: the DOMContentLoaded re-dispatch (cached tab swap) re-runs
+       init() — never add a second visibilitychange watcher. */
+    if (startAutoLockWatcher._wired) return;
+    startAutoLockWatcher._wired = true;
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) {
         _backgroundTime = Date.now();

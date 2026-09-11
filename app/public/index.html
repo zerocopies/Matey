@@ -22,9 +22,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <script src="./version.js"></script>
-    <link rel="stylesheet" href="./matey-preview.css?v=105">
-    <link rel="stylesheet" href="./matey-vault.css">
+<script src="./version.js"></script>
+     document.write('<link rel="stylesheet" href="./matey-preview.css?v=' + MATEY_CSS_VERSION + '">');
+     <link rel="stylesheet" href="./matey-vault.css">
     <script src="./matey-vault.js"></script>
     <script src="./matey-boot.js?q=94"></script>
     <script src="./matey-sentry.js?v=101"></script>
@@ -53,7 +53,6 @@
               <path d="M40 80 L43 85 L46 80 L49 85 L52 80 L55 85 L58 80 L60 82"/>
             </svg>
           </button>
-          <button id="lux-theme-toggle" class="theme-toggle-btn" type="button" title="Theme" aria-label="Theme">🎨</button>
           <button class="burger-menu-btn" type="button" title="Menu" aria-label="Menu">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="4" y1="6" x2="20" y2="6"></line>
@@ -107,7 +106,6 @@
       </main>
     </div>
     <script src="./matey-themes.js?v=101"></script>
-    <script src="./matey-theme-toggle.js?v=101"></script>
     <script src="./matey-swipe.js?v=101"></script>
     <script src="./matey-profile.js?v=101"></script>
     <script src="./matey-greet.js?v=101"></script>

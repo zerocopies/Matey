@@ -381,6 +381,12 @@
   function startAutoLockWatcher(namespace, callback) {
     _autoLockCallbacks[namespace] = callback;
 
+    /* Guard: one visibilitychange watcher per namespace — the DOMContentLoaded
+       re-dispatch (cached tab swap) re-runs init() which calls this again. */
+    startAutoLockWatcher._wired = startAutoLockWatcher._wired || {};
+    if (startAutoLockWatcher._wired[namespace]) return;
+    startAutoLockWatcher._wired[namespace] = true;
+
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) {
         _backgroundTime = Date.now();

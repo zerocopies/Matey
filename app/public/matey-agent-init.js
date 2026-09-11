@@ -84,6 +84,8 @@
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
+      /* Cached tab switch: skip when the agent region was swapped away. */
+      if (!document.getElementById('agent-chat')) return;
       setTimeout(initAgentIDE, 100);
     });
   } else {

@@ -599,7 +599,16 @@
       if (!document.querySelector('.workspace-display-container, .workspace-folder-btn')) {
         console.log('[TRACE] updateDisplay: no workspace-display-container or workspace-folder-btn, calling injectWorkspaceUI');
         injectWorkspaceUI();
-        return updateDisplay(name);
+        // After injection, check if elements were actually created before recursing.
+        // On pages without .header-top (raw-editor.html, etc.), injectWorkspaceUI()
+        // returns early without creating workspace UI — don't recurse infinitely.
+        var after = document.querySelector('.workspace-name, #workspace-display, .workspace-display-container, .workspace-folder-btn');
+        if (after) {
+          console.log('[TRACE] updateDisplay: elements created by injectWorkspaceUI, retrying display update');
+          return updateDisplay(name);
+        }
+        console.log('[TRACE] updateDisplay: injectWorkspaceUI did not create elements (page may not support workspace UI), skipping');
+        return;
       }
       console.log('[TRACE] updateDisplay: no el, no container to inject into — returning');
       return;

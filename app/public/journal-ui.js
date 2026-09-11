@@ -987,6 +987,9 @@
 
   /* ==================== Init ==================== */
   function init() {
+    /* Cached tab switch: skip when the journal region was swapped away —
+       the DOMContentLoaded re-dispatch must not crash on missing nodes. */
+    if (!document.getElementById('jnl-library')) return;
     /* Make incognito icon status-only on Journal (disable matey-greet.js toggle) */
     var incBtn = document.querySelector('.incognito-trigger');
     if (incBtn) {
