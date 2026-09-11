@@ -333,7 +333,7 @@ main.content, main[role="main"], .app-main {
 .content > *:nth-child(4) { animation-delay: 120ms; }
 
 /* Tab active indicator bar */
-.tab.active::after { display: none; }
+
 
 /* Settings accordion — smooth open/close with max-height */
 .settings-section-body {
@@ -548,7 +548,7 @@ body {
   justify-content: space-between !important;
   width: 100% !important;
   height: 54px !important;
-  padding-top: max(20px, env(safe-area-inset-top, 20px)) !important;
+  padding-top: max(24px, env(safe-area-inset-top, 24px)) !important;
   padding-bottom: 8px !important;
   padding-left: 12px !important;
   padding-right: 12px !important;
@@ -582,7 +582,7 @@ body {
 /* Force Folder+Plug box to render as a wide rectangle */
 .workspace-plug-box {
   width: 68px !important;
-  height: 34px !important;
+  height: 28px !important;
   min-width: 68px !important;
   aspect-ratio: auto !important;
   display: flex !important;
@@ -601,6 +601,8 @@ body {
 .workspace-plug-box svg {
   display: block !important;
   flex-shrink: 0 !important;
+  width: 17px !important;
+  height: 17px !important;
 }
 
 .workspace-plug-box:active {
@@ -610,7 +612,7 @@ body {
 /* Force IDE Badge to render as a wide rectangular pill */
 .ide-text-badge {
   width: 52px !important;
-  height: 34px !important;
+  height: 28px !important;
   min-width: 52px !important;
   aspect-ratio: auto !important;
   display: flex !important;
@@ -647,38 +649,6 @@ body {
 }
 
 .status-circle:active {
-  transform: scale(0.96) !important;
-}
-
-.theme-toggle-btn,
-.vault-btn {
-  width: 34px !important;
-  height: 34px !important;
-  min-width: 34px !important;
-  min-height: 34px !important;
-  border-radius: 8px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-sizing: border-box !important;
-  flex-shrink: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  cursor: pointer !important;
-  transition: transform 0.15s ease !important;
-}
-
-.theme-toggle-btn svg,
-.vault-btn svg {
-  display: block !important;
-  width: 18px !important;
-  height: 18px !important;
-}
-
-.theme-toggle-btn:active,
-.vault-btn:active {
   transform: scale(0.96) !important;
 }
 
@@ -913,32 +883,6 @@ body {
 }
 
 /* Luxury 3-theme toggle (temporary) — solid, theme-aware */
-.lux-theme-toggle {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  color: var(--text-primary);
-  border-radius: 8px;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  flex-shrink: 0;
-  -webkit-tap-highlight-color: transparent;
-  z-index: 11;
-  position: relative;
-}
-.lux-theme-toggle:active {
-  opacity: 0.7;
-}
-
 .menu-btn {
   display: flex;
   align-items: center;
@@ -987,7 +931,7 @@ body {
 .tab-navigation,
 .sub-nav {
   margin-top: 12px !important;
-  margin-bottom: 8px !important;
+  margin-bottom: 16px !important;
   padding-top: 2px !important;
   padding-bottom: 4px !important;
   padding-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
@@ -1000,58 +944,83 @@ body {
 
 .tabs {
   display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  gap: 6px;                       /* Task 3 — tighter, unified gutter */
+  gap: clamp(5px, 1.6vw, 10px);        /* Segmented bar — label sits on the bar */
+  box-sizing: border-box;
 }
 
+/* Segmented tab bar — each tab is a horizontal rounded bar.
+   Only the active tab's label is visible (coral, over its bar);
+   inactive labels are hidden so they render as plain bars. */
   .tab {
   flex: 1 1 0;
-  min-width: 0;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  padding: 12px 4px;              /* Task 3 — more vertical breathing room */
+  min-width: 30px;
+  max-width: 130px;
+  height: 16px;                       /* inactive = short navy bar */
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
   margin: 0;
-  border-radius: var(--radius-card);
-  font-size: 14px;
-  font-weight: var(--font-weight-normal);
-  letter-spacing: 0.07em;         /* Task 3 — slightly more tracking */
+  border: none;
+  border-radius: 2px;               /* slightly rounded ends for thin line */
+  background: #1e2a44;                /* plain dark navy / slate */
+  box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.05);
+  color: transparent;                 /* hide label text unless active */
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   text-decoration: none;
   white-space: nowrap;
   text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
   position: relative;
-  transition: color var(--duration-base) var(--ease-out), background 0.15s ease;
+  transition: flex-grow 0.28s var(--ease-out), max-width 0.28s var(--ease-out),
+              color 0.18s ease, background 0.18s ease;
   touch-action: manipulation;
 }
 
+/* Active tab: visibly wider gradient bar with its coral label on it. */
 .tab.active {
-  color: var(--app-fg);
-  font-weight: 700;
-  background: var(--card-bg);
-  border-radius: var(--radius-card);
+  flex-grow: 3;                       /* ~3x wider than inactive bars */
+  max-width: 220px;
+  min-width: 86px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #3D7BFF 0%, #8A5CFF 100%);  /* blue -> purple */
+  box-shadow: 0 2px 12px rgba(90, 100, 255, 0.35);
+  color: #FF7A6E;                     /* active label in coral / salmon */
+  text-shadow: 0 0 4px rgba(255,122,110,0.7);
+  font-size: 16px;
+  font-weight: 900;
 }
+
+.tab::after {
+  content: "";
+}
+
 
 /* Draggable tabs */
 .tab.dragging {
-  opacity: 0.5;
+  opacity: 0.7;
   transform: scale(1.05);
   z-index: 10;
   background: var(--surface);
-  border-radius: 8px;
+  border-radius: 9px;
   border-bottom-color: var(--accent);
   transition: none;
 }
 
 .tab.drag-placeholder {
   flex: 1 1 0;
-  min-width: 0;
+  min-width: 30px;
   border: 2px dashed var(--border);
-  border-radius: 8px;
+  border-radius: 9px;
   background: transparent;
-  min-height: 42px;
+  height: 18px;
+  align-self: flex-end;
 }
 
 .content-section {
@@ -1401,6 +1370,7 @@ body {
   top: 2px;
   width: 16px;
   height: 16px;
+  box-sizing: border-box;
   border-radius: 999px;
   transition: left 0.2s;
 }
@@ -2687,6 +2657,7 @@ body {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
+  box-sizing: border-box;
   color: var(--app-accent);
 }
 .workspace-selector button .ws-item-tag {
@@ -3240,6 +3211,7 @@ body {
 .lib-sub-arrow {
   width: 16px;
   height: 16px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3723,6 +3695,7 @@ body {
   justify-content: center;
   width: 16px;
   height: 16px;
+  box-sizing: border-box;
   flex-shrink: 0;
   opacity: 0.6;
 }
@@ -3990,6 +3963,7 @@ body {
 .byok-capabilities-row:last-child .byok-cap:last-child { margin-left: 8px; }
 .byok-cap { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; flex: 1; min-width: 0; }
 .byok-cap input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); margin: 0; flex-shrink: 0; }
+  box-sizing: border-box;
 .byok-capabilities-section { margin-top: 32px; }
 .byok-dialog-actions { display: flex; gap: 12px; justify-content: space-between; margin-top: 24px; flex-wrap: wrap; }
 .byok-btn {
@@ -5132,6 +5106,7 @@ body {
 .agent-stripes .stripe:nth-child(1) { height: 12px; animation-delay: 0s; }
 .agent-stripes .stripe:nth-child(2) { height: 24px; animation-delay: 0.15s; }
 .agent-stripes .stripe:nth-child(3) { height: 16px; animation-delay: 0.3s; }
+  box-sizing: border-box;
 .agent-stripes .stripe:nth-child(4) { height: 28px; animation-delay: 0.45s; }
 .agent-stripes .stripe:nth-child(5) { height: 20px; animation-delay: 0.6s; }
 
@@ -5354,8 +5329,10 @@ body {
 .md-voice-status {
   grid-column: 1 / -1;
   min-height: 16px;
+  box-sizing: border-box;
   font-size: 12px;
   line-height: 16px;
+  box-sizing: border-box;
   color: var(--accent, #4da3ff);
   padding: 2px 6px;
   white-space: nowrap;
@@ -7557,6 +7534,7 @@ body {
 .matey-edit-btn svg {
   width: 16px;
   height: 16px;
+  box-sizing: border-box;
 }
 
 /* Symbol buttons - unified dark tile theme */
