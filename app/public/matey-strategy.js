@@ -20,7 +20,7 @@ var MateyStrategy = (function () {
     { id: 'S-014', title: 'Check array bounds before access', category: 'bounds', language: 'rust' }
   ];
 
-  var COMMUNITY_STRATEGY_URL = 'https://static.matey-app.dev/community-strategies.json';
+  var COMMUNITY_STRATEGY_URL = 'https://zerocopies.github.io/matey-community-strategies/community-strategies.json';
   var COMMUNITY_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000;
   var COMMUNITY_SYNC_KEY = 'matey-community-strategy-last-sync';
 
