@@ -833,7 +833,7 @@ class ToolDispatcher {
         var cmd = args.command || '';
         if (!cmd.trim()) return { success: false, error: 'Empty command' };
 
-        // Check if shell is enabled in settings (default OFF — POST-LAUNCH hardening gate)
+        // Check if shell is enabled in settings (default OFF)
         if (window.MateyShellGuard && !window.MateyShellGuard.isShellEnabled()) {
           return { success: false, error: 'Shell access is disabled. Enable it in Settings → Features → Native Shell.' };
         }

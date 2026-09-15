@@ -141,7 +141,7 @@
                 <div class="setting-row setting-row-with-icon">
                   <div class="setting-row-icon">🖥️</div>
                   <div class="setting-row-body">
-                    <div class="setting-row-label">Native Shell <span class="experimental-badge">Post-launch</span></div>
+                    <div class="setting-row-label">Native Shell</div>
                     <div class="setting-row-desc">Allow the agent to run local shell commands (Termux/Android shell). Off by default. Medium/high-risk commands always ask first via the system confirm dialog.</div>
                   </div>
                  <label class="setting-toggle">
@@ -445,7 +445,7 @@
       });
     }
 
-    /* Native Shell toggle wiring — default OFF (POST-LAUNCH gate).
+    /* Native Shell toggle wiring — default OFF.
        Backed by MateyShellGuard storage key 'matey-shell-enabled'. */
     var shellToggle = document.getElementById('feature-native-shell');
     if (shellToggle) {
