@@ -13,6 +13,11 @@
 
 import { ASTIndex, setBasePath, getBasePath } from './matey-ast-index.js';
 
+// Track active worker count on window (exposed for test/debugging).
+if (typeof self !== 'undefined' && self.window !== undefined) {
+  self.window.__mateyWorkerCount = (self.window.__mateyWorkerCount || 0) + 1;
+}
+
 // Ensure base path is set correctly for the worker context.
 // In a module worker, self.location.href is the worker script URL.
 if (typeof self !== 'undefined' && self.location) {

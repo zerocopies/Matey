@@ -118,9 +118,20 @@
           var getAll = os.getAll();
           var getKeys = os.getAllKeys();
           getAll.onsuccess = function () {
-            var keys = getKeys.result || [], vals = getAll.result || [];
-            keys.forEach(function (k, i) { if (_lfCache[k] === undefined) _lfCache[k] = vals[i]; });
-            resolve();
+            /* Race fix: getKeys may not have finished when getAll fires —
+               reading .result early throws InvalidStateError (seen as an
+               uncaught boot exception). Wait for both requests. */
+            var vals = getAll.result || [];
+            var finish = function (keys) {
+              (keys || []).forEach(function (k, i) { if (_lfCache[k] === undefined) _lfCache[k] = vals[i]; });
+              resolve();
+            };
+            if (getKeys.readyState === 'done') {
+              finish(getKeys.result);
+            } else {
+              getKeys.onsuccess = function () { finish(getKeys.result); };
+              getKeys.onerror = function () { finish([]); };
+            }
           };
           getAll.onerror = function () { resolve(); };
         } catch (e) { resolve(); }

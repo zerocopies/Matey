@@ -111,14 +111,43 @@
     return true;
   }
 
-  /* ---- Command Sanitization ---- */
+  /* ---- Command Sanitization (production: REJECT, do not silently strip) ----
+   * Returns { ok:true, command } when safe, { ok:false, reason } when the
+   * input contains chaining/substitution characters. Callers must refuse
+   * to execute rejected input. Newlines are rejected outright (multiline
+   * smuggling). Null bytes are rejected. Length is capped at 4000 chars. */
+  var _MAX_CMD_LEN = 4000;
+  var _INJECTION_RE = /[;&|`$()<>]/;
   function sanitizeCommand(cmd) {
     if (!cmd || typeof cmd !== 'string') return '';
-    return cmd.trim().replace(/[;&|`$(){}[\]\\]/g, function(match) {
-      // Block command chaining and subshells
+    var s = String(cmd).replace(/\0/g, '');
+    if (/[\r\n]/.test(s)) return '';
+    if (s.length > _MAX_CMD_LEN) s = s.slice(0, _MAX_CMD_LEN);
+    return s.trim().replace(/[;&|`$()<>]/g, function(match) {
+      // Block command chaining, pipes, subshells, redirection
       if (match === ';' || match === '&' || match === '|' || match === '`' || match === '$') return '';
       return match;
     });
+  }
+
+  /* Strict gate: true only when the raw input is safe to execute as-is.
+   * Any chaining/substitution/redirection char or newline fails closed. */
+  function isCommandSafe(cmd) {
+    if (!cmd || typeof cmd !== 'string') return false;
+    if (cmd.indexOf('\0') !== -1) return false;
+    if (/[\r\n]/.test(cmd)) return false;
+    if (cmd.length > _MAX_CMD_LEN) return false;
+    return !_INJECTION_RE.test(cmd);
+  }
+
+  function rejectionReason(cmd) {
+    if (!cmd || typeof cmd !== 'string' || !cmd.trim()) return 'Empty command';
+    if (cmd.indexOf('\0') !== -1) return 'Null byte detected';
+    if (/[\r\n]/.test(cmd)) return 'Multiline input blocked — single command only';
+    if (cmd.length > _MAX_CMD_LEN) return 'Command exceeds ' + _MAX_CMD_LEN + ' characters';
+    var m = _INJECTION_RE.exec(cmd);
+    if (m) return 'Blocked chaining/substitution character: ' + JSON.stringify(m[0]);
+    return null;
   }
 
   window.MateyShellGuard = {
@@ -126,6 +155,9 @@
     isShellEnabled: isShellEnabled,
     setShellEnabled: setShellEnabled,
     confirmExecution: confirmExecution,
-    sanitizeCommand: sanitizeCommand
+    sanitizeCommand: sanitizeCommand,
+    isCommandSafe: isCommandSafe,
+    rejectionReason: rejectionReason,
+    MAX_COMMAND_LENGTH: _MAX_CMD_LEN
   };
 })();

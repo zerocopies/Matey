@@ -139,6 +139,17 @@
                </div>
                 </div>
                 <div class="setting-row setting-row-with-icon">
+                  <div class="setting-row-icon">🖥️</div>
+                  <div class="setting-row-body">
+                    <div class="setting-row-label">Native Shell <span class="experimental-badge">Post-launch</span></div>
+                    <div class="setting-row-desc">Allow the agent to run local shell commands (Termux/Android shell). Off by default. Medium/high-risk commands always ask first via the system confirm dialog.</div>
+                  </div>
+                 <label class="setting-toggle">
+                   <input type="checkbox" id="feature-native-shell" />
+                   <span class="setting-toggle-slider"></span>
+                 </label>
+                </div>
+                <div class="setting-row setting-row-with-icon">
                   <div class="setting-row-icon">🌐</div>
                   <div class="setting-row-body">
                     <div class="setting-row-label">Community Wisdom <span class="experimental-badge">Experimental</span></div>
@@ -434,6 +445,30 @@
       });
     }
 
+    /* Native Shell toggle wiring — default OFF (POST-LAUNCH gate).
+       Backed by MateyShellGuard storage key 'matey-shell-enabled'. */
+    var shellToggle = document.getElementById('feature-native-shell');
+    if (shellToggle) {
+      var storedShell = false;
+      try {
+        if (window.MateyShellGuard && typeof window.MateyShellGuard.isShellEnabled === 'function') {
+          storedShell = window.MateyShellGuard.isShellEnabled();
+        } else {
+          storedShell = localStorage.getItem('matey-shell-enabled') === 'true';
+        }
+      } catch (e) {}
+      shellToggle.checked = storedShell === true;
+      shellToggle.addEventListener('change', function () {
+        try {
+          if (window.MateyShellGuard && typeof window.MateyShellGuard.setShellEnabled === 'function') {
+            window.MateyShellGuard.setShellEnabled(this.checked);
+          } else {
+            localStorage.setItem('matey-shell-enabled', String(this.checked));
+          }
+        } catch (e) {}
+      });
+    }
+
    /* VAD toggle wiring — default ON */
    var vadToggle = document.getElementById('feature-vad-enabled');
    if (vadToggle) {
@@ -651,6 +686,14 @@
     isCommunityWisdomEnabled: function () {
       try { return localStorage.getItem('matey-community-wisdom-enabled') === 'true'; }
       catch (_) { return false; }
+    },
+    isNativeShellEnabled: function () {
+      try {
+        if (window.MateyShellGuard && typeof window.MateyShellGuard.isShellEnabled === 'function') {
+          return window.MateyShellGuard.isShellEnabled();
+        }
+        return localStorage.getItem('matey-shell-enabled') === 'true';
+      } catch (_) { return false; }
     }
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inject);

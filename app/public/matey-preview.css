@@ -547,8 +547,8 @@ body {
   align-items: center !important;
   justify-content: space-between !important;
   width: 100% !important;
-  height: 54px !important;
-  padding-top: max(20px, env(safe-area-inset-top, 20px)) !important;
+  min-height: calc(54px + env(safe-area-inset-top, 24px)) !important;
+  padding-top: calc(env(safe-area-inset-top, 24px) + 16px) !important;
   padding-bottom: 8px !important;
   padding-left: 12px !important;
   padding-right: 12px !important;
@@ -557,7 +557,6 @@ body {
   background: var(--app-bg, #0B0B0E) !important;
   flex-shrink: 0 !important;
 }
-
 .header-left {
   display: flex !important;
   align-items: center !important;
@@ -998,40 +997,55 @@ body {
   border-bottom: 0.5px solid var(--border);
 }
 
-.tabs {
-  display: flex;
-  width: 100%;
-  gap: 6px;                       /* Task 3 — tighter, unified gutter */
+.tabs,
+.tabs-wrap,
+.tabs-wrapper,
+.tabs-container,
+.tabs-nav,
+.tabs-track {
+  border: none !important;
+  border-bottom: 0px solid transparent !important;
+  border-top: 0px solid transparent !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
-
-  .tab {
-  flex: 1 1 0;
-  min-width: 0;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  padding: 12px 4px;              /* Task 3 — more vertical breathing room */
-  margin: 0;
-  border-radius: var(--radius-card);
-  font-size: 14px;
-  font-weight: var(--font-weight-normal);
-  letter-spacing: 0.07em;         /* Task 3 — slightly more tracking */
-  text-transform: uppercase;
-  text-decoration: none;
-  white-space: nowrap;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  position: relative;
-  transition: color var(--duration-base) var(--ease-out), background 0.15s ease;
-  touch-action: manipulation;
+.tabs::before,
+.tabs::after,
+.tabs-wrap::before,
+.tabs-wrap::after,
+.tabs-wrapper::before,
+.tabs-wrapper::after,
+.tabs-container::before,
+.tabs-container::after,
+.tabs-nav::before,
+.tabs-nav::after,
+.tab::before,
+.tab::after,
+.tabs-line,
+.tabs-divider,
+.tabs-track {
+  display: none !important;
+  content: none !important;
+  height: 0 !important;
+  border: none !important;
+  background: transparent !important;
 }
-
+.tab {
+  flex: 0 0 auto !important;
+  border: none !important;
+  background: transparent !important;
+  margin: 0 4px !important;
+  padding: 8px 12px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.09em !important;
+  text-transform: uppercase !important;
+  color: var(--text) !important;
+}
 .tab.active {
-  color: var(--app-fg);
-  font-weight: 700;
-  background: var(--card-bg);
-  border-radius: var(--radius-card);
+  background: rgba(255,255,255,0.12) !important;
+  border-radius: 20px !important;
+  color: #ffffff !important;
 }
 
 /* Draggable tabs */
@@ -8530,4 +8544,70 @@ body {
 #editor-view .file-path,
 #editor-view #edit-status {
     color: #cccccc !important;
+}
+
+/* Ensure page containers are visible */
+#vots-container,
+.vots-wrapper,
+#journal-container,
+#lifestyle-container,
+.page-view {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    min-height: 100vh !important;
+}
+
+/* Remove tab bar horizontal line */
+    display: none !important;
+}
+
+/* Remove individual tab underlines */
+.tab, 
+.tab-item, 
+.tabs a, 
+.tab-btn {
+  text-decoration: none !important;
+  border-bottom: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.tab::after, 
+.tab::before, 
+.tab.active::after, 
+.tab.active::before,
+.tab-item::after,
+.tab-item::before {
+  display: none !important;
+  content: none !important;
+  height: 0 !important;
+  width: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Strip full-width horizontal container line */
+.tabs, 
+.tabs-wrap, 
+.tabs-wrapper, 
+.tabs-container, 
+.tabs-nav {
+  border: none !important;
+  border-bottom: 0px solid transparent !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.tabs::after, 
+.tabs::before, 
+.tabs-wrap::after, 
+.tabs-wrap::before, 
+.tabs-wrapper::after, 
+.tabs-wrapper::before {
+  display: none !important;
+  content: none !important;
+  height: 0 !important;
+  border: none !important;
+  background: transparent !important;
 }

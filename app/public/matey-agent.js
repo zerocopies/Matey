@@ -833,12 +833,23 @@ class ToolDispatcher {
         var cmd = args.command || '';
         if (!cmd.trim()) return { success: false, error: 'Empty command' };
 
-        // Check if shell is enabled in settings
+        // Check if shell is enabled in settings (default OFF — POST-LAUNCH hardening gate)
         if (window.MateyShellGuard && !window.MateyShellGuard.isShellEnabled()) {
           return { success: false, error: 'Shell access is disabled. Enable it in Settings → Features → Native Shell.' };
         }
 
-        // Classify risk and require confirmation for medium/high risk
+        // Injection gate: REJECT chaining/substitution/redirection outright (fail closed).
+        // sanitizeCommand() legacy-strips, but execution must never proceed on tainted input.
+        if (window.MateyShellGuard && typeof window.MateyShellGuard.isCommandSafe === 'function') {
+          if (!window.MateyShellGuard.isCommandSafe(cmd)) {
+            var reason = window.MateyShellGuard.rejectionReason(cmd) || 'Unsafe characters detected';
+            return { success: false, error: 'Command blocked: ' + reason, risk: 'blocked' };
+          }
+        }
+
+        // Classify risk and require a REAL OS-level confirm() dialog for medium/high risk.
+        // confirmExecution() uses the platform confirm dialog (NOT a stub) — Cancel aborts
+        // before any bridge call; nothing has executed at this point by construction.
         var risk = 'low';
         if (window.MateyShellGuard) {
           risk = window.MateyShellGuard.classifyRisk(cmd);
