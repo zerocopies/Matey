@@ -10,6 +10,7 @@ var BrainState = (function () {
   var SCHEMA_VERSION = 1;
   var STATE_KEY = 'matey-brain-state';
   var METRICS_KEY = 'matey-brain-metrics';
+  var CALL_HISTORY_KEY = 'matey-cloud-call-history';
 
   var FIX_DB = 'matey-fix-memory';
   var FIX_STORE = 'fixes';
@@ -35,6 +36,53 @@ var BrainState = (function () {
     } catch (_) {}
     try { return localStorage.getItem('matey-last-workspace') || 'default'; }
     catch (_) { return 'default'; }
+  }
+
+  function _recordCloudCall(latencyMs, tokensUsed) {
+    try {
+      var history = [];
+      try { var raw = localStorage.getItem(CALL_HISTORY_KEY); if (raw) history = JSON.parse(raw); } catch (_) {}
+      history.push({ ts: Date.now(), latencyMs: latencyMs || 0, tokensUsed: tokensUsed || 0 });
+      if (history.length > 500) history = history.slice(-500);
+      try { localStorage.setItem(CALL_HISTORY_KEY, JSON.stringify(history)); } catch (_) {}
+    } catch (_) {}
+  }
+
+  function _computeAvgLatency() {
+    try {
+      var raw = localStorage.getItem(CALL_HISTORY_KEY);
+      if (!raw) return 0;
+      var history = JSON.parse(raw);
+      if (!Array.isArray(history) || !history.length) return 0;
+      var totalMs = 0, count = 0;
+      for (var i = 0; i < history.length; i++) {
+        if (typeof history[i].latencyMs === 'number' && history[i].latencyMs > 0) {
+          totalMs += history[i].latencyMs;
+          count++;
+        }
+      }
+      return count > 0 ? Math.round(totalMs / count) : 0;
+    } catch (_) { return 0; }
+  }
+
+  function _computeTokensSaved() {
+    try {
+      var raw = localStorage.getItem(CALL_HISTORY_KEY);
+      if (!raw) return 0;
+      var history = JSON.parse(raw);
+      if (!Array.isArray(history) || !history.length) return 0;
+      var totalTokens = 0;
+      for (var i = 0; i < history.length; i++) {
+        if (typeof history[i].tokensUsed === 'number' && history[i].tokensUsed > 0) {
+          totalTokens += history[i].tokensUsed;
+        }
+      }
+      return totalTokens;
+    } catch (_) { return 0; }
+  }
+
+  function recordCloudCall(latencyMs, tokensUsed) {
+    _recordCloudCall(latencyMs, tokensUsed);
   }
 
   function _openIDB(dbName, storeName, mode) {
@@ -291,11 +339,29 @@ var BrainState = (function () {
   }
 
   function getMetrics() {
-    try {
-      var raw = localStorage.getItem(STATE_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch (_) {}
-    return null;
+    var avgLatency = _computeAvgLatency();
+    var tokensEstimate = _computeTokensSaved();
+    var instinctCount = 0;
+    try { instinctCount = _getInstinctCount(); } catch (_) {}
+    var dnaNodeCount = 0;
+    try { dnaNodeCount = _getDnaNodeCount(); } catch (_) {}
+    var styleProfileVersion = 0;
+    try { styleProfileVersion = _getStyleProfileVersion(); } catch (_) {}
+    var raw = '';
+    try { raw = localStorage.getItem(METRICS_KEY); } catch (_) {}
+    var m = raw ? JSON.parse(raw) : {};
+    var hits = m.hits || 0;
+    var totalQueries = m.totalQueries || 0;
+    var localCoverage = totalQueries > 0 ? Math.round((hits / totalQueries) * 100) : 0;
+    return {
+      brainSchemaVersion: SCHEMA_VERSION,
+      instinctCount: instinctCount,
+      localCoverage: localCoverage,
+      avgLatencySavedMs: avgLatency,
+      tokensSavedEstimate: tokensEstimate,
+      styleProfileVersion: styleProfileVersion || 0,
+      dnaNodeCount: dnaNodeCount
+    };
   }
 
   function recordHit(latencyMs, tokensSaved) {

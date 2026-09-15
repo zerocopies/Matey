@@ -11,13 +11,28 @@
     if (window.BrainState) return Promise.resolve();
     if (_brainReady) return _brainReady;
     _brainReady = new Promise(function (resolve, reject) {
-      var s = document.createElement('script');
-      s.src = './matey-brain.js';
-      s.onload = resolve;
-      s.onerror = reject;
-      document.head.appendChild(s);
+      var need = ['./matey-instinct.js', './matey-strategy.js', './matey-brain.js'];
+      var pending = need.length;
+      function oneDone() { if (--pending === 0) resolve(); }
+      need.forEach(function (src) {
+        var s = document.createElement('script');
+        s.src = src;
+        s.onload = oneDone;
+        s.onerror = function () {
+          console.warn('[MateyInit] Brain dependency failed to load:', src);
+          oneDone();
+        };
+        document.head.appendChild(s);
+      });
     });
-    return _brainReady;
+    return _brainReady.then(function () {
+      if (typeof BrainState !== 'undefined') {
+        window.BrainState = BrainState;
+        console.log('[MateyInit] BrainState assigned to window.BrainState, schema v' + BrainState.brainSchemaVersion);
+      } else {
+        console.warn('[MateyInit] BrainState not found after loading brain scripts');
+      }
+    });
   }
 
   function measureColdStart() {
