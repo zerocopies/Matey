@@ -15,7 +15,12 @@ import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
+
+import android.Manifest;
+import android.content.pm.PackageManager;
 
 import com.getcapacitor.BridgeActivity;
 
@@ -26,10 +31,21 @@ public class MainActivity extends BridgeActivity {
 
     private ValueCallback<Uri[]> filePathCallback;
     private ActivityResultLauncher<Intent> fileChooserLauncher;
+    private static final int REQ_RECORD_AUDIO = 7001;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Pre-grant RECORD_AUDIO at app level so WebView getUserMedia works
+        // without the Chromium "requires MODIFY_AUDIO_SETTINGS and RECORD_AUDIO" block.
+        // Manifest already declares RECORD_AUDIO + MODIFY_AUDIO_SETTINGS.
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG, "Requesting RECORD_AUDIO runtime permission");
+            ActivityCompat.requestPermissions(
+                    this, new String[]{Manifest.permission.RECORD_AUDIO}, REQ_RECORD_AUDIO);
+        }
 
         // Register the custom FilePicker plugin for Android system file dialogs
         registerPlugin(FilePickerPlugin.class);

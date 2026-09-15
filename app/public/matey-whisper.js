@@ -2,6 +2,9 @@
 (function () {
   'use strict';
   var WHISPER_STATE = { ready: false, model: null, transcriber: null, loading: false, modelId: null, progress: 0, isMultilingual: false };
+  /* In-flight load promise — shared by all callers so concurrent requests
+     (warm-up preload + user recording) never fail with 'Already loading'. */
+  var _loadPromise = null;
     var MODEL_OPTIONS = [
     { id: 'Xenova/whisper-tiny.en', label: 'Whisper Tiny (English)', size: '99MB', desc: 'Fast English-only dictation — optimized for mobile', langs: 'english' },
     { id: 'Xenova/whisper-tiny', label: 'Whisper Tiny (multilingual)', size: '99MB', desc: 'Fast multilingual — supports 99+ languages', langs: 'multilingual' }
@@ -71,13 +74,26 @@
   }
 
   function loadModel(modelId, onProgress) {
-    if (WHISPER_STATE.loading) return Promise.reject('Already loading');
     if (WHISPER_STATE.ready && WHISPER_STATE.modelId === modelId) return Promise.resolve(WHISPER_STATE.transcriber);
+    if (WHISPER_STATE.loading && _loadPromise) {
+      /* Share the in-flight load instead of failing with 'Already loading',
+         which used to break transcription whenever the warm-up preload was
+         still running (the common case right after app launch). */
+      console.log('[MateyWhisper] loadModel(): load already in flight — sharing it');
+      if (onProgress) {
+        var poll = setInterval(function () {
+          if (!WHISPER_STATE.loading) { clearInterval(poll); return; }
+          onProgress(WHISPER_STATE.progress || 0);
+        }, 250);
+        _loadPromise.then(function () { clearInterval(poll); }, function () { clearInterval(poll); });
+      }
+      return _loadPromise;
+    }
     WHISPER_STATE.loading = true;
     WHISPER_STATE.progress = 0;
     if (onProgress) onProgress(0);
 
-return loadFromCDN().then(function () {
+    _loadPromise = loadFromCDN().then(function () {
         /* Configure ONNX Runtime WASM backend to use local WASM files */
         if (window.transformersEnv && window.transformersEnv.backends && window.transformersEnv.backends.onnx) {
           var onnxEnv = window.transformersEnv.backends.onnx;
@@ -131,8 +147,10 @@ return loadFromCDN().then(function () {
       return transcriber;
     }).catch(function (err) {
       WHISPER_STATE.loading = false;
+      _loadPromise = null;
       throw err;
     });
+    return _loadPromise;
   }
 
   function resampleToMono16kHz(buffer, sampleRate) {
@@ -154,6 +172,23 @@ return loadFromCDN().then(function () {
     return result;
   }
 
+  /* decodeAudioData in Chromium returns a promise IN ADDITION to the callbacks,
+     so passing an error callback still leaves an unhandled promise rejection
+     ("Uncaught (in promise) EncodingError"). This wrapper swallows that promise
+     while keeping the existing callback-based error path intact. */
+  function _decodeAudioDataSafe(ctx, data, onSuccess, onError) {
+    var p = null;
+    try {
+      p = ctx.decodeAudioData(data, onSuccess, onError);
+    } catch (e) {
+      if (typeof onError === 'function') onError(e);
+      return;
+    }
+    if (p && typeof p.catch === 'function') {
+      p.catch(function () { /* already routed to onError */ });
+    }
+  }
+
   function transcribe(audioBlob, onResult) {
     if (!WHISPER_STATE.ready || !WHISPER_STATE.transcriber) {
       return Promise.reject('Model not loaded. Please download a model in Settings first.');
@@ -163,7 +198,19 @@ return loadFromCDN().then(function () {
       var reader = new FileReader();
       reader.onload = function () {
         var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        audioCtx.decodeAudioData(reader.result, function (buffer) {
+        var settled = false;
+        var timeoutId = setTimeout(function () {
+          if (!settled) {
+            settled = true;
+            console.error('[MateyWhisper] decodeAudioData timed out after 15s — rejecting instead of hanging');
+            try { audioCtx.close(); } catch (e) {}
+            reject(new Error('Audio decode timed out (15s). Try a shorter recording.'));
+          }
+        }, 15000);
+        _decodeAudioDataSafe(audioCtx, reader.result, function (buffer) {
+          if (settled) { try { audioCtx.close(); } catch (e2) {} return; }
+          settled = true;
+          clearTimeout(timeoutId);
           var channelData = buffer.getChannelData(0);
           console.log('[MateyWhisper] Decoded audio: sampleRate=' + buffer.sampleRate +
                       ', channels=' + buffer.numberOfChannels + ', length=' + channelData.length);
@@ -172,16 +219,28 @@ return loadFromCDN().then(function () {
            WHISPER_STATE.transcriber(resampled, {
             sampling_rate: 16000,
             language: WHISPER_STATE.isMultilingual ? 'en' : undefined,
-            num_beams: 5,
+            /* Greedy decoding: beam search (num_beams>1) took ~4 minutes for an
+               11s clip on a Pixel 8a (measured 14:13:13→14:17:15), which made
+               dictation unusable. Greedy is the mobile-appropriate default. */
+            num_beams: 1,
             repetition_penalty: 1.05,
             no_repeat_ngram_size: 3,
             max_new_tokens: 224,
             temperature: 0.0
           }).then(function (result) {
             console.log('[MateyWhisper] Transcription result:', result);
+            try { audioCtx.close(); } catch (e3) {}
             resolve(result);
-          }).catch(reject);
-        }, reject);
+          }).catch(function (e) { try { audioCtx.close(); } catch (e4) {} reject(e); });
+        }, function (decodeErr) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeoutId);
+          console.error('[MateyWhisper] decodeAudioData failed:', decodeErr);
+          try { audioCtx.close(); } catch (e5) {}
+          reject(decodeErr instanceof Error ? decodeErr
+            : new Error('Unable to decode audio data (' + (decodeErr && decodeErr.name ? decodeErr.name : 'EncodingError') + '). Try recording again.'));
+        });
       };
       reader.onerror = reject;
       reader.readAsArrayBuffer(audioBlob);

@@ -166,6 +166,8 @@
         micState.stream = stream;
         micState.audioChunks = [];
         micState._totalBytes = 0;
+        /* Parallel PCM capture — the reliable transcription source on Android WebView */
+        _startPcmCapture(stream);
 
         var mime = pickMicMimeType();
         console.log('[MateyMic] Using MIME type:', JSON.stringify(mime));
@@ -207,14 +209,18 @@
             console.log('[MateyMic] Recording stopped, chunks:', micState.audioChunks.length);
             var blob = new Blob(micState.audioChunks, { type: micState.recordedMimeType });
             console.log('[MateyMic] Combined blob:', blob.size, 'bytes, type:', blob.type);
+            /* Prefer the decoded-safe WAV built from captured PCM */
+            var sourceBlob = micState._pcmWav || blob;
+            micState._pcmWav = null;
+            console.log('[MateyMic] Transcription source:', sourceBlob.size, 'bytes, type:', sourceBlob.type);
            micState.isRecording = false;
            micState.active = false;
            updateMicButtonVisual(micBtn, false);
            notifyStateChange();
-           if (micState.statusText) micState.statusText.textContent = 'Recorded ' + blob.size + ' bytes — transcribing…';
+           if (micState.statusText) micState.statusText.textContent = 'Recorded ' + sourceBlob.size + ' bytes — transcribing…';
            var domain = micState.currentDomain || STT_DOMAINS_DEFAULT;
            var contextPayload = micState.currentContextPayload || {};
-           processAudioBlob(blob, domain, contextPayload);
+           processAudioBlob(sourceBlob, domain, contextPayload);
         };
 
         mediaRecorder.start(250);
@@ -255,6 +261,10 @@
             micState._totalBytes = 0;
             var mime = pickMicMimeType();
             var mediaRecorder = null;
+            /* Parallel PCM capture — the reliable transcription source on Android WebView */
+            micState.audioChunks = [];
+            micState._totalBytes = 0;
+            _startPcmCapture(stream);
             try {
               mediaRecorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
             } catch (mrErr) {
@@ -279,14 +289,16 @@
             };
             mediaRecorder.onstop = function () {
               var blob = new Blob(micState.audioChunks, { type: micState.recordedMimeType });
+              var sourceBlob = micState._pcmWav || blob;
+              micState._pcmWav = null;
               micState.isRecording = false;
               micState.active = false;
               updateMicButtonVisual(micBtn, false);
               notifyStateChange();
-              if (micState.statusText) micState.statusText.textContent = 'Recorded ' + blob.size + ' bytes — transcribing…';
+              if (micState.statusText) micState.statusText.textContent = 'Recorded ' + sourceBlob.size + ' bytes — transcribing…';
               var domain = micState.currentDomain || STT_DOMAINS_DEFAULT;
               var contextPayload = micState.currentContextPayload || {};
-              processAudioBlob(blob, domain, contextPayload);
+              processAudioBlob(sourceBlob, domain, contextPayload);
             };
             mediaRecorder.start(250);
             micState.autoStopTimer = setTimeout(function () {
@@ -357,6 +369,19 @@
       clearTimeout(micState.autoStopTimer);
       micState.autoStopTimer = null;
     }
+     /* Finalize the PCM capture FIRST — that WAV is the blob we actually transcribe. */
+     try {
+       if (micState._pcmChunks && micState._pcmChunks.length) {
+         micState._pcmWav = _pcmToWavBlob(micState._pcmChunks, micState._pcmSampleRate);
+         if (micState._pcmWav) {
+           console.log('[MateyMic] PCM WAV ready:', micState._pcmWav.size, 'bytes @', micState._pcmSampleRate + 'Hz');
+         }
+       }
+     } catch (pcmErr) {
+       console.warn('[MateyMic] PCM finalize failed, falling back to MediaRecorder blob:', pcmErr && pcmErr.message);
+       micState._pcmWav = null;
+     }
+     _stopPcmCapture();
      if (micState.mediaRecorder && micState.mediaRecorder.state === 'recording') {
        micState.mediaRecorder.stop();
      }
@@ -416,9 +441,22 @@
     var blob = new Blob(chunksToProcess, { type: mime });
     micState.streamProcessedChunks++;
 
-    console.debug('[MateyMic] Processing chunk #' + micState.streamProcessedChunks + ': ' + blob.size + ' bytes');
+    /* Prefer the PCM delta — WebView cannot decode the raw webm/opus chunks. */
+    var pcmBlob = null;
+    try {
+      if (micState._pcmChunks && micState._pcmChunks.length > (micState._pcmConsumed || 0)) {
+        var pcmDelta = micState._pcmChunks.slice(micState._pcmConsumed || 0);
+        micState._pcmConsumed = micState._pcmChunks.length;
+        if (pcmDelta.length) pcmBlob = _pcmToWavBlob(pcmDelta, micState._pcmSampleRate);
+      }
+    } catch (pcmErr) {
+      console.warn('[MateyMic] PCM chunk encode failed, using recorder blob:', pcmErr && pcmErr.message);
+    }
+    var chunkSourceBlob = pcmBlob || blob;
 
-    _transcribeMicChunk(blob, domain, contextPayload).then(function (text) {
+    console.debug('[MateyMic] Processing chunk #' + micState.streamProcessedChunks + ': ' + chunkSourceBlob.size + ' bytes, type: ' + chunkSourceBlob.type);
+
+    _transcribeMicChunk(chunkSourceBlob, domain, contextPayload).then(function (text) {
       if (!text || !text.trim()) return;
 
       micState.streamChunkIndex++;
@@ -451,11 +489,129 @@
     return 'audio/webm';
   }
 
+  /* decodeAudioData in Chromium returns a promise IN ADDITION to the callbacks,
+     so passing an error callback still leaves an unhandled promise rejection
+     ("Uncaught (in promise) EncodingError"). This wrapper swallows that promise
+     while keeping the existing callback-based error path intact. */
+  function _decodeAudioDataSafe(ctx, data, onSuccess, onError) {
+    var p = null;
+    try {
+      p = ctx.decodeAudioData(data, onSuccess, onError);
+    } catch (e) {
+      if (typeof onError === 'function') onError(e);
+      return;
+    }
+    if (p && typeof p.catch === 'function') {
+      p.catch(function () { /* already routed to onError */ });
+    }
+  }
+
   function _normalizeBlobForDecode(blob) {
     if (!blob || !blob.type) return blob;
     var supported = ['audio/wav', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/ogg'];
     if (supported.indexOf(blob.type) !== -1) return blob;
     return new Blob([blob], { type: 'audio/webm' });
+  }
+
+  /* ---- PCM Capture (reliable core path) ----
+     Android WebView's decodeAudioData cannot decode the chunked webm/opus blob
+     emitted by MediaRecorder ("EncodingError: Unable to decode audio data"), which
+     silently killed every transcription attempt. We therefore capture raw Float32
+     PCM in parallel through a ScriptProcessorNode and encode a real WAV container
+     ourselves — WAV always decodes, so Whisper always gets usable samples. */
+  function _startPcmCapture(stream) {
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx || !stream) return false;
+      var ctx = new Ctx();
+      var source = ctx.createMediaStreamSource(stream);
+      var processor = ctx.createScriptProcessor(4096, 1, 1);
+      micState._pcmCtx = ctx;
+      micState._pcmSource = source;
+      micState._pcmProcessor = processor;
+      micState._pcmChunks = [];
+      micState._pcmSamples = 0;
+      micState._pcmConsumed = 0;
+      micState._pcmSampleRate = ctx.sampleRate || 48000;
+      processor.onaudioprocess = function (e) {
+        try {
+          var input = e.inputBuffer.getChannelData(0);
+          micState._pcmChunks.push(new Float32Array(input));
+          micState._pcmSamples += input.length;
+        } catch (err) { /* ignore */ }
+      };
+      source.connect(processor);
+      /* Chrome requires the processor to be connected to a destination to run */
+      processor.connect(ctx.destination);
+      if (ctx.state === 'suspended') { try { ctx.resume(); } catch (e2) {} }
+      console.log('[MateyMic] PCM capture started @ ' + micState._pcmSampleRate + 'Hz');
+      return true;
+    } catch (e) {
+      console.warn('[MateyMic] PCM capture unavailable, MediaRecorder blob only:', e && e.message);
+      micState._pcmCtx = null; micState._pcmProcessor = null; micState._pcmChunks = [];
+      return false;
+    }
+  }
+
+  function _stopPcmCapture() {
+    try {
+      if (micState._pcmProcessor) {
+        micState._pcmProcessor.onaudioprocess = null;
+        try { micState._pcmProcessor.disconnect(); } catch (e1) {}
+      }
+      if (micState._pcmSource) { try { micState._pcmSource.disconnect(); } catch (e2) {} }
+      if (micState._pcmCtx) { try { micState._pcmCtx.close(); } catch (e3) {} }
+    } catch (e) { /* ignore */ }
+    micState._pcmProcessor = null;
+    micState._pcmSource = null;
+    micState._pcmCtx = null;
+  }
+
+  function _encodeWav(samples, sampleRate) {
+    var buffer = new ArrayBuffer(44 + samples.length * 2);
+    var view = new DataView(buffer);
+    function writeString(offset, str) {
+      for (var i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+    }
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + samples.length * 2, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, samples.length * 2, true);
+    var offset = 44;
+    for (var k = 0; k < samples.length; k++, offset += 2) {
+      var s = Math.max(-1, Math.min(1, samples[k]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+    return new Blob([view], { type: 'audio/wav' });
+  }
+
+  function _pcmToWavBlob(chunks, sampleRate) {
+    if (!chunks || !chunks.length) return null;
+    var total = 0;
+    for (var i = 0; i < chunks.length; i++) total += chunks[i].length;
+    if (!total) return null;
+    var merged = new Float32Array(total);
+    var off = 0;
+    for (var j = 0; j < chunks.length; j++) { merged.set(chunks[j], off); off += chunks[j].length; }
+    var rate = sampleRate || 16000;
+    if (window.MateySpeech && MateySpeech.SileroVADProcessor &&
+        typeof MateySpeech.SileroVADProcessor.encodeFloat32ToWav === 'function') {
+      try {
+        return MateySpeech.SileroVADProcessor.encodeFloat32ToWav(merged, rate);
+      } catch (e) {
+        console.warn('[MateyMic] SileroVAD WAV encode failed, using local encoder:', e && e.message);
+      }
+    }
+    return _encodeWav(merged, rate);
   }
 
   function _transcribeMicChunk(blob, domain, contextPayload) {
@@ -472,7 +628,7 @@
         retryReader.onload = function () {
           var audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
           if (audioCtx.state === 'suspended') audioCtx.resume();
-          audioCtx.decodeAudioData(retryReader.result, function (buffer) {
+          _decodeAudioDataSafe(audioCtx, retryReader.result, function (buffer) {
             var channelData = buffer.getChannelData(0);
             var sampleRate = buffer.sampleRate;
 
@@ -656,7 +812,7 @@
           retryReader.onload = function () {
             var audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            audioCtx.decodeAudioData(retryReader.result, function (buffer) {
+            _decodeAudioDataSafe(audioCtx, retryReader.result, function (buffer) {
               var channelData = buffer.getChannelData(0);
               var sampleRate = buffer.sampleRate;
 

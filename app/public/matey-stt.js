@@ -285,7 +285,24 @@
     }
   };
 
-    /* ---- SileroVADProcessor ---- */
+    /* decodeAudioData in Chromium returns a promise IN ADDITION to the callbacks,
+     so passing an error callback still leaves an unhandled promise rejection
+     ("Uncaught (in promise) EncodingError"). This wrapper swallows that promise
+     while keeping the existing callback-based error path intact. */
+  function _decodeAudioDataSafe(ctx, data, onSuccess, onError) {
+    var p = null;
+    try {
+      p = ctx.decodeAudioData(data, onSuccess, onError);
+    } catch (e) {
+      if (typeof onError === 'function') onError(e);
+      return;
+    }
+    if (p && typeof p.catch === 'function') {
+      p.catch(function () { /* already routed to onError */ });
+    }
+  }
+
+  /* ---- SileroVADProcessor ---- */
   var SileroVADProcessor = {
     filterSilence: function (float32AudioArray) {
       var threshold = 0.015;
@@ -497,7 +514,7 @@
         retryReader.onload = function () {
           var audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
           if (audioCtx.state === 'suspended') audioCtx.resume();
-          audioCtx.decodeAudioData(retryReader.result, function (buffer) {
+          _decodeAudioDataSafe(audioCtx, retryReader.result, function (buffer) {
             var channelData = buffer.getChannelData(0);
             var sampleRate = buffer.sampleRate;
 
@@ -674,7 +691,7 @@
         retryReader.onload = function () {
           var audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
           if (audioCtx.state === 'suspended') audioCtx.resume();
-          audioCtx.decodeAudioData(retryReader.result, function (buffer) {
+          _decodeAudioDataSafe(audioCtx, retryReader.result, function (buffer) {
             var channelData = buffer.getChannelData(0);
             var sampleRate = buffer.sampleRate;
 
