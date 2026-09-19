@@ -75,15 +75,15 @@ function estimateMessageTokens(msg) {
   return tokens;
 }
 
-function countConversationTokens(history) {
-  let total = 0;
+function countConversationTokens(history, model) {
+  let total = 0; const budget = model ? getModelContextWindow(model) : maxTokens;
   for (const msg of history) total += estimateMessageTokens(msg);
   return total;
 }
 
-function pruneHistoryByTokens(history, maxTokens, preserveSystem = true) {
+function pruneHistoryByTokens(history, maxTokens, preserveSystem = true, model) {
   const pruned = [...history];
-  let total = countConversationTokens(pruned);
+  let total = countConversationTokens(pruned, model); let budget = model ? getModelContextWindow(model) : maxTokens;
 
   if (total <= maxTokens) return { pruned, removed: 0 };
 
