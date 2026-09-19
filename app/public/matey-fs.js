@@ -1012,7 +1012,7 @@
         var result = await iter.next();
         if (result.done) break;
         var entry = result.value;
-        entries.push({ name: entry.name, kind: entry.kind });
+        entries.push({ path: entry.name.replace(/\/$/, ""), name: entry.name, type: entry.kind === 1 ? "file" : "directory" });
       }
       return entries;
     } catch (e) {
