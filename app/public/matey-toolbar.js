@@ -205,8 +205,8 @@
             micBtn.classList.add('listening');
             micBtn.classList.add('mic-active-oval');
             micBtn.innerHTML = MIC_SVG_LISTENING;
-            micBtn.style.background = '#22c55e';
-            micBtn.style.borderColor = '#22c55e';
+            micBtn.style.background = '#34D399';
+            micBtn.style.borderColor = '#34D399';
             micBtn.style.color = '#ffffff';
             micBtn.style.borderRadius = '9999px';
           } else {
@@ -240,7 +240,7 @@
         btn.dataset.key = key;
         btn.title = 'Insert ' + key;
         btn.setAttribute('aria-label', 'Insert ' + key);
-        btn.innerHTML = '<span style="font-size:14px;font-weight:600;color:var(--accent,#B583FC);">' + key + '</span>';
+        btn.innerHTML = '<span style="font-size:14px;font-weight:600;color:var(--accent,#8B5CF6);">' + key + '</span>';
         btn.addEventListener('click', function (e) {
           e.preventDefault();
           e.stopPropagation();

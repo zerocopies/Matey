@@ -141,17 +141,17 @@ export class MateyCoach {
       <div id="coach-badge" style="position:fixed; bottom:${pos.bottom}px; right:${pos.right}px; width:56px; height:56px; background:var(--accent, #FFD166); border:none; border-radius:50%; display:none; align-items:center; justify-content:center; z-index:200; -webkit-tap-highlight-color:transparent; touch-action:none; cursor:grab; box-shadow:0 4px 12px rgba(0,0,0,0.35); opacity:0; transform:scale(0.8); transition:opacity 0.3s ease, transform 0.3s ease;">
         <span style="font-size:24px; line-height:1; display:block; width:100%; height:100%; display:flex; align-items:center; justify-content:center; pointer-events:none;">💡</span>
       </div>
-      <div id="coach-drawer" style="position:fixed; bottom:${pos.bottom}px; right:${pos.right + 66}px; width:300px; max-width:calc(100vw - 80px); background:var(--card-bg, #0D0D0D); border:1px solid var(--border, #2A2A2A); border-radius:16px; padding:18px 20px; color:#FFFFFF; font-family:inherit; font-size:14px; line-height:1.6; box-shadow:0 10px 40px rgba(0,0,0,0.6); z-index:201; display:none; opacity:0; transform:translateY(12px); transition:opacity 0.25s ease, transform 0.25s ease;">
+      <div id="coach-drawer" style="position:fixed; bottom:${pos.bottom}px; right:${pos.right + 66}px; width:300px; max-width:calc(100vw - 80px); background:var(--card-bg, #16161a); border:1px solid var(--border, #23232a); border-radius:16px; padding:18px 20px; color:#FFFFFF; font-family:inherit; font-size:14px; line-height:1.6; box-shadow:0 10px 40px rgba(0,0,0,0.6); z-index:201; display:none; opacity:0; transform:translateY(12px); transition:opacity 0.25s ease, transform 0.25s ease;">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-          <div style="font-size:10px; color:var(--accent, #B583FC); font-weight:700; text-transform:uppercase; letter-spacing:0.6px;">Quick Tip</div>
+          <div style="font-size:10px; color:var(--accent, #8B5CF6); font-weight:700; text-transform:uppercase; letter-spacing:0.6px;">Quick Tip</div>
         </div>
-        <div id="coach-tip-text" style="color:#e8e8e8; margin-bottom:14px;"></div>
+        <div id="coach-tip-text" style="color:#ffffff; margin-bottom:14px;"></div>
         <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-          <button id="coach-star-btn" type="button" style="background:none; border:1px solid var(--border, #2A2A2A); border-radius:10px; padding:8px 12px; color:#FFD166; font-size:18px; cursor:pointer; display:flex; align-items:center; gap:6px; transition:background 0.15s ease;">
+          <button id="coach-star-btn" type="button" style="background:none; border:1px solid var(--border, #23232a); border-radius:10px; padding:8px 12px; color:#FFD166; font-size:18px; cursor:pointer; display:flex; align-items:center; gap:6px; transition:background 0.15s ease;">
             <span id="coach-star-icon">☆</span>
-            <span id="coach-star-label" style="font-size:12px; color:#B3B3B3;">Save</span>
+            <span id="coach-star-label" style="font-size:12px; color:#9E9EA9;">Save</span>
           </button>
-          <button id="coach-dismiss-btn" type="button" style="background:var(--accent, #B583FC); border:none; border-radius:10px; padding:8px 14px; color:#1c1c20; font-size:13px; font-weight:600; cursor:pointer; transition:opacity 0.15s ease;">
+          <button id="coach-dismiss-btn" type="button" style="background:var(--accent, #8B5CF6); border:none; border-radius:10px; padding:8px 14px; color:#ffffff; font-size:13px; font-weight:600; cursor:pointer; transition:opacity 0.15s ease;">
             Got it
           </button>
         </div>

@@ -31,11 +31,11 @@ const MAX_FILE_SIZE = 2 * 1024 * 1024;
 const oneDarkTheme = EditorView.theme({
   '&': {
     color: '#abb2bf',
-    backgroundColor: '#282c34',
+    backgroundColor: '#0e0e11',
     height: '100%',
   },
   '.cm-scroller': {
-    backgroundColor: '#282c34',
+    backgroundColor: '#0e0e11',
     color: '#abb2bf',
     fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
     lineHeight: '1.5',
@@ -43,11 +43,11 @@ const oneDarkTheme = EditorView.theme({
   '.cm-content': { color: '#abb2bf', caretColor: '#528bff', fontFamily: 'inherit' },
   '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#528bff' },
   '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection':
-    { backgroundColor: '#3e4451' },
-  '.cm-activeLine': { backgroundColor: '#2c313a' },
-  '.cm-activeLineGutter': { backgroundColor: '#2c313a', color: '#7d8590' },
-  '.cm-gutters': { backgroundColor: '#282c34', color: '#7d8590', border: 'none' },
-  '.cm-lineNumbers .cm-gutterElement': { color: '#7d8590' },
+    { backgroundColor: '#23232a' },
+  '.cm-activeLine': { backgroundColor: '#16161a' },
+  '.cm-activeLineGutter': { backgroundColor: '#16161a', color: '#9E9EA9' },
+  '.cm-gutters': { backgroundColor: '#0e0e11', color: '#9E9EA9', border: 'none' },
+  '.cm-lineNumbers .cm-gutterElement': { color: '#9E9EA9' },
 }, { dark: true });
 
 const oneDarkHighlightStyle = HighlightStyle.define([
@@ -83,7 +83,7 @@ const floatingActionStyle = `
     max-width: 420px;
   }
   .matey-floating-diff-bar button {
-    background: #4f46e5;
+    background: #8B5CF6;
     color: #fff;
     border: none;
     border-radius: 4px;
@@ -145,7 +145,7 @@ export class MateyIDE {
 
   initHeaderUI() {
     const headerHTML = `
-      <div id="ide-header" style="display:flex;align-items:center;justify-content:space-between;background:var(--app-header-bg, #0D0D0D);border-bottom:1px solid var(--app-border, #262626);padding:8px 12px;font-family:sans-serif;font-size:13px;color:var(--app-fg, #e5e5e5);min-height:41px;box-sizing:border-box;">
+      <div id="ide-header" style="display:flex;align-items:center;justify-content:space-between;background:var(--app-header-bg, #0e0e11);border-bottom:1px solid var(--app-border, #23232a);padding:8px 12px;font-family:sans-serif;font-size:13px;color:var(--app-fg, #ffffff);min-height:41px;box-sizing:border-box;">
         <div style="display:flex;align-items:center;gap:8px;overflow:hidden;min-width:0;flex:1;">
           <span id="ide-lang-badge" style="background:#312e81;color:#a5b4fc;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;white-space:nowrap;">TXT</span>
           <span id="ide-file-path" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--app-muted, #a3a3a3);font-family:monospace;min-width:0;flex:1;">No file open</span>
@@ -157,7 +157,7 @@ export class MateyIDE {
           <div id="ide-theme-menu" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--app-surface, #1a1a1a);border:1px solid var(--app-border, #404040);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.55);padding:4px 0;z-index:9999;max-height:60vh;overflow-y:auto;min-width:220px;"></div>
           <button id="ide-btn-theme-reset" title="Revert to default theme" style="background:transparent;color:var(--app-muted, #9ca3af);border:1px solid var(--app-border, #404040);border-radius:4px;padding:4px 6px;font-size:11px;cursor:pointer;display:none;">\u2715</button>
           <input type="file" id="ide-theme-file" accept="*" style="display:none" />
-          <button id="ide-btn-save" title="Save (Cmd+S)" style="background:var(--app-accent, #4f46e5);color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">Save</button>
+          <button id="ide-btn-save" title="Save (Cmd+S)" style="background:var(--app-accent, #8B5CF6);color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">Save</button>
           <button id="ide-btn-saveas" title="Save As" style="background:var(--app-surface, #262626);color:var(--app-fg, #d4d4d4);border:1px solid var(--app-border, #404040);border-radius:4px;padding:4px 8px;font-size:12px;cursor:pointer;">Save As</button>
           <button id="ide-btn-delete" title="Delete file" style="background:transparent;color:#ef4444;border:1px solid #7f1d1d;border-radius:4px;padding:4px 8px;font-size:12px;cursor:pointer;">Delete</button>
         </div>
@@ -497,7 +497,7 @@ export class MateyIDE {
     this.elFallbackTextarea.style.fontFamily = 'monospace';
     this.elFallbackTextarea.style.fontSize = '13px';
     this.elFallbackTextarea.style.color = '#e5e5e5';
-    this.elFallbackTextarea.style.backgroundColor = '#080808';
+    this.elFallbackTextarea.style.backgroundColor = '#0e0e11';
     this.elFallbackTextarea.style.border = 'none';
     this.elFallbackTextarea.style.resize = 'none';
     this.elFallbackTextarea.style.outline = 'none';

@@ -14,20 +14,20 @@
  * state) and on pagehide; a MATEY_CSS_VERSION bump discards all snapshots. */
 (function () {
   'use strict';
-  var TAB_ORDER = ['lifestyle', 'vots', 'editor', 'journal', 'agent'];
+  var TAB_ORDER = ['agent', 'lifestyle', 'vots', 'journal', 'editor'];
   var TAB_URLS = {
+    'agent': './preview.html',
     'lifestyle': './lifestyle.html',
     'vots': './vots.html',
-    'editor': './raw-editor.html',
     'journal': './journal.html',
-    'agent': './preview.html'
+    'editor': './raw-editor.html'
   };
   var TAB_LABELS = {
-    'lifestyle': 'Lifestyle',
-    'vots': 'My-VOTS',
-    'editor': '>edit',
-    'journal': 'Journal',
-    'agent': '>agent'
+    'agent': '~AGENT',
+    'lifestyle': 'LIFESTYLE',
+    'vots': 'MY VOTS',
+    'journal': 'JOURNAL',
+    'editor': 'IDE'
   };
   var LONG_PRESS_MS = 800;
 

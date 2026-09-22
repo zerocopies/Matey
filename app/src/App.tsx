@@ -494,7 +494,7 @@ function TokenGauge({ usage }: { usage: number }) {
         cy="28"
         r="25"
         fill="none"
-        stroke="var(--app-accent,#B583FC)"
+        stroke="var(--app-accent,#8B5CF6)"
         strokeWidth="6"
         strokeLinecap="round"
         style={{ strokeDasharray, strokeDashoffset: dashOffset }}
@@ -503,7 +503,7 @@ function TokenGauge({ usage }: { usage: number }) {
         cx="28"
         cy="28"
         r="25"
-        fill="var(--app-bg,#0e0e0e)"
+        fill="var(--app-bg,#000000)"
       />
     </svg>
   );

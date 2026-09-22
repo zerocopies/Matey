@@ -436,27 +436,28 @@
 
   function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-   function showDialog(editingIndex) {
-    var dialog = document.getElementById('byok-dialog');
-    if (!dialog) return;
-    var providers = load();
-    var p = (editingIndex != null && editingIndex >= 0) ? providers[editingIndex] : null;
-    document.getElementById('byok-name').value = p ? p.name : '';
-    document.getElementById('byok-url').value = p ? p.baseUrl : '';
-    document.getElementById('byok-key').value = p ? p.apiKey : '';
-    var modelEl = document.getElementById('byok-model');
-    if (modelEl) modelEl.value = p ? (p.model || '') : '';
-    var caps = p ? (p.capabilities || []) : [];
-    /* New providers default to text generation; detection refines below */
-    if (!caps.length) caps = ['text'];
-    ['cap_text', 'cap_vision', 'cap_stt', 'cap_imagegen'].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.checked = caps.indexOf(el.value) !== -1;
-    });
-     dialog.setAttribute('data-edit-index', editingIndex != null ? editingIndex : '');
-     dialog.classList.add('open');
-     wireAutoDetect();
-   }
+function showDialog(editingIndex) {
+     var dialog = document.getElementById('byok-dialog');
+     if (!dialog) return;
+     var providers = load();
+     var p = (editingIndex != null && editingIndex >= 0) ? providers[editingIndex] : null;
+     document.getElementById('byok-name').value = p ? p.name : '';
+     document.getElementById('byok-url').value = p ? p.baseUrl : '';
+     document.getElementById('byok-key').value = p ? p.apiKey : '';
+     var modelEl = document.getElementById('byok-model');
+     if (modelEl) modelEl.value = p ? (p.model || '') : '';
+     var caps = p ? (p.capabilities || []) : [];
+     /* New providers default to text generation; detection refines below */
+     if (!caps.length) caps = ['text'];
+     ['cap_text', 'cap_vision', 'cap_stt', 'cap_imagegen'].forEach(function (id) {
+       var el = document.getElementById(id);
+       if (el) el.checked = caps.indexOf(el.value) !== -1;
+     });
+      dialog.setAttribute('data-edit-index', editingIndex != null ? editingIndex : '');
+      dialog.classList.add('open');
+      dialog.style.display = 'flex';
+      wireAutoDetect();
+    }
 
    /* ---- Auto-detect provider from API key ---- */
    var _detectDebounce = null;
@@ -558,10 +559,24 @@
      if (modelInput) modelInput.value = models[0];
    }
 
-   function hideDialog() {
-    var dialog = document.getElementById('byok-dialog');
-    if (dialog) dialog.classList.remove('open');
-  }
+function hideDialog() {
+     var dialog = document.getElementById('byok-dialog');
+     if (dialog) {
+       dialog.classList.remove('open');
+       dialog.style.display = 'none';
+     }
+   }
+
+   /* Ensure dialog is hidden on page load */
+   if (document.readyState === 'loading') {
+     document.addEventListener('DOMContentLoaded', function () {
+       var dialog = document.getElementById('byok-dialog');
+       if (dialog) { dialog.classList.remove('open'); dialog.style.display = 'none'; }
+     });
+   } else {
+     var dialog = document.getElementById('byok-dialog');
+     if (dialog) { dialog.classList.remove('open'); dialog.style.display = 'none'; }
+   }
 
    function saveProvider(e) {
     e.preventDefault();
@@ -578,7 +593,11 @@
     var preset = window.MateyProviderPresets ? window.MateyProviderPresets.detect(apiKey) : null;
     if (!name || !baseUrl) {
       if (!preset) {
-        alert('Unrecognized API key format. Could not auto-detect the provider — nothing was saved.');
+        if (window.AgentToast) {
+          window.AgentToast.show('Unrecognized API key format. Could not auto-detect the provider.', true);
+        } else {
+          console.error('Unrecognized API key format. Could not auto-detect the provider.');
+        }
         return;
       }
       if (!name) name = preset.name;
@@ -614,7 +633,7 @@
   }
 
   function deleteProvider(idx) {
-    if (!confirm('Remove this provider?')) return;
+    if (!window.confirm('Remove this provider?')) return;
     var providers = load();
     providers.splice(idx, 1);
     save(providers);
@@ -640,7 +659,7 @@
     if (testBtn) testBtn.addEventListener('click', testConnection);
     var clearBtn = document.getElementById('byok-clear-credentials');
     if (clearBtn) clearBtn.addEventListener('click', function () {
-      if (!confirm('Clear all saved provider credentials? This cannot be undone.')) return;
+      if (!window.confirm('Clear all saved provider credentials? This cannot be undone.')) return;
       _providersCache = [];
       if (_providersDB) {
         try { _providersDB.transaction('kv', 'readwrite').objectStore('kv').delete(KEY); } catch (e) {}
@@ -648,7 +667,7 @@
       try { localStorage.removeItem('matey-providers'); } catch (e) {}
       try { localStorage.removeItem('matey_gemini_key'); } catch (e) {}
       try { localStorage.removeItem('matey_openai_key'); } catch (e) {}
-      alert('All provider credentials cleared.');
+      if (window.AgentToast) { window.AgentToast.show('All provider credentials cleared.', false); } else { console.log('All provider credentials cleared.'); };
       renderList();
     });
     var backdrop = document.getElementById('byok-dialog');

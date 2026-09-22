@@ -178,7 +178,7 @@
         var toastText = toastEl ? toastEl.innerText : 'no element';
         addResult('agent-toast message', toastText, toastText === 'Test: file not found: test.txt');
         var toastBorderColor = toastEl ? toastEl.style.borderColor : '';
-        addResult('agent-toast error border', toastBorderColor, toastBorderColor === '#E85D5D' || toastBorderColor === 'rgb(232, 93, 93)' || toastBorderColor.includes('E85D5D'));
+        addResult('agent-toast error border', toastBorderColor, toastBorderColor === '#F87171' || toastBorderColor === 'rgb(248, 113, 113)' || toastBorderColor.includes('F87171'));
         
         // Test: CANCELLED error does NOT show as failure toast (shows as cancelled in status line)
         addInfo('--- CANCELLED error handling ---', '');

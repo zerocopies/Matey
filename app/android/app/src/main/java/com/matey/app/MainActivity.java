@@ -50,6 +50,9 @@ public class MainActivity extends BridgeActivity {
         // Register the custom FilePicker plugin for Android system file dialogs
         registerPlugin(FilePickerPlugin.class);
 
+        // Register the native shell backend used by MateyNativeShell/ShellGuard
+        registerPlugin(ShellExecPlugin.class);
+
         // Register the ActivityResultLauncher for the file chooser (WebView file input)
         fileChooserLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),

@@ -300,7 +300,7 @@ var MateyVault = (function () {
     } else {
       var display = document.getElementById('matey-vault-pin-display');
       if (display) {
-        display.style.color = '#E85D5D';
+        display.style.color = '#F87171';
         setTimeout(() => { display.style.color = ''; }, 600);
       }
       _pinInput = '';

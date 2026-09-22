@@ -334,8 +334,8 @@
       if (isRecording) {
         btn.classList.add('mic-active');
         btn.classList.add('mic-active-oval');
-        btn.style.background = '#22c55e';
-        btn.style.borderColor = '#22c55e';
+        btn.style.background = '#34D399';
+        btn.style.borderColor = '#34D399';
         btn.style.color = '#ffffff';
         btn.style.borderRadius = '9999px';
         // White mic icon

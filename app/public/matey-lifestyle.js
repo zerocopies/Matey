@@ -256,7 +256,7 @@
     var modal = document.createElement('div');
     modal.id = id;
     modal.className = 'lifestyle-modal';
-    modal.style.setProperty('--lf-accent', accent || '#8b8b90');
+    modal.style.setProperty('--lf-accent', accent || '#8B5CF6');
     modal.innerHTML = '<div class="lifestyle-backdrop"></div>' +
       '<div class="lifestyle-dialog">' +
       '<div class="lifestyle-header">' +
@@ -307,7 +307,7 @@
      Mic toggles on-device Whisper listening via window.MateySpeech —
      never the OS/keyboard mic. Submitted values become pill chips:
      chipStyle 'accent' = filled with section accent (preference fields),
-     'neutral' = #1c1c20 chips with an x (inventory fields). */
+     'neutral' = #0e0e11 chips with an x (inventory fields). */
   function voiceFieldHTML(id, placeholder) {
     return '<div class="lf-vinput" id="' + id + '-wrap">' +
       '<input type="text" id="' + id + '" placeholder="' + esc(placeholder) + '" autocomplete="off" />' +
@@ -625,12 +625,12 @@
       editor.innerHTML = '<div class="lf-inline-editor">' +
         '<img src="' + dataUrl + '" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;display:block;margin-bottom:10px" />' +
         '<label class="lf-label">Category</label>' +
-        '<select class="lf-vinput" id="lf-ward-cat" style="height:46px;background:#141418;border:1px solid #29292e;border-radius:12px;color:#f0f0f0;font-size:14px;padding:0 14px;width:100%">' +
+        '<select class="lf-vinput" id="lf-ward-cat" style="height:46px;background:#0e0e11;border:1px solid #23232a;border-radius:12px;color:#ffffff;font-size:14px;padding:0 14px;width:100%">' +
         WARDROBE_CATEGORIES.map(function (c) { return '<option value="' + c.label + '">' + c.label + '</option>'; }).join('') +
         '</select>' +
         '<div style="display:flex;gap:10px;margin-top:12px">' +
         '<button type="button" class="lf-btn-primary" id="lf-ward-save" style="height:42px;font-size:14px">Save item</button>' +
-        '<button type="button" class="lf-btn-primary" id="lf-ward-cancel" style="height:42px;font-size:14px;background:#29292e">Cancel</button>' +
+        '<button type="button" class="lf-btn-primary" id="lf-ward-cancel" style="height:42px;font-size:14px;background:#23232a">Cancel</button>' +
         '</div></div>';
       editor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       modal.querySelector('#lf-ward-cancel').addEventListener('click', function () {
@@ -883,7 +883,7 @@
     modal.setBody(
       '<div class="lf-coach-tip">' +
         '<div class="lf-coach-tip-text">' + esc(tip.text) + '</div>' +
-        '<button type="button" class="lf-btn-primary" id="lf-coach-next" style="margin-top:18px;background:' + accent + ';color:#1c1c20">Got it, next one</button>' +
+        '<button type="button" class="lf-btn-primary" id="lf-coach-next" style="margin-top:18px;background:' + accent + ';color:#ffffff">Got it, next one</button>' +
       '</div>'
     );
 

@@ -176,8 +176,8 @@
     var size = options.size || 300;
     var dotRadius = options.dotRadius || 12;
     var lineWidth = options.lineWidth || 3;
-    var accentColor = options.accentColor || '#B583FC';
-    var dotColor = options.dotColor || '#8b8b90';
+    var accentColor = options.accentColor || '#8B5CF6';
+    var dotColor = options.dotColor || '#9E9EA9';
     var bgColor = options.bgColor || 'transparent';
     var onComplete = options.onComplete || function () {};
     var onCancel = options.onCancel || function () {};

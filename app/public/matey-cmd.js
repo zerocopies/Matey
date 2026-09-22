@@ -13,7 +13,7 @@ export class CommandPalette {
           <input type="text" id="cmd-palette-input" placeholder="Speak or type..." style="width:100%; padding:12px; background:#000; color:#fff; border:1px solid #444; border-radius:6px; font-size:16px;" />
           <div style="display:flex; justify-content:space-between; margin-top:12px;">
             <button id="cmd-palette-cancel" style="padding:8px 16px; background:transparent; color:#fff; border:none;">Cancel</button>
-            <button id="cmd-palette-submit" style="padding:8px 16px; background:#4f46e5; color:#fff; border:none; border-radius:6px; font-weight:bold;">Send</button>
+            <button id="cmd-palette-submit" style="padding:8px 16px; background:#8B5CF6; color:#fff; border:none; border-radius:6px; font-weight:bold;">Send</button>
           </div>
         </div>
       </div>

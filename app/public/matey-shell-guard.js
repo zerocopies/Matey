@@ -10,10 +10,12 @@
   /* ---- Risk Classification ---- */
   var _HIGH_RISK_PATTERNS = [
     /rm\s+(-[rfRF]+\s+.*|\s+\/)/,
+    /rm\s+--(recursive|force|no-preserve-root)\b/,
     /rmdir\s+/,
     /mkfs/,
     /dd\s+if=/,
-    /chmod\s+777/,
+    /chmod\s+(-[rwxRf]+\s+)?\b(777|666|000)\b/,
+    /\bchmod\b[^\n]*\b(777|666|000|a\+rwx|ugo?\+rwx)\b/,
     /chown\s+-R\s+root/,
     /sudo\s+/,
     /su\s+/,
@@ -71,9 +73,28 @@
   ];
 
   /* ---- Risk Assessment ---- */
+  /* Backslash-escaping is the universal evasion vector for every pattern above
+     (r\m -rf /, \m\kfs, s\udo ...). We classify on a backslash-stripped,
+     whitespace-collapsed copy so evasions still trip the risk matcher, then
+     fail closed at the injection gate for the raw command (backslash blocked). */
+  function _riskNormalize(cmd) {
+    return cmd.replace(/\\/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  /* Permit only innocuous regex escapes inside (likely quoted) arguments:
+     \s \S \d \D \w \W \b \B . t n \\  — anything else (e.g. \m, \ , \/ framing
+     an evasion like r\m) is rejected by isCommandSafe/rejectionReason. */
+  var _ALLOWED_BACKSLASH = /\\[sSwWdDbt.nB\\]/g;
+
+  function _hasUnsafeBackslash(s) {
+    if (!s) return false;
+    var reduced = s.replace(_ALLOWED_BACKSLASH, '');
+    return reduced.indexOf('\\') !== -1;
+  }
+
   function classifyRisk(cmd) {
     if (!cmd || typeof cmd !== 'string') return 'unknown';
-    var trimmed = cmd.trim();
+    var trimmed = _riskNormalize(cmd);
     if (!trimmed) return 'unknown';
 
     for (var i = 0; i < _HIGH_RISK_PATTERNS.length; i++) {
@@ -137,6 +158,7 @@
     if (cmd.indexOf('\0') !== -1) return false;
     if (/[\r\n]/.test(cmd)) return false;
     if (cmd.length > _MAX_CMD_LEN) return false;
+    if (_hasUnsafeBackslash(cmd)) return false;
     return !_INJECTION_RE.test(cmd);
   }
 
@@ -145,6 +167,7 @@
     if (cmd.indexOf('\0') !== -1) return 'Null byte detected';
     if (/[\r\n]/.test(cmd)) return 'Multiline input blocked — single command only';
     if (cmd.length > _MAX_CMD_LEN) return 'Command exceeds ' + _MAX_CMD_LEN + ' characters';
+    if (_hasUnsafeBackslash(cmd)) return 'Backslash escape detected — use quotes for spaced/regex arguments';
     var m = _INJECTION_RE.exec(cmd);
     if (m) return 'Blocked chaining/substitution character: ' + JSON.stringify(m[0]);
     return null;

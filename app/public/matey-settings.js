@@ -272,7 +272,7 @@
        </div>
       </aside>`;
 
-  var BYOK_HTML = `<div class="byok-dialog" id="byok-dialog" style="position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);padding:20px;">
+  var BYOK_HTML = `<div class="byok-dialog" id="byok-dialog" style="position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);padding:20px;">
   <div class="byok-dialog-panel" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:24px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;">
     <h3 class="byok-dialog-title" style="font-size:18px;font-weight:600;color:var(--text-primary);margin:0 0 24px;">Provider Configuration</h3>
     <form id="byok-form">

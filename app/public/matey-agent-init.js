@@ -62,7 +62,7 @@
         if (chat) {
           var msg = document.createElement('div');
           msg.className = 'agent-msg agent-system';
-          msg.style.cssText = 'padding:12px; margin:8px; background:#1a1a2e; border-radius:8px; color:#e0e0e0;';
+          msg.style.cssText = 'padding:12px; margin:8px; background:#16161a; border-radius:8px; color:#9E9EA9;';
           msg.textContent = 'No AI provider configured. Please add an OpenAI-compatible API key in Settings.';
           chat.appendChild(msg);
         }

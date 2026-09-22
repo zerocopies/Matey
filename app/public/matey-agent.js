@@ -142,17 +142,17 @@ class HarnessLogger {
   }
 }
 
-// Toast helper — replaces alert(), matches app's design system (#0D0D0D bg, #2A2A2A border, #B583FC accent)
+// Toast helper — replaces alert(), matches app's OLED design system (#0e0e11 bg, #23232a border, #8B5CF6 accent)
 class AgentToast {
   static show(message, isError = false) {
     let el = document.getElementById('agent-toast');
     if (!el) {
       document.body.insertAdjacentHTML('beforeend', `
-        <div id="agent-toast" style="position:fixed; bottom:90px; left:16px; right:16px; background:#0D0D0D; border:1px solid ${isError ? '#E85D5D' : '#2A2A2A'}; border-radius:16px; padding:14px 16px; color:#FFFFFF; font-size:14px; z-index:10000; transform:translateY(150%); transition:transform 0.4s ease; box-shadow:0 10px 30px rgba(0,0,0,0.5);"></div>
+        <div id="agent-toast" style="position:fixed; bottom:90px; left:16px; right:16px; background:#0e0e11; border:1px solid ${isError ? '#F87171' : '#23232a'}; border-radius:16px; padding:14px 16px; color:#FFFFFF; font-size:14px; z-index:10000; transform:translateY(150%); transition:transform 0.4s ease; box-shadow:0 10px 30px rgba(0,0,0,0.5);"></div>
       `);
       el = document.getElementById('agent-toast');
     }
-    el.style.borderColor = isError ? '#E85D5D' : '#2A2A2A';
+    el.style.borderColor = isError ? '#F87171' : '#23232a';
     el.innerText = message;
     el.style.transform = 'translateY(0)';
     clearTimeout(el._hideTimer);
@@ -166,8 +166,8 @@ class AgentProgress {
   static _ensureEl() {
     if (AgentProgress._el) return AgentProgress._el;
     document.body.insertAdjacentHTML('beforeend', `
-      <div id="agent-progress" style="position:fixed; top:70px; left:16px; right:16px; background:#0D0D0D; border:1px solid #2A2A2A; border-radius:12px; padding:8px 14px; color:#B3B3B3; font-size:12px; z-index:9999; display:none; align-items:center; gap:8px;">
-        <span class="agent-spinner" style="width:10px; height:10px; border:2px solid #B583FC; border-top-color:transparent; border-radius:50%; display:inline-block; animation:agent-spin 0.8s linear infinite;"></span>
+      <div id="agent-progress" style="position:fixed; top:70px; left:16px; right:16px; background:#0e0e11; border:1px solid #23232a; border-radius:12px; padding:8px 14px; color:#9E9EA9; font-size:12px; z-index:9999; display:none; align-items:center; gap:8px;">
+        <span class="agent-spinner" style="width:10px; height:10px; border:2px solid #8B5CF6; border-top-color:transparent; border-radius:50%; display:inline-block; animation:agent-spin 0.8s linear infinite;"></span>
         <span id="agent-progress-text"></span>
       </div>
       <style>@keyframes agent-spin { to { transform: rotate(360deg); } }</style>

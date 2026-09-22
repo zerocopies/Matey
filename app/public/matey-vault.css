@@ -7,9 +7,7 @@
   display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.8);
   padding: 20px;
   font-family: inherit;
 }
@@ -18,12 +16,10 @@
   width: 100%;
   max-width: 640px;
   max-height: 90vh;
-  background: rgba(20, 20, 24, 0.92);
-  border: 1px solid var(--border, #2A2A2A);
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-modal);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -34,13 +30,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px;
-  border-bottom: 0.5px solid var(--border, #2A2A2A);
+  border-bottom: 1px solid var(--border-card);
 }
 
 #matey-vault-title {
   font-size: 18px;
   font-weight: 700;
-  color: #f0f0f0;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -48,9 +44,9 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid var(--border, #2A2A2A);
-  background: transparent;
-  color: #B3B3B3;
+  border: 1px solid var(--border-card);
+  background: var(--bg-card);
+  color: var(--text-muted);
   font-size: 20px;
   cursor: pointer;
   display: flex;
@@ -78,9 +74,9 @@
 }
 
 .vault-folder-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border, #2A2A2A);
-  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
   padding: 18px;
   cursor: pointer;
   transition: transform 0.15s ease, background 0.15s ease;
@@ -100,13 +96,13 @@
 .vault-folder-label {
   font-size: 15px;
   font-weight: 600;
-  color: #f0f0f0;
+  color: var(--text-primary, #FFFFFF);
   margin-bottom: 4px;
 }
 
 .vault-folder-desc {
   font-size: 12px;
-  color: var(--text-secondary, #B3B3B3);
+  color: var(--text-secondary, var(--text-secondary, #9E9EA9));
   line-height: 1.4;
 }
 
@@ -123,13 +119,13 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: var(--text-secondary, #B3B3B3);
+  color: var(--text-secondary, var(--text-secondary, #9E9EA9));
   cursor: pointer;
 }
 
 .vault-item-count {
   font-size: 12px;
-  color: var(--text-secondary, #B3B3B3);
+  color: var(--text-secondary, var(--text-secondary, #9E9EA9));
 }
 
 .vault-item-list {
@@ -143,8 +139,8 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border, #2A2A2A);
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
   border-radius: 12px;
   transition: background 0.15s ease;
 }
@@ -156,7 +152,7 @@
 .vault-item-check {
   width: 20px;
   height: 20px;
-  accent-color: var(--accent, #B583FC);
+  accent-color: var(--accent, #8B5CF6);
   cursor: pointer;
 }
 
@@ -180,7 +176,7 @@
 .vault-item-title {
   font-size: 14px;
   font-weight: 500;
-  color: #f0f0f0;
+  color: var(--text-primary, #FFFFFF);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -188,7 +184,7 @@
 
 .vault-item-meta {
   font-size: 11px;
-  color: var(--text-secondary, #B3B3B3);
+  color: var(--text-secondary, var(--text-secondary, #9E9EA9));
   margin-top: 2px;
 }
 
@@ -214,7 +210,7 @@
 .vault-empty {
   text-align: center;
   padding: 40px 20px;
-  color: var(--text-secondary, #B3B3B3);
+  color: var(--text-secondary, var(--text-secondary, #9E9EA9));
   font-size: 14px;
 }
 
@@ -227,19 +223,17 @@
   display: flex;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(20, 20, 24, 0.95);
-  border: 1px solid var(--border, #2A2A2A);
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
   border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  box-shadow: var(--shadow-modal);
   z-index: 10000;
 }
 
 #matey-vault-action-bar button {
   border: none;
   background: transparent;
-  color: #f0f0f0;
+  color: var(--text-primary, #FFFFFF);
   font-size: 13px;
   font-weight: 500;
   padding: 10px 14px;
@@ -257,11 +251,11 @@
 }
 
 #vault-action-rename {
-  color: var(--accent, #B583FC);
+  color: var(--accent, #8B5CF6);
 }
 
 #vault-action-delete {
-  color: #E85D5D;
+  color: var(--danger, #F87171);
 }
 
 #vault-action-download {
@@ -281,32 +275,31 @@
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  padding: 20px;
 }
 
 #matey-vault-pin-dialog {
-  background: rgba(20, 20, 24, 0.95);
-  border: 1px solid var(--border, #2A2A2A);
-  border-radius: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
   padding: 24px;
   width: 90%;
   max-width: 340px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  box-shadow: var(--shadow-modal);
   text-align: center;
 }
 
 #matey-vault-pin-title {
   font-size: 16px;
   font-weight: 600;
-  color: #f0f0f0;
+  color: var(--text-primary, #FFFFFF);
   margin-bottom: 16px;
 }
 
 #matey-vault-pin-display {
   font-size: 28px;
   font-weight: 700;
-  color: var(--accent, #B583FC);
+  color: var(--accent, #8B5CF6);
   letter-spacing: 8px;
   margin-bottom: 20px;
   min-height: 36px;
@@ -324,9 +317,9 @@
 .vault-pin-key {
   height: 56px;
   border-radius: 14px;
-  border: 1px solid var(--border, #2A2A2A);
-  background: rgba(255, 255, 255, 0.06);
-  color: #f0f0f0;
+  border: 1px solid var(--border-card);
+  background: var(--bg-card);
+  color: var(--text-primary);
   font-size: 20px;
   font-weight: 600;
   cursor: pointer;
@@ -355,10 +348,10 @@
   min-width: 44px;
   min-height: 44px;
   flex-shrink: 0;
-  border-radius: 12px;
-  border: 1px solid var(--border, #2A2A2A);
-  background: transparent;
-  color: #B3B3B3;
+  border-radius: 16px;
+  border: 1px solid var(--border-card);
+  background: var(--bg-card);
+  color: var(--text-muted);
   font-size: 18px;
   cursor: pointer;
   display: flex;
@@ -368,6 +361,6 @@
 }
 
 #vault-launcher:active {
-  background: rgba(255, 255, 255, 0.08);
-  color: #f0f0f0;
+  background: var(--border-card);
+  color: var(--text-primary);
 }
