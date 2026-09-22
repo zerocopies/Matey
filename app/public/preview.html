@@ -5,20 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
     <style>
-      html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
+      html, body { margin: 0; width: 100%; height: 100%; background: #000000; overflow: hidden; }
       .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; }
     </style>
     <script>
-      /* Instant matte background — set --app-bg before first paint so the
-         html { background-color: var(--app-bg) !important } rule resolves
-         to the themed color immediately. No white flash. */
-      try {
-        var _bgs = { graphitexx: '#000000', 'cool-panda': '#1a1d23', minimal: '#fafafa' };
-        var _t = localStorage.getItem('matey-theme') || 'graphitexx';
-        var _bg = _bgs[_t] || _bgs.graphitexx;
-        document.documentElement.style.setProperty('--app-bg', _bg);
-        document.documentElement.style.backgroundColor = _bg;
-      } catch (e) {}
+      try { document.documentElement.style.setProperty('--bg-main', '#000000'); document.documentElement.style.backgroundColor = '#000000'; } catch (e) {}
     </script>
     <meta name="description" content="Matey — your on-device personal AI assistant with BYOK AI providers, offline Whisper STT, encrypted journal, and syntax-driven note vault." />
     <link rel="icon" href="./images/matey-logo.png" type="image/png" />
@@ -27,31 +18,30 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="theme.css?v=105">
-     <script src="./version.js"></script>
-     document.write('<link rel="stylesheet" href="./matey-preview.css?v=' + MATEY_CSS_VERSION + '">');
     <script src="./version.js"></script>
+    <script>
+      document.write('<link rel="stylesheet" href="./matey-preview.css?v=' + MATEY_CSS_VERSION + '">');
+    </script>
     <script src="./matey-boot.js?v=101"></script>
     <script src="./matey-sentry.js?v=101"></script>
-    <script src="./matey-vector-search.js?v=101"></script>
-    <script src="./matey-behavior.js?v=101"></script>
-    <script src="./matey-shell-guard.js?v=101"></script>
-    <script src="./matey-native-shell.js?v=101"></script>
   </head>
-   <body>
-       <div class="app-shell">
+  <body>
+    <div class="app-shell">
+      <!-- Top Header -->
       <header class="header">
         <div class="header-left">
           <img src="images/matey-logo.png" class="matey-logo" alt="Matey" />
-          <button id="workspace-folder-btn" class="workspace-plug-box" title="Select Workspace">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9h6"></path><path d="M9 13h6"></path></svg>
-          </button>
-          <button class="ide-text-badge" type="button" title="IDE">IDE</button>
+          <div class="header-center-icons">
+            <button id="workspace-folder-btn" class="header-icon-btn workspace-plug-box" title="Select Workspace" aria-label="Select Workspace">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9h6"></path><path d="M9 13h6"></path></svg>
+            </button>
+            <button class="header-icon-btn ide-text-badge" type="button" title="IDE" aria-label="IDE">IDE</button>
+          </div>
         </div>
         <div class="header-actions">
           <div class="status-circle" title="Token Meter"></div>
-          <button class="incognito-btn" type="button" title="Incognito" aria-label="Incognito">
+          <button class="header-icon-btn" type="button" title="Incognito" aria-label="Incognito">
             <svg width="22" height="22" viewBox="0 0 100 120" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M50 4 C20 4 5 28 5 52 L5 92 C5 105 15 105 20 98 C25 105 35 105 40 98 C45 105 55 105 60 98 C65 105 75 105 80 98 C85 105 95 105 95 92 L95 52 C95 28 80 4 50 4 Z"/>
               <ellipse cx="35" cy="50" rx="10" ry="15"/>
@@ -62,7 +52,7 @@
               <path d="M40 80 L43 85 L46 80 L49 85 L52 80 L55 85 L58 80 L60 82"/>
             </svg>
           </button>
-          <button class="burger-menu-btn" type="button" title="Menu" aria-label="Menu">
+          <button class="header-icon-btn burger-menu-btn" type="button" title="Menu" aria-label="Menu">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="4" y1="6" x2="20" y2="6"></line>
               <line x1="4" y1="12" x2="20" y2="12"></line>
@@ -73,108 +63,73 @@
       </header>
 
       <nav class="tabs-wrap" id="tabs-wrap">
-        <div class="tabs">
-          <a class="tab" href="./lifestyle.html">Lifestyle</a>
-          <a class="tab" href="./vots.html">My-VOTS</a>
-          <a class="tab" href="./markdown.html">.EDITOR</a>
-          <a class="tab" href="./journal.html">Journal</a>
-          <a class="tab active" href="./preview.html#agent">Agent</a>
-        </div>
+          <div class="tabs">
+            <a class="tab active" href="./preview.html#agent" aria-current="page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              <span>~AGENT</span>
+            </a>
+            <a class="tab" href="./lifestyle.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg>
+              <span>LIFESTYLE</span>
+            </a>
+            <a class="tab" href="./vots.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>MY VOTS</span>
+            </a>
+            <a class="tab" href="./journal.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>JOURNAL</span>
+            </a>
+            <a class="tab" href="./raw-editor.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>IDE</span>
+            </a>
+          </div>
       </nav>
 
-      <main class="agent-page">
-         <div class="agent-chat" id="agent-chat">
-          <div class="agent-welcome" id="agent-welcome">
-            <img src="./images/matey-logo.png" alt="Matey" class="agent-welcome-logo" id="agent-welcome-logo" />
-            <div class="agent-welcome-text">Hi, I'm <strong>Matey Agent</strong> — your on-device AI assistant. How can I help you today?</div>
-          </div>
-        </div>
-        <div class="md-composer" id="md-composer">
-          <div class="md-symbol-toolbar" id="md-symbol-toolbar">
-            <button type="button" data-key="*">* </button>
-            <button type="button" data-key="/">/</button>
-            <button type="button" data-key="#"># </button>
-            <button type="button" data-key="$">$</button>
-            <button type="button" data-key="?">?</button>
-            <button type="button" data-key="!">!</button>
-            <button type="button" data-key="=">=</button>
-            <button type="button" data-key="+">+</button>
-            <button type="button" data-key="-">-</button>
-            <button type="button" data-key="÷">÷</button>
-            <button type="button" data-key="(">(</button>
-            <button type="button" data-key=")">)</button>
-          </div>
-          <div class="md-compose-box">
-            <input type="file" id="md-attach-input" accept="*/*" multiple style="display:none" />
-            <button class="md-attach-btn" id="md-attach" type="button" aria-label="Attach file">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            </button>
-            <button class="md-model-btn" id="md-model-btn" type="button" aria-label="Select model" title="Select model">⚡ Auto</button>
-            <div class="md-model-menu" id="md-model-menu" hidden>
-              <div class="md-model-menu-head" id="md-model-menu-head">AI Model</div>
-              <div class="md-model-group">
-                <div class="md-model-group-label">⚡ Fast &amp; Cheap</div>
-                <div class="md-model-options" id="md-model-fast"></div>
-              </div>
-              <div class="md-model-group">
-                <div class="md-model-group-label">🧠 Heavy &amp; Reasoning</div>
-                <div class="md-model-options" id="md-model-heavy"></div>
-              </div>
-              <div class="md-model-group">
-                <button type="button" class="md-model-auto" id="md-model-auto" data-model="auto">Reset to Auto</button>
-              </div>
-            </div>
-            <div class="md-attach-pills" id="md-attach-pills" style="display:none"></div>
-            <button class="md-voice-btn" id="md-voice" type="button" aria-label="Voice input">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-            </button>
-            <textarea class="md-compose-input" id="md-compose-input" autocomplete="off" placeholder="Type and press send..." rows="1"></textarea>
-            <div class="md-voice-status" id="md-voice-status" role="status" aria-live="polite"></div>
-            <div class="md-compose-actions">
-              <button class="md-send-btn" id="md-send" type="button" aria-label="Send">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="19" y1="12" x2="12" y2="5"></line><line x1="5" y1="12" x2="12" y2="5"></line></svg>
-              </button>
+      <!-- Main Chat Area -->
+      <main class="main-content agent-page">
+        <div class="screen-viewport">
+          <div class="chat-area" id="agent-chat" role="log" aria-live="polite">
+            <div class="welcome" id="agent-welcome">
+              <img src="./images/matey-logo.png" alt="Matey" class="welcome-logo" id="agent-welcome-logo" />
+              <div class="welcome-text" id="agent-welcome-text">Hi, I'm <strong>Matey Agent</strong> — your on-device AI assistant. How can I help you today?</div>
+        <div class="welcome-subtext text-muted" style="font-size: 13px; margin-top: 8px;">Your sovereign, on-device AI with BYOK providers, local STT & encrypted journal.</div>
             </div>
           </div>
         </div>
-        <style id="mty-model-picker-styles">
-          /* Solid Model Picker — fully theme-aware via Luxury tokens */
-          #md-composer { position: relative; }
-          .md-model-btn {
-            display: inline-flex; align-items: center; gap: 4px;
-            padding: 6px 10px; border-radius: 10px; flex-shrink: 0; white-space: nowrap;
-            background: var(--surface-main, #17171b); color: var(--accent-primary, #B583FC);
-            border: 1px solid var(--border-subtle, #3A3A3A);
-            font: inherit; font-size: 12px; font-weight: 600; line-height: 1; cursor: pointer;
-          }
-          .md-model-btn:hover { border-color: var(--accent-primary, #B583FC); opacity: 0.92; }
-          .md-model-menu {
-            position: absolute; right: 12px; bottom: calc(100% - 24px);
-            width: 240px; max-height: 320px; overflow-y: auto;
-            background: var(--surface-main, #17171b); border: 1px solid var(--border-subtle, #2A2A2A); border-radius: 14px;
-            padding: 10px; z-index: 220; color: var(--text-primary, #FFFFFF); font-size: 13px;
-            box-shadow: 0 16px 40px rgba(0,0,0,0.6);
-          }
-          .md-model-menu[hidden] { display: none; }
-          .md-model-menu-head {
-            font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-            color: var(--text-muted, #6B6B6B); padding: 4px 6px 8px; border-bottom: 1px solid var(--border-subtle, #242424); margin-bottom: 8px;
-          }
-          .md-model-group-label { font-size: 11px; font-weight: 700; color: var(--text-muted, #8A8A8A); padding: 6px 6px 4px; }
-          .md-model-options { display: flex; flex-direction: column; gap: 2px; }
-          .md-model-opt, .md-model-auto {
-            display: flex; align-items: center; gap: 6px; width: 100%;
-            padding: 8px 10px; border: 1px solid transparent; border-radius: 8px;
-            background: transparent; color: var(--text-primary, #DDDDDD); font: inherit; font-size: 13px; text-align: left; cursor: pointer;
-          }
-          .md-model-opt:hover, .md-model-auto:hover { background: var(--surface-secondary, #232329); border-color: var(--border-subtle, #333339); color: var(--text-primary, #FFFFFF); }
-          .md-model-opt.is-active { background: var(--accent-dim); border-color: var(--accent-primary, #B583FC); color: var(--accent-primary, #FFFFFF); }
-          .md-model-auto { color: var(--text-muted, #B3B3B3); justify-content: center; margin-top: 2px; }
-          .mty-live-text { font-size: 14px; line-height: 1.55; white-space: pre-wrap; word-wrap: break-word; color: var(--text-primary, #FFFFFF); }
-          .mty-diff-line { opacity: 0.55; font-size: 12px; margin-top: 6px; color: var(--text-secondary, #B3B3B3); }
-        </style>
       </main>
+
+      <!-- Bottom Composer -->
+      <div class="composer" id="md-composer">
+        <div class="composer-box">
+          <input type="file" id="md-attach-input" accept="*/*" multiple style="display:none" />
+          <button class="composer-attach" id="md-attach" type="button" aria-label="Attach file">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+          <button class="composer-attach" id="md-model-btn" type="button" aria-label="Select model" title="Select model" style="padding:4px 10px;border-radius:var(--radius-full);background:var(--bg-card);border:1px solid var(--border-card);color:var(--accent);font:inherit;font-size:11px;font-weight:600;line-height:1;">⚡ Auto</button>
+          <div class="md-model-menu" id="md-model-menu" hidden>
+            <div class="md-model-menu-head" id="md-model-menu-head"></div>
+            <div class="md-model-menu-group-label">Fast</div>
+            <div class="md-model-menu-rows" id="md-model-fast"></div>
+            <div class="md-model-menu-group-label">Heavy</div>
+            <div class="md-model-menu-rows" id="md-model-heavy"></div>
+            <button type="button" class="md-model-auto" id="md-model-auto">⚡ Auto</button>
+          </div>
+          <div class="md-attach-pills" id="md-attach-pills" style="display:none;flex-wrap:wrap;gap:6px;"></div>
+          <button class="composer-voice" id="md-voice" type="button" aria-label="Voice input">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            <span class="mic-glow" style="position:absolute;inset:-4px;border-radius:50%;background:radial-gradient(circle,var(--accent-green) 0%,transparent 70%);opacity:0;pointer-events:none;transition:opacity 0.3s;"></span>
+          </button>
+          <textarea class="composer-input" id="md-compose-input" autocomplete="off" placeholder="Type and press send..." rows="1"></textarea>
+          <div class="md-voice-status" id="md-voice-status" role="status" aria-live="polite"></div>
+          <button class="composer-send" id="md-send" type="button" aria-label="Send">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="19" y1="12" x2="12" y2="5"></line><line x1="5" y1="12" x2="12" y2="5"></line></svg>
+          </button>
+        </div>
+      </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.2/mammoth.min.js"></script>
     <script src="./matey-themes.js?v=101"></script>
@@ -186,10 +141,10 @@
     <script src="./matey-tabs.js?v=101"></script>
     <script src="./matey-byok.js?v=101"></script>
     <script src="./matey-provider-presets.js?v=101"></script>
-     <script src="./matey-saf.js?v=101"></script>
-      <script type="module" src="./matey-agent-bundle.js?v=104"></script>
-      <script src="./matey-agent-init.js?v=102"></script>
-      <script src="./matey-agent-harness.js?v=102"></script>
+    <script src="./matey-saf.js?v=101"></script>
+    <script type="module" src="./matey-agent-bundle.js?v=104"></script>
+    <script src="./matey-agent-init.js?v=102"></script>
+    <script src="./matey-agent-harness.js?v=102"></script>
     <script src="./matey-beat.js?v=101"></script>
     <script type="module">import { mateyCoach } from './matey-coach.js'; window.mateyCoach = mateyCoach;</script>
     <script src="./matey-lifestyle.js?v=103"></script>
@@ -203,7 +158,7 @@
       var pendingFiles = [];
       var convHistory = [];
 
-      /* ===== Visual Model Picker (TASK 1) — solid dark, no glass effects ===== */
+      /* ===== Visual Model Picker ===== */
       var modelBtn = document.getElementById('md-model-btn');
       var modelMenu = document.getElementById('md-model-menu');
       var modelFast = document.getElementById('md-model-fast');
@@ -373,7 +328,7 @@
       }
 
       function escapeHtml(str) {
-        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        return String(str).replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"');
       }
 
       function formatFileSize(bytes) {
@@ -382,9 +337,14 @@
         return (bytes / 1048576).toFixed(1) + ' MB';
       }
 
-      function createMsgBubble(cls, content) {
+      function createMsgBubble(cls, content, isUser) {
         var div = document.createElement('div');
         div.className = cls;
+        if (isUser) {
+          div.style.cssText = "align-self:flex-end;background:var(--accent);color:#000000;border-radius:18px 18px 4px 18px;padding:10px 14px;max-width:80%;box-shadow:0 1px 2px rgba(0,0,0,0.3);";
+        } else {
+          div.style.cssText = "align-self:flex-start;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);border-radius:18px 18px 18px 4px;padding:10px 14px;max-width:80%;box-shadow:0 1px 2px rgba(0,0,0,0.3);";
+        }
         div.innerHTML = renderMarkdown(content);
         return div;
       }
@@ -490,11 +450,7 @@
         return text;
       }
 
-      /* ===== Universal file attachment support (Agent tab) =====
-         The file input accepts ANY file type (accept all). Text/code documents
-         are read via FileReader.readAsText(); spreadsheets (.csv/.xlsx/.xls)
-         get raw tabular text/rows extracted into the context window; PDF/DOCX
-         keep their existing parsers; images preview inline. */
+      /* ===== Universal file attachment support ===== */
       function fileKey(file) {
         var parts = String(file.name || '').split('.');
         var ext = parts.length > 1 ? parts.pop().toLowerCase() : '';
@@ -535,23 +491,18 @@
                k.mime.indexOf('csv') !== -1 || k.mime.indexOf('spreadsheet') !== -1 || k.mime.indexOf('ms-excel') !== -1;
       }
 
-      /* Convert raw CSV text into bounded ' | '-separated table rows for context. */
       function extractCsvRows(text) {
         var rows = String(text).split(/\r?\n/);
         var out = [];
         for (var i = 0; i < rows.length && out.length < 250; i++) {
           var line = rows[i].replace(/\r/g, '').trim();
           if (!line) continue;
-          // Split on commas outside double-quoted spans.
           var cells = line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/);
           out.push(cells.map(function (c) { return c.replace(/^"|"$/g, '').trim(); }).slice(0, 40).join(' | '));
         }
         return out.join('\n');
       }
 
-      /* Minimal offline XLSX reader — inflates xl/sharedStrings.xml and
-         worksheet XML straight from the ZIP container with DecompressionStream
-         (no CDN, fully offline). Flattens cells into raw tabular rows. */
       function sharedStringsToArray(xml) {
         var arr = [], re = /<si>([\s\S]*?)<\/si>/gi, m;
         while ((m = re.exec(xml))) {
@@ -629,7 +580,6 @@
       async function extractFileText(file) {
         var k = fileKey(file);
 
-        /* Spreadsheets — raw tabular text/rows into the context window */
         if (isSpreadsheet(file)) {
           if (k.ext === 'csv' || k.mime.indexOf('csv') !== -1) {
             var csvText = await readFileAsText(file);
@@ -642,7 +592,6 @@
           return '[Spreadsheet attached: ' + file.name + ' — binary spreadsheet container; parser could not extract rows. Convert to CSV for inline tables.]';
         }
 
-        /* Text / code documents — straight FileReader.readAsText() */
         if (isTextLike(file)) {
           var txt = await readFileAsText(file);
           return 'File "' + file.name + '":\n' + txt;
@@ -731,7 +680,6 @@
         return { role: 'user', content: content };
       }
 
-      /* ===== Attached-file pills in the input bar (icon + quick ✕ remove) ===== */
       function extIcon(ext) {
         var map = {
           pdf: '📕', doc: '📘', docx: '📘', md: '📝', txt: '📄', rtf: '📄',
@@ -805,11 +753,11 @@
           convHistory.push(userMsg);
 
           if (text) {
-            chat.appendChild(createMsgBubble('agent-msg agent-user', text));
+            chat.appendChild(createMsgBubble('agent-msg agent-user', text, true));
           }
           if (pendingFiles.length > 0) {
             pendingFiles.forEach(function (f) {
-              var bubble = createMsgBubble('agent-msg agent-user', f.name + ' (' + formatFileSize(f.size) + ')');
+              var bubble = createMsgBubble('agent-msg agent-user', f.name + ' (' + formatFileSize(f.size) + ')', true);
               bubble.style.cssText = 'opacity:0.7;font-size:13px;';
               chat.appendChild(bubble);
             });
@@ -820,7 +768,8 @@
 
           var resp = document.createElement('div');
           resp.className = 'agent-msg agent-reply';
-          resp.innerHTML = '<img src="./images/matey-logo.png" class="ai-thinking-logo" alt="Thinking…" />';
+          resp.style.cssText = "align-self:flex-start;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);border-radius:18px 18px 18px 4px;padding:10px 14px;max-width:80%;box-shadow:0 1px 2px rgba(0,0,0,0.3);";
+          resp.innerHTML = '<img src="./images/matey-logo.png" class="ai-thinking-logo" alt="Thinking…" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;" />';
           chat.appendChild(resp);
           scrollToBottom();
 
@@ -830,7 +779,6 @@
           }
 
           try {
-            // Use AgentOrchestrator (with tool calling) if available, otherwise fall back to plain chat
             if (window.MateyAgent && window.MateyAgent.AgentOrchestrator) {
               if (!window.mateyAgent) {
                 var provider = window.MateyByok.getProvider('text');
@@ -841,9 +789,6 @@
                 window.mateyAgent = new window.MateyAgent.AgentOrchestrator(provider);
               }
               resp.innerHTML = '<div style="opacity:0.7;">Agent is working... <span class="agent-thinking-dots">...</span></div>';
-              // Live streaming (TASK 2): paint tokens into the bubble via rAF +
-              // insertAdjacentText. NEVER innerHTML-per-token — that re-parses the
-              // whole bubble every frame and freezes the UI thread.
               var liveEl = document.createElement('div');
               liveEl.className = 'mty-live-text';
               resp.appendChild(liveEl);
@@ -946,7 +891,6 @@
           if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
         });
       }
-      // Voice input handled by matey-mic.js (loaded at line ~542) to avoid duplicate handlers
 
       if (typeof pdfjsLib !== 'undefined') {
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.worker.min.js';
@@ -959,7 +903,7 @@
     <script src="./matey-stt.js?v=101"></script>
     <script src="./matey-mic.js?v=101"></script>
     <script src="./matey-models.js?v=101"></script>
-<script src="./matey-rss.js?v=101"></script>
+    <script src="./matey-rss.js?v=101"></script>
     <script src="./matey-license.js?v=101"></script>
     <script src="./matey-recall.js?v=101"></script>
     <script src="./matey-init.js?v=101"></script>
@@ -968,7 +912,7 @@
     <script src="./matey-fs.js?v=101"></script>
     <script src="./matey-hooks-manager.js?v=101"></script>
     <script src="./matey-lock.js?v=101"></script>
-  <script>
+    <script>
     (function() {
       /* Logo -> home */
       var logo = document.querySelector(".matey-logo");
@@ -1040,6 +984,6 @@
         });
       });
     })();
-  </script>
+    </script>
   </body>
 </html>
