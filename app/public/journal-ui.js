@@ -31,6 +31,7 @@
   var _currentTags = [];
   var _currentPhotos = [];
   var _currentVoiceNotes = [];
+  var _userNavigated = false;
   var _activeFilterTag = null;
   var _isRecording = false;
   var _mediaRecorder = null;
@@ -148,6 +149,7 @@
   }
 
   function goToEditor(entryId) {
+    _userNavigated = true;
     _currentEntryId = entryId || null;
     _currentTags = [];
     _currentPhotos = [];
@@ -1240,12 +1242,12 @@
           if (locked) {
             showLock();
             activateIncognitoIcon();
-          } else {
+          } else if (!_userNavigated) {
             goToLibrary();
             activateIncognitoIcon();
           }
         });
-      } else {
+      } else if (!_userNavigated) {
         goToLibrary();
       }
     });

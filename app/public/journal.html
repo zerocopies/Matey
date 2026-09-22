@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="en">
-  <head>
+    <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
     <style>
-      html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
+      html, body { margin: 0; width: 100%; height: 100%; background: #000000; overflow: hidden; }
       .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; display: flex; flex-direction: column; }
     </style>
     <meta name="description" content="Matey Journal — private, encrypted, local-first journaling." />
@@ -20,24 +20,24 @@
     <script>
       document.write('<link rel="stylesheet" href="./matey-preview.css?v=' + MATEY_CSS_VERSION + '">');
     </script>
-    <link rel="stylesheet" href="theme.css?v=105">
+    <link rel="stylesheet" href="theme.css?v=202">
     <script src="./matey-boot.js?v=100"></script>
     <script src="./matey-sentry.js?v=100"></script>
   </head>
   <body>
- <div class="app-shell">
+   <div class="app-shell">
       <header class="header">
         <div class="header-left">
           <img src="images/matey-logo.png" class="matey-logo" alt="Matey" />
-          <button id="workspace-folder-btn" class="workspace-plug-box" title="Select Workspace">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9h6"></path><path d="M9 13h6"></path></svg>
+          <button id="workspace-folder-btn" class="header-icon-btn workspace-plug-box" title="Select Workspace" aria-label="Select Workspace">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9h6"></path><path d="M9 13h6"></path></svg>
           </button>
-          <button class="ide-text-badge" type="button" title="IDE">IDE</button>
+          <button class="header-icon-btn ide-text-badge" type="button" title="IDE" aria-label="IDE">IDE</button>
         </div>
         <div class="header-actions">
           <div class="status-circle" title="Token Meter"></div>
-          <button class="incognito-btn" type="button" title="Incognito" aria-label="Incognito">
+          <button class="header-icon-btn" type="button" title="Incognito" aria-label="Incognito">
             <svg width="22" height="22" viewBox="0 0 100 120" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M50 4 C20 4 5 28 5 52 L5 92 C5 105 15 105 20 98 C25 105 35 105 40 98 C45 105 55 105 60 98 C65 105 75 105 80 98 C85 105 95 105 95 92 L95 52 C95 28 80 4 50 4 Z"/>
               <ellipse cx="35" cy="50" rx="10" ry="15"/>
@@ -48,7 +48,7 @@
               <path d="M40 80 L43 85 L46 80 L49 85 L52 80 L55 85 L58 80 L60 82"/>
             </svg>
           </button>
-          <button class="burger-menu-btn" type="button" title="Menu" aria-label="Menu">
+          <button class="header-icon-btn burger-menu-btn" type="button" title="Menu" aria-label="Menu">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="4" y1="6" x2="20" y2="6"></line>
               <line x1="4" y1="12" x2="20" y2="12"></line>
@@ -60,113 +60,124 @@
 
       <nav class="tabs-wrap" id="tabs-wrap">
         <div class="tabs">
-          <a class="tab" href="./lifestyle.html">Lifestyle</a>
-          <a class="tab" href="./vots.html">My-VOTS</a>
-          <a class="tab" href="./raw-editor.html">&gt;edit</a>
-          <a class="tab active" href="./journal.html">Journal</a>
-          <a class="tab" href="./preview.html#agent">&gt;agent</a>
+            <a class="tab" href="./preview.html#agent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              <span>~AGENT</span>
+            </a>
+            <a class="tab" href="./lifestyle.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg>
+              <span>LIFESTYLE</span>
+            </a>
+            <a class="tab" href="./vots.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>MY VOTS</span>
+            </a>
+            <a class="tab active" href="./journal.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>JOURNAL</span>
+            </a>
+            <a class="tab" href="./raw-editor.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>IDE</span>
+            </a>
         </div>
-      </nav>
-
-
-      <!-- ==================== LOCK SCREEN ==================== -->
+      </nav><!-- ==================== LOCK SCREEN ==================== -->
       <div class="jnl-lock" id="jnl-lock" style="display:none">
-        <div class="jnl-lock-content">
-          <div class="jnl-lock-icon">
+        <div class="jnl-lock-content" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:32px 24px;max-width:360px;width:90%;">
+          <div class="jnl-lock-icon" style="margin-bottom:16px;">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           </div>
-          <h2 class="jnl-lock-title">Journal Locked</h2>
-          <p class="jnl-lock-desc" id="jnl-lock-desc">Enter your PIN to unlock</p>
-          <input type="password" class="jnl-lock-input" id="jnl-pin-input" inputmode="numeric" pattern="[0-9]*" placeholder="••••" maxlength="8" />
-          <button class="jnl-btn jnl-btn-primary" id="jnl-unlock-btn" type="button">Unlock</button>
-          <button class="jnl-btn jnl-btn-secondary" id="jnl-setup-btn" type="button" style="display:none">Set Up PIN</button>
-          <p class="jnl-lock-error" id="jnl-lock-error" style="display:none">Incorrect PIN</p>
+          <h2 class="jnl-lock-title" style="font-size:20px;font-weight:600;color:var(--text-primary);margin:0 0 8px;">Journal Locked</h2>
+          <p class="jnl-lock-desc" id="jnl-lock-desc" style="color:var(--text-muted);font-size:14px;margin:0 0 24px;">Enter your PIN to unlock</p>
+          <input type="password" class="jnl-lock-input" id="jnl-pin-input" inputmode="numeric" pattern="[0-9]*" placeholder="••••" maxlength="8" style="width:100%;background:var(--bg-main);border:1px solid var(--border-card);border-radius:12px;padding:16px;font:inherit;font-size:18px;color:var(--text-primary);text-align:center;letter-spacing:8px;outline:none;margin-bottom:16px;" />
+          <button class="jnl-btn jnl-btn-primary" id="jnl-unlock-btn" type="button" style="width:100%;background:var(--accent);color:#000000;border:none;border-radius:12px;padding:16px;font:inherit;font-size:16px;font-weight:600;cursor:pointer;">Unlock</button>
+          <button class="jnl-btn jnl-btn-secondary" id="jnl-setup-btn" type="button" style="display:none;width:100%;margin-top:12px;background:transparent;color:var(--text-muted);border:1px solid var(--border-card);border-radius:12px;padding:16px;font:inherit;font-size:16px;cursor:pointer;">Set Up PIN</button>
+          <p class="jnl-lock-error" id="jnl-lock-error" style="display:none;color:var(--danger);font-size:13px;margin-top:12px;text-align:center;">Incorrect PIN</p>
         </div>
       </div>
 
       <!-- ==================== TIER 1: LIBRARY ==================== -->
-      <main class="jnl-library" id="jnl-library" style="display:none">
-        <div class="jnl-library-header">
-          <h1 class="jnl-library-title">Journals</h1>
-          <button class="jnl-btn jnl-btn-primary jnl-new-journal-btn" id="jnl-new-journal-btn" type="button">
+      <main class="main-content jnl-library" id="jnl-library" style="display:none">
+        <div class="jnl-library-header" style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px;">
+          <button class="jnl-btn jnl-btn-primary jnl-new-journal-btn" id="jnl-new-journal-btn" type="button" style="background:var(--accent);color:#000000;border:none;border-radius:12px;padding:12px 16px;font:inherit;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;cursor:pointer;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             New Journal
           </button>
         </div>
         <div class="jnl-library-list" id="jnl-library-list"></div>
-        <div class="jnl-library-empty" id="jnl-library-empty" style="display:none">
-          <div class="jnl-library-empty-icon">📓</div>
-          <p class="jnl-library-empty-text">No journals yet</p>
-          <p class="jnl-library-empty-sub">Create your first journal to start writing</p>
+        <div class="jnl-library-empty" id="jnl-library-empty" style="display:none;text-align:center;padding:48px 24px;color:var(--text-muted);">
+          <div class="jnl-library-empty-icon" style="font-size:48px;margin-bottom:16px;">📓</div>
+          <p class="jnl-library-empty-text" style="font-size:16px;font-weight:600;color:var(--text-primary);margin:0 0 8px;">No journals yet</p>
+          <p class="jnl-library-empty-sub" style="font-size:14px;margin:0;">Create your first journal to start writing</p>
         </div>
       </main>
 
       <!-- ==================== TIER 2: ENTRY LIST ==================== -->
-      <main class="jnl-entry-list" id="jnl-entry-list" style="display:none">
-        <div class="jnl-entry-list-header">
-          <button class="jnl-icon-btn" id="jnl-entry-list-back" type="button" aria-label="Back">
+      <main class="main-content jnl-entry-list" id="jnl-entry-list" style="display:flex;background:#000000;">
+        <div class="jnl-entry-list-header" style="display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--border-card);background:#000000;position:sticky;top:0;z-index:10;">
+          <button class="jnl-icon-btn" id="jnl-entry-list-back" type="button" aria-label="Back" style="width:40px;height:40px;border-radius:50%;border:none;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
-          <h2 class="jnl-entry-list-title" id="jnl-journal-name">Journal</h2>
-          <div class="jnl-entry-list-actions">
-            <button class="jnl-icon-btn" id="jnl-search-btn" type="button" aria-label="Search">
+          <h2 class="jnl-entry-list-title" id="jnl-journal-name" style="flex:1;font-size:18px;font-weight:600;color:var(--text-primary);margin:0;">Journal</h2>
+          <div class="jnl-entry-list-actions" style="display:flex;gap:8px;">
+            <button class="jnl-icon-btn" id="jnl-search-btn" type="button" aria-label="Search" style="width:40px;height:40px;border-radius:50%;border:none;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </button>
-            <button class="jnl-icon-btn" id="jnl-journal-settings-btn" type="button" aria-label="Journal settings">
+            <button class="jnl-icon-btn" id="jnl-journal-settings-btn" type="button" aria-label="Journal settings" style="width:40px;height:40px;border-radius:50%;border:none;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
           </div>
         </div>
-        <div class="jnl-search-bar" id="jnl-search-bar" style="display:none">
-          <input type="text" class="jnl-search-input" id="jnl-search-input" placeholder="Search entries..." />
+        <div class="jnl-search-bar" id="jnl-search-bar" style="display:none;padding:0 16px 16px;">
+          <input type="text" class="jnl-search-input" id="jnl-search-input" placeholder="Search entries..." style="width:100%;background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:12px 16px;font:inherit;font-size:15px;color:var(--text-primary);outline:none;" />
         </div>
         <div class="jnl-tags-filter" id="jnl-tags-filter"></div>
-        <div class="jnl-entries" id="jnl-entries"></div>
-        <div class="jnl-entries-empty" id="jnl-entries-empty" style="display:none">
-          <p class="jnl-entries-empty-text">No entries yet</p>
-          <p class="jnl-entries-empty-sub">Tap + to write your first entry</p>
+        <div class="jnl-entries" id="jnl-entries" style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;"></div>
+        <div class="jnl-entries-empty" id="jnl-entries-empty" style="display:none;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;color:var(--text-muted);text-align:center;">
+          <p class="jnl-entries-empty-text" style="font-size:16px;font-weight:600;color:var(--text-primary);margin:0 0 8px;">No entries yet</p>
+          <p class="jnl-entries-empty-sub" style="font-size:14px;margin:0;">Tap + to write your first entry</p>
         </div>
-        <button class="jnl-fab" id="jnl-new-entry-fab" type="button" title="New entry">
+        <button class="jnl-fab" id="jnl-new-entry-fab" type="button" title="New entry" style="position:fixed;bottom:calc(90px + env(safe-area-inset-bottom, 0px));right:16px;width:56px;height:56px;border-radius:50%;border:none;background:var(--accent);color:#000000;box-shadow:0 4px 12px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:100;">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
       </main>
 
       <!-- ==================== TIER 3: EDITOR ==================== -->
-      <main class="jnl-editor" id="jnl-editor" style="display:none">
-        <div class="jnl-editor-date-row">
-          <div class="jnl-editor-date-row-left">
-            <button class="jnl-icon-btn jnl-quick-back" id="jnl-editor-back" type="button" aria-label="Back">
+      <main class="main-content jnl-editor" id="jnl-editor" style="display:none;background:#000000;flex-direction:column;height:100%;">
+        <div class="jnl-editor-date-row" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border-card);background:#000000;position:sticky;top:0;z-index:10;">
+          <div class="jnl-editor-date-row-left" style="display:flex;align-items:center;gap:12px;">
+            <button class="jnl-icon-btn jnl-quick-back" id="jnl-editor-back" type="button" aria-label="Back" style="width:40px;height:40px;border-radius:50%;border:none;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
-            <div class="jnl-editor-date" id="jnl-editor-date"></div>
+            <div class="jnl-editor-date" id="jnl-editor-date" style="font-size:14px;color:var(--text-muted);"></div>
           </div>
-          <div class="jnl-editor-quick-actions">
-            <button class="jnl-icon-btn jnl-quick-action" id="jnl-editor-save" type="button" title="Save" aria-label="Save">
+          <div class="jnl-editor-quick-actions" style="display:flex;gap:8px;">
+            <button class="jnl-icon-btn jnl-quick-action" id="jnl-editor-save" type="button" title="Save" aria-label="Save" style="width:40px;height:40px;border-radius:50%;border:none;background:var(--accent);color:#000000;display:flex;align-items:center;justify-content:center;cursor:pointer;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </button>
-            <button class="jnl-icon-btn jnl-quick-action" id="jnl-quick-attach" type="button" title="Attach">
+            <button class="jnl-icon-btn jnl-quick-action" id="jnl-quick-attach" type="button" title="Attach" style="width:40px;height:40px;border-radius:50%;border:none;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
             </button>
-            <button class="jnl-icon-btn jnl-quick-action" id="jnl-quick-mood" type="button" title="Add emoji">
+            <button class="jnl-icon-btn jnl-quick-action" id="jnl-quick-mood" type="button" title="Add emoji" style="width:40px;height:40px;border-radius:50%;border:none;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
             </button>
-            <button class="jnl-icon-btn jnl-quick-action" id="jnl-quick-font" type="button" title="Fonts">
+            <button class="jnl-icon-btn jnl-quick-action" id="jnl-quick-font" type="button" title="Fonts" style="width:40px;height:40px;border-radius:50%;border:none;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
             </button>
           </div>
         </div>
-        <div id="jnl-media-stack" class="jnl-media-stack"></div>
-        <div class="jnl-editor-scroll">
-          <textarea class="jnl-editor-body" id="jnl-editor-body" placeholder="What's on your mind?"></textarea>
+        <div id="jnl-media-stack" class="jnl-media-stack" style="padding:16px;"></div>
+        <div class="jnl-editor-scroll" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;">
+          <textarea class="jnl-editor-body" id="jnl-editor-body" placeholder="What's on your mind?" style="width:100%;min-height:300px;background:transparent;border:none;color:var(--text-primary);font:inherit;font-size:16px;line-height:1.6;resize:none;outline:none;"></textarea>
         </div>
-        <div class="jnl-editor-toolbar">
-          <button class="jnl-toolbar-btn" id="jnl-attach-photo" type="button" title="Add photo">
+        <div class="jnl-editor-toolbar" style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border-card);background:#000000;position:sticky;bottom:0;z-index:10;">
+          <button class="jnl-toolbar-btn" id="jnl-attach-photo" type="button" title="Add photo" style="width:44px;height:44px;border-radius:12px;border:none;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           </button>
-          <button class="jnl-toolbar-btn" id="jnl-attach-voice" type="button" title="Record voice note">
+          <button class="jnl-toolbar-btn" id="jnl-attach-voice" type="button" title="Record voice note" style="width:44px;height:44px;border-radius:12px;border:none;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
           </button>
-          <button class="jnl-toolbar-btn" id="jnl-attach-mood" type="button" title="Mood">
+          <button class="jnl-toolbar-btn" id="jnl-attach-mood" type="button" title="Mood" style="width:44px;height:44px;border-radius:12px;border:none;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
           </button>
           <button class="jnl-toolbar-btn" id="jnl-attach-location" type="button" title="Location">
