@@ -4,20 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
     <style>
-      html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
+      html, body { margin: 0; width: 100%; height: 100%; background: #000000; overflow: hidden; }
       .app-shell { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; }
     </style>
     <script>
-      /* Instant matte background — set --app-bg before first paint so the
-         html { background-color: var(--app-bg) !important } rule resolves
-         to the themed color immediately. No white flash. */
-      try {
-        var _bgs = { graphitexx: '#000000', 'cool-panda': '#1a1d23', minimal: '#fafafa' };
-        var _t = localStorage.getItem('matey-theme') || 'graphitexx';
-        var _bg = _bgs[_t] || _bgs.graphitexx;
-        document.documentElement.style.setProperty('--app-bg', _bg);
-        document.documentElement.style.backgroundColor = _bg;
-      } catch (e) {}
+      /* Instant background — no white flash */
+      try { document.documentElement.style.setProperty('--bg-main', '#000000'); document.documentElement.style.backgroundColor = '#000000'; } catch (e) {}
     </script>
     <meta name="description" content="Matey — your on-device personal AI assistant with BYOK AI providers, offline Whisper STT, encrypted journal, and syntax-driven note vault." />
     <link rel="icon" href="./images/matey-logo.png" type="image/png" />
@@ -38,15 +30,15 @@
       <header class="header">
         <div class="header-left">
           <img src="images/matey-logo.png" class="matey-logo" alt="Matey" />
-          <button id="workspace-folder-btn" class="workspace-plug-box" title="Select Workspace">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9h6"></path><path d="M9 13h6"></path></svg>
+          <button id="workspace-folder-btn" class="header-icon-btn workspace-plug-box" title="Select Workspace" aria-label="Select Workspace">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9h6"></path><path d="M9 13h6"></path></svg>
           </button>
-          <button class="ide-text-badge" type="button" title="IDE">IDE</button>
+          <button class="header-icon-btn ide-text-badge" type="button" title="IDE" aria-label="IDE">IDE</button>
         </div>
         <div class="header-actions">
           <div class="status-circle" title="Token Meter"></div>
-          <button class="incognito-btn" type="button" title="Incognito" aria-label="Incognito">
+          <button class="header-icon-btn" type="button" title="Incognito" aria-label="Incognito">
             <svg width="22" height="22" viewBox="0 0 100 120" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M50 4 C20 4 5 28 5 52 L5 92 C5 105 15 105 20 98 C25 105 35 105 40 98 C45 105 55 105 60 98 C65 105 75 105 80 98 C85 105 95 105 95 92 L95 52 C95 28 80 4 50 4 Z"/>
               <ellipse cx="35" cy="50" rx="10" ry="15"/>
@@ -57,7 +49,7 @@
               <path d="M40 80 L43 85 L46 80 L49 85 L52 80 L55 85 L58 80 L60 82"/>
             </svg>
           </button>
-          <button class="burger-menu-btn" type="button" title="Menu" aria-label="Menu">
+          <button class="header-icon-btn burger-menu-btn" type="button" title="Menu" aria-label="Menu">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="4" y1="6" x2="20" y2="6"></line>
               <line x1="4" y1="12" x2="20" y2="12"></line>
@@ -67,48 +59,92 @@
         </div>
       </header>
 
-            <nav class="tabs-wrap" id="tabs-wrap">
+      <nav class="tabs-wrap" id="tabs-wrap">
         <div class="tabs">
-          <a class="tab active" href="./lifestyle.html">Lifestyle</a>
-          <a class="tab" href="./vots.html">My-VOTS</a>
-          <a class="tab" href="./raw-editor.html">&gt;edit</a>
-          <a class="tab" href="./journal.html">Journal</a>
-          <a class="tab" href="./preview.html#agent">&gt;agent</a>
+            <a class="tab" href="./preview.html#agent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              <span>~AGENT</span>
+            </a>
+            <a class="tab active" href="./lifestyle.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg>
+              <span>LIFESTYLE</span>
+            </a>
+            <a class="tab" href="./vots.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>MY VOTS</span>
+            </a>
+            <a class="tab" href="./journal.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>JOURNAL</span>
+            </a>
+            <a class="tab" href="./raw-editor.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>IDE</span>
+            </a>
         </div>
       </nav>
 
-      <main class="content">
+      <main class="main-content" role="main">
         <div class="lf-home">
           <div class="lf-rows">
-          <div class="lf-row" data-cat="grooming" role="button" tabindex="0">
-            <div class="lf-row-icon" style="background:rgba(239,159,39,0.15);color:#EF9F27"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M6 17m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M8.6 8.6l10.4 10.4"/><path d="M8.6 15.4l10.4 -10.4"/></svg></div>
-            <div class="lf-row-text"><div class="lf-row-title">Grooming</div><div class="lf-row-desc">AI hairstyle, beard and moustache picks</div></div>
-            <span class="lf-row-chevron"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg></span>
-          </div>
-          <div class="lf-row" data-cat="wardrobe" role="button" tabindex="0">
-            <div class="lf-row-icon" style="background:rgba(55,138,221,0.15);color:#378ADD"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4l6 2v5h-3v8a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1v-8h-3v-5l6 -2a3 3 0 0 0 6 0"/></svg></div>
-            <div class="lf-row-text"><div class="lf-row-title">Wardrobe</div><div class="lf-row-desc">Your digital closet, matched by colour</div></div>
-            <span class="lf-row-chevron"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg></span>
-          </div>
-          <div class="lf-row" data-cat="culinary" role="button" tabindex="0">
-            <div class="lf-row-icon" style="background:rgba(216,90,48,0.15);color:#D85A30"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 3v12h-5c-.023 -3.681 .184 -7.406 5 -12zm0 12v6h-1v-3m-10 -14v17m-3 -17v3a3 3 0 1 0 6 0v-3"/></svg></div>
-            <div class="lf-row-text"><div class="lf-row-title">Culinary</div><div class="lf-row-desc">Recipes from what's in your kitchen</div></div>
-            <span class="lf-row-chevron"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg></span>
-          </div>
-          <div class="lf-row" data-cat="living" role="button" tabindex="0">
-            <div class="lf-row-icon" style="background:rgba(151,196,89,0.15);color:#97C459"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg></div>
-            <div class="lf-row-text"><div class="lf-row-title">Living</div><div class="lf-row-desc">Rearrange your space from a few photos</div></div>
-            <span class="lf-row-chevron"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg></span>
-          </div>
-          <div class="lf-row" data-cat="beat" role="button" tabindex="0">
-            <div class="lf-row-icon" style="background:rgba(175,169,236,0.15);color:#AFA9EC"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8l4 -16l3 8h4"/></svg></div>
-            <div class="lf-row-text"><div class="lf-row-title">Beat</div><div class="lf-row-desc">Your weekly and monthly rhythm</div></div>
-            <span class="lf-row-badge" id="lf-beat-badge">0/wk</span>
+            <div class="lf-row" data-cat="grooming" role="button" tabindex="0" aria-label="Grooming">
+              <div class="list-item-icon" style="background:rgba(239,159,39,0.12);border-color:rgba(239,159,39,0.3);color:#EF9F27;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M6 17m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M8.6 8.6l10.4 10.4"/><path d="M8.6 15.4l10.4 -10.4"/></svg>
+              </div>
+              <div class="list-item-content">
+                <div class="list-item-title">Grooming</div>
+                <div class="list-item-subtitle">AI hairstyle, beard and moustache picks</div>
+              </div>
+              <svg class="list-item-action" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg>
+            </div>
+
+            <div class="lf-row" data-cat="wardrobe" role="button" tabindex="0" aria-label="Wardrobe">
+              <div class="list-item-icon" style="background:rgba(55,138,221,0.12);border-color:rgba(55,138,221,0.3);color:#378ADD;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4l6 2v5h-3v8a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1v-8h-3v-5l6 -2a3 3 0 0 0 6 0"/></svg>
+              </div>
+              <div class="list-item-content">
+                <div class="list-item-title">Wardrobe</div>
+                <div class="list-item-subtitle">Your digital closet, matched by colour</div>
+              </div>
+              <svg class="list-item-action" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg>
+            </div>
+
+            <div class="lf-row" data-cat="culinary" role="button" tabindex="0" aria-label="Culinary">
+              <div class="list-item-icon" style="background:rgba(216,90,48,0.12);border-color:rgba(216,90,48,0.3);color:#D85A30;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 3v12h-5c-.023 -3.681 .184 -7.406 5 -12zm0 12v6h-1v-3m-10 -14v17m-3 -17v3a3 3 0 1 0 6 0v-3"/></svg>
+              </div>
+              <div class="list-item-content">
+                <div class="list-item-title">Culinary</div>
+                <div class="list-item-subtitle">Recipes from what's in your kitchen</div>
+              </div>
+              <svg class="list-item-action" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg>
+            </div>
+
+            <div class="lf-row" data-cat="living" role="button" tabindex="0" aria-label="Living">
+              <div class="list-item-icon" style="background:rgba(151,196,89,0.12);border-color:rgba(151,196,89,0.3);color:#97C459;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg>
+              </div>
+              <div class="list-item-content">
+                <div class="list-item-title">Living</div>
+                <div class="list-item-subtitle">Rearrange your space from a few photos</div>
+              </div>
+              <svg class="list-item-action" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg>
+            </div>
+
+            <div class="lf-row" data-cat="beat" role="button" tabindex="0" aria-label="Beat">
+              <div class="list-item-icon" style="background:rgba(175,169,236,0.12);border-color:rgba(175,169,236,0.3);color:#AFA9EC;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8l4 -16l3 8h4"/></svg>
+              </div>
+              <div class="list-item-content">
+                <div class="list-item-title">Beat</div>
+                <div class="list-item-subtitle">Your weekly and monthly rhythm</div>
+              </div>
+              <span class="chip chip-accent" id="lf-beat-badge">0/wk</span>
+            </div>
           </div>
         </div>
-      </div>
-    </main>
-  </div>
+      </main>
+    </div>
     <script src="./matey-themes.js?v=101"></script>
     <script src="./matey-greet.js?v=101"></script>
     <script src="./matey-tabs.js?v=101"></script>

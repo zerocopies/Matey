@@ -1,13 +1,43 @@
-/* Matey Global Theme — extracted from the Lifestyle design system.
-   Single source of truth for app-wide surface/text/radius tokens.
-   Loaded via <link rel="stylesheet" href="theme.css?v=103"> in journal,
-   preview and vots pages. Accent per section remains in matey-preview.css. */
+/* Matey Global Theme — OLED Pitch-Black Design System
+   Canvas: #000000 (absolute pitch black)
+   Cards: #121216 with 1px #1a1a22 border, 16px radius
+   Text: #E8E8E8 primary (off-white), #9A9A9A secondary, #8A8A92 muted
+   Accent: #8B5CF6 brand violet for interactive affordances; #34D399 green reserved for status/success */
 :root {
-  --bg-main: #0b0b0d;        /* app/screen background */
-  --bg-card: #17171b;        /* card / row / sheet surface */
-  --border-card: #29292e;    /* card + input border */
-  --text-primary: #f5f5f5;   /* titles and primary body text */
-  --text-muted: #8b8b90;     /* secondary / meta text */
-  --accent-green: #22c55e;   /* primary green accent */
-  --radius-card: 12px;       /* cards, inputs, chips containers */
+  --bg-main: #000000;
+  --bg-card: #121216;
+  --border-card: #1a1a22;
+  --border-divider: #1c1c24;
+  --text-primary: #E8E8E8;
+  --text-secondary: #9A9A9A;
+  --text-muted: #8A8A92;
+  --text-dim: #6E6E76;
+  --accent: #8B5CF6;
+  --accent-gold: #8B5CF6;
+  --accent-violet: #8B5CF6;
+  --accent-violet-dim: rgba(139, 92, 246, 0.12);
+  --accent-green: #34D399;
+  --accent-green-dim: rgba(52, 211, 153, 0.12);
+  --accent-blue: #38BDF8;
+  --accent-orange: #F59E0B;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --radius-card: 16px;
+  --radius-modal: 16px;
+  --radius-full: 9999px;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --header-height: 54px;
+  --tabs-height: 44px;
+  --composer-height: 140px;
+  --page-gutter: 16px;
+  --danger: #F87171;
 }

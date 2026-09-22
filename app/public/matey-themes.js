@@ -3,8 +3,9 @@
   'use strict';
 
   /* Instant background paint — set <html> bg from the persisted theme BEFORE
-   * first paint so page navigations never flash white. Matte, theme-aware. */
-  var _themeBgs = { graphitexx: '#000000', 'cool-panda': '#1a1d23', minimal: '#fafafa' };
+   * first paint so page navigations never flash white. OLED pitch-black,
+   * theme-independent (all themes resolve to the same OLED palette). */
+  var _themeBgs = { graphitexx: '#000000', 'cool-panda': '#000000', minimal: '#000000' };
   try {
     var _tid = localStorage.getItem('matey-theme') || 'graphitexx';
     var _bg = _themeBgs[_tid] || _themeBgs.graphitexx;
@@ -17,23 +18,23 @@
 
   var themes = [
     { id: 'graphitexx', name: 'Graphite XX',
-      bg: '#000000', surface: '#080808', surfaceRaised: '#ffffff',
-      text: '#b0b0b0', textSecondary: '#808080', muted: '#4d4d4d', textOnCard: '#121212',
-      accent: '#ab5555', accentDim: 'rgba(171,85,85,0.12)',
-      accentGreen: '#22ff22', accentGreenDim: 'rgba(34,255,34,0.15)', accentGreenText: '#22ff22',
-      border: '#e0e0e0', borderSubtle: '#f0f0f0', danger: '#643535' },
+      bg: '#000000', surface: '#121216', surfaceRaised: '#141416',
+      text: '#E8E8E8', textSecondary: '#9A9A9A', muted: '#8A8A92', textOnCard: '#E8E8E8',
+      accent: '#8B5CF6', accentDim: 'rgba(139,92,246,0.12)',
+      accentGreen: '#34D399', accentGreenDim: 'rgba(52,211,153,0.12)', accentGreenText: '#34D399',
+      border: '#1a1a22', borderSubtle: '#1c1c24', danger: '#F87171' },
     { id: 'cool-panda', name: 'Cool Panda',
-      bg: '#1a1d23', surface: '#22262e', surfaceRaised: '#2a2f38',
-      text: '#e0e4ea', textSecondary: '#a8aeb8', muted: '#686e78', textOnCard: '#e0e4ea',
-      accent: '#7c9eff', accentDim: 'rgba(124,158,255,0.12)',
-      accentGreen: '#7cffb2', accentGreenDim: 'rgba(124,255,178,0.15)', accentGreenText: '#7cffb2',
-      border: '#3a3f48', borderSubtle: '#2a2f38', danger: '#ff7c7c' },
+      bg: '#000000', surface: '#121216', surfaceRaised: '#141416',
+      text: '#E8E8E8', textSecondary: '#9A9A9A', muted: '#8A8A92', textOnCard: '#E8E8E8',
+      accent: '#8B5CF6', accentDim: 'rgba(139,92,246,0.12)',
+      accentGreen: '#34D399', accentGreenDim: 'rgba(52,211,153,0.12)', accentGreenText: '#34D399',
+      border: '#1a1a22', borderSubtle: '#1c1c24', danger: '#F87171' },
     { id: 'minimal', name: 'Minimal',
-      bg: '#fafafa', surface: '#ffffff', surfaceRaised: '#ffffff',
-      text: '#1a1a1a', textSecondary: '#5a5a5a', muted: '#9a9a9a', textOnCard: '#1a1a1a',
-      accent: '#0066cc', accentDim: 'rgba(0,102,204,0.12)',
-      accentGreen: '#008844', accentGreenDim: 'rgba(0,136,68,0.15)', accentGreenText: '#008844',
-      border: '#e0e0e0', borderSubtle: '#f0f0f0', danger: '#cc3333' }
+      bg: '#000000', surface: '#121216', surfaceRaised: '#141416',
+      text: '#E8E8E8', textSecondary: '#9A9A9A', muted: '#8A8A92', textOnCard: '#E8E8E8',
+      accent: '#8B5CF6', accentDim: 'rgba(139,92,246,0.12)',
+      accentGreen: '#34D399', accentGreenDim: 'rgba(52,211,153,0.12)', accentGreenText: '#34D399',
+      border: '#1a1a22', borderSubtle: '#1c1c24', danger: '#F87171' }
   ];
   function getTheme() {
     var s = localStorage.getItem('matey-theme') || 'graphitexx';
