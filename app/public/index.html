@@ -22,65 +22,10 @@
     <script src="./matey-vault.js"></script>
     <script src="./matey-boot.js?v=100"></script>
     <script src="./matey-sentry.js?v=100"></script>
+      <script src="./matey-header.js?v=1"></script>
   </head>
 <body>
     <div class="app-shell">
-      <header class="header">
-        <div class="header-left">
-          <img src="images/matey-logo.png" class="matey-logo" alt="Matey" />
-          <button id="workspace-folder-btn" class="header-icon-btn workspace-plug-box" title="Select Workspace" aria-label="Select Workspace">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9h6"></path><path d="M9 13h6"></path></svg>
-          </button>
-          <button class="header-icon-btn ide-text-badge" type="button" title="IDE" aria-label="IDE">IDE</button>
-        </div>
-        <div class="header-actions">
-          <div class="status-circle" title="Token Meter"></div>
-          <button class="header-icon-btn" type="button" title="Incognito" aria-label="Incognito">
-            <svg viewBox="0 0 100 120" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M50 4 C20 4 5 28 5 52 L5 92 C5 105 15 105 20 98 C25 105 35 105 40 98 C45 105 55 105 60 98 C65 105 75 105 80 98 C85 105 95 105 95 92 L95 52 C95 28 80 4 50 4 Z"/>
-              <ellipse cx="35" cy="50" rx="10" ry="15"/>
-              <ellipse cx="65" cy="50" rx="10" ry="15"/>
-              <path d="M26 34 L38 40"/>
-              <path d="M74 34 L62 40"/>
-              <path d="M38 78 Q50 94 62 78 Q50 88 38 78 Z"/>
-              <path d="M40 80 L43 85 L46 80 L49 85 L52 80 L55 85 L58 80 L60 82"/>
-            </svg>
-          </button>
-          <button class="header-icon-btn burger-menu-btn" type="button" title="Menu" aria-label="Menu">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="4" y1="6" x2="20" y2="6"></line>
-              <line x1="4" y1="12" x2="20" y2="12"></line>
-              <line x1="4" y1="18" x2="20" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-      </header>
-      <nav class="tabs-wrap" id="tabs-wrap">
-          <div class="tabs">
-            <a class="tab" href="./lifestyle.html">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg>
-              <span>LIFESTYLE</span>
-            </a>
-            <a class="tab" href="./vots.html">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              <span>MY VOTS</span>
-            </a>
-            <a class="tab" href="./journal.html">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              <span>JOURNAL</span>
-            </a>
-            <a class="tab" href="./raw-editor.html">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><line x1="8" y1="6" x2="8" y2="18"/><line x1="8" y1="18" x2="20" y2="18"/></svg>
-              <span>EDITOR</span>
-            </a>
-            <a class="tab active" href="./preview.html#agent" aria-current="page">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-              <span>AGENT</span>
-            </a>
-          </div>
-      </nav>
-
       <main class="main-content" role="main">
         <div class="lf-home">
           <div class="lf-rows">

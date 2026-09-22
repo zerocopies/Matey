@@ -450,7 +450,7 @@
     requestAnimationFrame(function () {
       consumePendingView();
       cacheCurrentPage();
-      renderTabs();
+      // renderTabs(); // handled by matey-header.js
       /* Late population (IndexedDB-backed lists) — refresh once more. */
       setTimeout(function () { snapshotCurrent(); }, 1200);
     });
