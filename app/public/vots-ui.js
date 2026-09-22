@@ -22,9 +22,9 @@
   };
 
   var LINK_TYPE_COLORS = {
-    twitter: '#8b8b90',
+    twitter: '#9E9EA9',
     youtube: '#E85D5D',
-    article: '#B583FC'
+    article: '#8B5CF6'
   };
 
   /* ==================== Utilities ==================== */
@@ -145,21 +145,21 @@
       size: 260,
       dotRadius: 14,
       lineWidth: 4,
-      accentColor: '#B583FC',
-      dotColor: '#8b8b90',
+      accentColor: '#8B5CF6',
+      dotColor: '#9E9EA9',
       minLength: 4,
       onComplete: function (pattern) {
         MateyLock.setPattern(NAMESPACE, pattern).then(function () {
           status.textContent = 'Pattern saved!';
-          status.style.color = '#22c55e';
+          status.style.color = '#34D399';
           setTimeout(function () {
             showMain();
           }, 800);
         });
       },
       onCancel: function () {
-        status.textContent = 'Pattern too short — try again';
-        status.style.color = '#E85D5D';
+status.textContent = 'Pattern too short — try again';
+          status.style.color = '#F87171';
       }
     });
   }
@@ -185,26 +185,26 @@
       size: 260,
       dotRadius: 14,
       lineWidth: 4,
-      accentColor: '#B583FC',
-      dotColor: '#8b8b90',
+      accentColor: '#8B5CF6',
+      dotColor: '#9E9EA9',
       minLength: 4,
       onComplete: function (pattern) {
         MateyLock.verifyPattern(NAMESPACE, pattern).then(function (ok) {
           if (ok) {
             MateyLock.unlock(NAMESPACE);
             status.textContent = 'Unlocked!';
-            status.style.color = '#22c55e';
+            status.style.color = '#34D399';
             setTimeout(function () { showMain(); }, 500);
           } else {
             status.textContent = 'Wrong pattern — try again';
-            status.style.color = '#E85D5D';
+            status.style.color = '#F87171';
             grid.cancel();
           }
         });
       },
       onCancel: function () {
         status.textContent = 'Pattern too short';
-        status.style.color = '#E85D5D';
+        status.style.color = '#F87171';
       }
     });
   }
@@ -276,7 +276,7 @@
       var val = input.value.trim();
       if (val && !isValidUrl(val)) {
         helper.textContent = 'Enter a valid URL (https://...)';
-        helper.style.color = '#E85D5D';
+        helper.style.color = '#F87171';
       } else if (val) {
         helper.textContent = 'Paste a public link to respond to';
         helper.style.color = '';
@@ -320,7 +320,7 @@
     if (!card) return;
 
     var iconSvg = ICONS[_currentLinkType.icon] || ICONS.article;
-    var accentColor = LINK_TYPE_COLORS[_currentLinkType.icon] || '#B583FC';
+    var accentColor = LINK_TYPE_COLORS[_currentLinkType.icon] || '#8B5CF6';
     var domain = MateyVots.getDomain(_currentLink);
 
     // Assemble headline
@@ -331,14 +331,19 @@
 
     card.style.setProperty('--vts-link-accent', accentColor);
     card.style.display = 'flex';
+    card.style.background = 'var(--bg-card)';
+    card.style.border = '1px solid var(--border-card)';
+    card.style.borderRadius = '12px';
+    card.style.padding = '16px';
+    card.style.marginBottom = '16px';
 
     card.innerHTML =
-      '<div class="vts-link-card-icon" style="color:' + accentColor + '">' + iconSvg + '</div>' +
-      '<div class="vts-link-card-body">' +
-        '<div class="vts-link-card-headline">' + escapeHtml(headline || 'Your response headline...') + '</div>' +
-        '<div class="vts-link-card-meta">' +
-          '<span class="vts-link-card-domain">' + escapeHtml(domain) + '</span>' +
-          '<span class="vts-link-card-type">' + escapeHtml(_currentLinkType.label) + '</span>' +
+      '<div class="vts-link-card-icon" style="width:40px;height:40px;border-radius:10px;background:' + accentColor + '20;color:' + accentColor + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + iconSvg + '</div>' +
+      '<div class="vts-link-card-body" style="flex:1;min-width:0;">' +
+        '<div class="vts-link-card-headline" style="font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:8px;">' + escapeHtml(headline || 'Your response headline...') + '</div>' +
+        '<div class="vts-link-card-meta" style="display:flex;align-items:center;gap:12px;">' +
+          '<span class="vts-link-card-domain" style="font-size:12px;color:var(--text-muted);font-family:monospace;">' + escapeHtml(domain) + '</span>' +
+          '<span class="vts-link-card-type" style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">' + escapeHtml(_currentLinkType.label) + '</span>' +
         '</div>' +
       '</div>';
   }
@@ -407,15 +412,16 @@
         var lt = MateyVots.detectLinkType(entry.link || '');
         var iconSvg = ICONS[lt.icon] || ICONS.article;
         var headline = entry.headline || entry.title || 'Untitled';
-        return '<div class="vts-history-item" data-id="' + entry.id + '">' +
-          '<div class="vts-history-item-header">' +
-            '<span class="vts-history-item-icon" style="color:' + (LINK_TYPE_COLORS[lt.icon] || '#B583FC') + '">' + iconSvg + '</span>' +
-            '<span class="vts-history-item-type">' + escapeHtml(lt.label) + '</span>' +
-            '<span class="vts-history-item-time">' + formatRelative(entry.timestamp) + '</span>' +
+        var accentColor = LINK_TYPE_COLORS[lt.icon] || '#8B5CF6';
+        return '<div class="vts-history-item" data-id="' + entry.id + '" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:16px;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;">' +
+          '<div class="vts-history-item-header" style="display:flex;align-items:center;gap:10px;">' +
+            '<span class="vts-history-item-icon" style="width:36px;height:36px;border-radius:10px;background:' + accentColor + '20;color:' + accentColor + ';display:flex;align-items:center;justify-content:center;">' + iconSvg + '</span>' +
+            '<span class="vts-history-item-type" style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">' + escapeHtml(lt.label) + '</span>' +
+            '<span class="vts-history-item-time" style="margin-left:auto;font-size:11px;color:var(--text-muted);">' + formatRelative(entry.timestamp) + '</span>' +
           '</div>' +
-          '<div class="vts-history-item-headline">' + escapeHtml(headline) + '</div>' +
-          '<div class="vts-history-item-preview">' + escapeHtml((entry.content || '').substring(0, 120)) + '</div>' +
-          '<div class="vts-history-item-domain">' + escapeHtml(MateyVots.getDomain(entry.link || '')) + '</div>' +
+          '<div class="vts-history-item-headline" style="font-size:15px;font-weight:500;color:var(--text-primary);">' + escapeHtml(headline) + '</div>' +
+          '<div class="vts-history-item-preview" style="font-size:13px;color:var(--text-muted);line-height:1.4;">' + escapeHtml((entry.content || '').substring(0, 120)) + '</div>' +
+          '<div class="vts-history-item-domain" style="font-size:11px;color:var(--text-muted);font-family:monospace;">' + escapeHtml(MateyVots.getDomain(entry.link || '')) + '</div>' +
         '</div>';
       }).join('');
 
