@@ -2,28 +2,28 @@
 (function () {
   'use strict';
 
-  var SETTINGS_HTML = `<aside class="settings-overlay" id="settings">
-      <div class="settings-header">
-        <button class="settings-back" id="settings-back" aria-label="Back" type="button">&#8249;</button>
-        <span class="settings-title">Settings</span>
+  var SETTINGS_HTML = `<aside class="settings-overlay" id="settings" style="position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;background:#000000;transform:translateX(100%);transition:transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+      <div class="settings-header" style="display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--border-card);background:#000000;position:sticky;top:0;z-index:10;">
+        <button class="settings-back" id="settings-back" aria-label="Back" type="button" style="width:40px;height:40px;border-radius:50%;border:none;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;line-height:1;">&#8249;</button>
+        <span class="settings-title" style="font-size:18px;font-weight:600;color:var(--text-primary);">Settings</span>
       </div>
-      <div class="settings-body">
+      <div class="settings-body" style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:12px;">
 
                 <div class="settings-section" id="sec-personalization">
           <div class="settings-section-header" data-toggle="sec-personalization">
             <div class="settings-section-left">
               <div>
-                <div class="settings-section-title">Personalization</div>
-                <div class="settings-section-desc">Your profile &amp; preferences</div>
+                <div class="settings-section-title" style="font-size:15px;font-weight:600;color:var(--text-primary);margin:0;">Personalization</div>
+                <div class="settings-section-desc" style="font-size:13px;color:var(--text-muted);margin-top:2px;">Your profile &amp; preferences</div>
               </div>
             </div>
             <span class="settings-section-arrow"></span>
           </div>
-          <div class="settings-section-body">
+          <div class="settings-section-body" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:16px;margin-top:8px;">
             <form id="profile-form">
               <div class="profile-hint">Tell Matey about yourself — who you are, what you do, what matters to you. Write freely.</div>
-              <textarea class="profile-about" id="profile-about" placeholder="Start typing your personalization…"></textarea>
-              <button class="submit-btn" type="submit">Save</button>
+              <textarea class="profile-about" id="profile-about" placeholder="Start typing your personalization…" style="width:100%;min-height:120px;background:var(--bg-main);border:1px solid var(--border-card);border-radius:12px;padding:16px;font:inherit;font-size:15px;color:var(--text-primary);outline:none;resize:vertical;margin-top:12px;"></textarea>
+              <button class="submit-btn" type="submit" style="width:100%;margin-top:16px;background:var(--accent);color:#000000;border:none;border-radius:12px;padding:16px;font:inherit;font-size:16px;font-weight:600;cursor:pointer;">Save</button>
             </form>
           </div>
         </div>
@@ -32,13 +32,13 @@
           <div class="settings-section-header" data-toggle="sec-theme">
             <div class="settings-section-left">
               <div>
-                <div class="settings-section-title">Theme</div>
-                <div class="settings-section-desc">Choose your look</div>
+                <div class="settings-section-title" style="font-size:15px;font-weight:600;color:var(--text-primary);margin:0;">Theme</div>
+                <div class="settings-section-desc" style="font-size:13px;color:var(--text-muted);margin-top:2px;">Choose your look</div>
               </div>
             </div>
             <span class="settings-section-arrow"></span>
           </div>
-          <div class="settings-section-body">
+          <div class="settings-section-body" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:16px;margin-top:8px;">
             <div class="theme-container" id="theme-grid"></div>
             
           </div>
@@ -47,14 +47,14 @@
           <div class="settings-section-header" data-toggle="sec-byok">
             <div class="settings-section-left">
               <div>
-                <div class="settings-section-title">Provider Configuration</div>
-                <div class="settings-section-desc">Add any OpenAI-compatible, OpenRouter, Gemini, or compatible API provider</div>
+                <div class="settings-section-title" style="font-size:15px;font-weight:600;color:var(--text-primary);margin:0;">Provider Configuration</div>
+                <div class="settings-section-desc" style="font-size:13px;color:var(--text-muted);margin-top:2px;">Add any OpenAI-compatible, OpenRouter, Gemini, or compatible API provider</div>
               </div>
             </div>
             <span class="settings-section-arrow"></span>
           </div>
-          <div class="settings-section-body">
-            <button class="byok-add-btn" id="byok-add" type="button">+ Add Provider</button>
+          <div class="settings-section-body" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:16px;margin-top:8px;">
+            <button class="byok-add-btn" id="byok-add" type="button" style="width:100%;background:var(--accent);color:#000000;border:none;border-radius:12px;padding:16px;font:inherit;font-size:16px;font-weight:600;cursor:pointer;">+ Add Provider</button>
             <div id="byok-list"></div>
           </div>
          </div>
@@ -63,14 +63,14 @@
            <div class="settings-section-header" data-toggle="sec-export">
              <div class="settings-section-left">
                <div>
-                 <div class="settings-section-title">Data Export</div>
-                 <div class="settings-section-desc">Download your data</div>
+                 <div class="settings-section-title" style="font-size:15px;font-weight:600;color:var(--text-primary);margin:0;">Data Export</div>
+                 <div class="settings-section-desc" style="font-size:13px;color:var(--text-muted);margin-top:2px;">Download your data</div>
                </div>
              </div>
              <span class="settings-section-arrow"></span>
            </div>
-           <div class="settings-section-body">
-             <button class="byok-add-btn" id="export-data" type="button">Download My Data</button>
+           <div class="settings-section-body" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:16px;margin-top:8px;">
+             <button class="byok-add-btn" id="export-data" type="button" style="width:100%;background:var(--accent);color:#000000;border:none;border-radius:12px;padding:16px;font:inherit;font-size:16px;font-weight:600;cursor:pointer;">Download My Data</button>
            </div>
          </div>
 
@@ -78,15 +78,15 @@
             <div class="settings-section-header" data-toggle="sec-voice">
               <div class="settings-section-left">
                 <div>
-                  <div class="settings-section-title">Voice</div>
-                  <div class="settings-section-desc">Speech recognition settings</div>
+                  <div class="settings-section-title" style="font-size:15px;font-weight:600;color:var(--text-primary);margin:0;">Voice</div>
+                  <div class="settings-section-desc" style="font-size:13px;color:var(--text-muted);margin-top:2px;">Speech recognition settings</div>
                 </div>
               </div>
               <span class="settings-section-arrow"></span>
             </div>
-            <div class="settings-section-body">
-              <div class="setting-row setting-row-with-icon setting-row-navigable" id="voice-stt-row">
-                <div class="setting-row-icon">
+            <div class="settings-section-body" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:16px;margin-top:8px;">
+              <div class="setting-row setting-row-with-icon setting-row-navigable" id="voice-stt-row" style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;cursor:pointer;">
+                <div class="setting-row-icon" style="width:40px;height:40px;border-radius:10px;background:var(--accent-violet-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 1a3 3 0 0 0-3 3v12a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
                     <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
@@ -94,20 +94,20 @@
                     <line x1="9" y1="23" x2="15" y2="23"/>
                   </svg>
                 </div>
-                <div class="setting-row-body">
-                  <div class="setting-row-label">Speech Recognition</div>
-                  <div class="setting-row-value" id="voice-stt-value">None</div>
+                <div class="setting-row-body" style="flex:1;min-width:0;">
+                  <div class="setting-row-label" style="font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">Speech Recognition</div>
+                  <div class="setting-row-value" id="voice-stt-value" style="font-size:13px;color:var(--text-muted);">None</div>
                 </div>
-                <svg class="setting-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                <svg class="setting-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text-muted);"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </div>
-                <div class="setting-row setting-row-with-icon">
-                  <div class="setting-row-icon">🎙️</div>
-                  <div class="setting-row-body">
-                    <div class="setting-row-label">Voice Activity Detection</div>
-                    <div class="setting-row-desc">Trim silence before sending to AI</div>
+                <div class="setting-row setting-row-with-icon" style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;">
+                  <div class="setting-row-icon" style="width:40px;height:40px;border-radius:10px;background:var(--accent-violet-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;">🎙️</div>
+                  <div class="setting-row-body" style="flex:1;min-width:0;">
+                    <div class="setting-row-label" style="font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">Voice Activity Detection</div>
+                    <div class="setting-row-desc" style="font-size:13px;color:var(--text-muted);">Trim silence before sending to AI</div>
                   </div>
-                  <label class="setting-toggle">
-                    <input type="checkbox" id="feature-vad-enabled" />
+                  <label class="setting-toggle" style="flex-shrink:0;">
+                    <input type="checkbox" id="feature-vad-enabled" style="width:20px;height:20px;accent-color:var(--accent);" />
                     <span class="setting-toggle-slider"></span>
                   </label>
                 </div>
@@ -118,44 +118,44 @@
              <div class="settings-section-header" data-toggle="sec-features">
                <div class="settings-section-left">
                  <div>
-                   <div class="settings-section-title">Features</div>
-                   <div class="settings-section-desc">Experimental and upcoming capabilities</div>
+                   <div class="settings-section-title" style="font-size:15px;font-weight:600;color:var(--text-primary);margin:0;">Features</div>
+                   <div class="settings-section-desc" style="font-size:13px;color:var(--text-muted);margin-top:2px;">Experimental and upcoming capabilities</div>
                  </div>
                </div>
                <span class="settings-section-arrow"></span>
              </div>
-             <div class="settings-section-body">
-               <div class="setting-row setting-row-with-icon">
-                  <div class="setting-row-icon">🎙️</div>
-                  <div class="setting-row-body">
+             <div class="settings-section-body" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:16px;margin-top:8px;">
+               <div class="setting-row setting-row-with-icon" style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;">
+                  <div class="setting-row-icon" style="width:40px;height:40px;border-radius:10px;background:var(--accent-violet-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;">🎙️</div>
+                  <div class="setting-row-body" style="flex:1;min-width:0;">
                     <div class="setting-row-label">Continuous Voice <span class="experimental-badge">Experimental</span></div>
                     <div class="setting-row-desc">Keeps the microphone listening between messages for hands-free conversation.</div>
                     <div class="setting-row-caption">Limited to short sessions. Not reliable on iOS Safari. May interrupt itself with background noise.</div>
                   </div>
-                 <label class="setting-toggle">
+                 <label class="setting-toggle" style="flex-shrink:0;">
                    <input type="checkbox" id="feature-continuous-voice" />
                    <span class="setting-toggle-slider"></span>
                  </label>
                </div>
                 </div>
-                <div class="setting-row setting-row-with-icon">
-                  <div class="setting-row-icon">🖥️</div>
-                  <div class="setting-row-body">
+                <div class="setting-row setting-row-with-icon" style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;">
+                  <div class="setting-row-icon" style="width:40px;height:40px;border-radius:10px;background:var(--accent-violet-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;">🖥️</div>
+                  <div class="setting-row-body" style="flex:1;min-width:0;">
                     <div class="setting-row-label">Native Shell</div>
                     <div class="setting-row-desc">Allow the agent to run local shell commands (Termux/Android shell). Off by default. Medium/high-risk commands always ask first via the system confirm dialog.</div>
                   </div>
-                 <label class="setting-toggle">
+                 <label class="setting-toggle" style="flex-shrink:0;">
                    <input type="checkbox" id="feature-native-shell" />
                    <span class="setting-toggle-slider"></span>
                  </label>
                 </div>
-                <div class="setting-row setting-row-with-icon">
-                  <div class="setting-row-icon">🌐</div>
-                  <div class="setting-row-body">
+                <div class="setting-row setting-row-with-icon" style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;">
+                  <div class="setting-row-icon" style="width:40px;height:40px;border-radius:10px;background:var(--accent-violet-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;">🌐</div>
+                  <div class="setting-row-body" style="flex:1;min-width:0;">
                     <div class="setting-row-label">Community Wisdom <span class="experimental-badge">Experimental</span></div>
                     <div class="setting-row-desc">Share anonymized fix-pattern stats to help other Matey users, and receive theirs — no code or personal data is ever shared.</div>
                   </div>
-                 <label class="setting-toggle">
+                 <label class="setting-toggle" style="flex-shrink:0;">
                    <input type="checkbox" id="feature-community-wisdom" />
                    <span class="setting-toggle-slider"></span>
                  </label>
@@ -167,20 +167,20 @@
             <div class="settings-section-header" data-toggle="sec-fs">
               <div class="settings-section-left">
                 <div>
-                  <div class="settings-section-title">File System</div>
-                  <div class="settings-section-desc">Workspace access</div>
+                  <div class="settings-section-title" style="font-size:15px;font-weight:600;color:var(--text-primary);margin:0;">File System</div>
+                  <div class="settings-section-desc" style="font-size:13px;color:var(--text-muted);margin-top:2px;">Workspace access</div>
                 </div>
               </div>
               <span class="settings-section-arrow"></span>
             </div>
-            <div class="settings-section-body">
+            <div class="settings-section-body" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:16px;margin-top:8px;">
               <div class="fs-status" id="fs-status">
                 <span class="fs-status-text" id="fs-status-text">No workspace connected</span>
               </div>
               <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                <button class="byok-add-btn" id="fs-init-workspace" type="button" style="flex:1">Matey Workspace</button>
+                <button class="byok-add-btn" id="fs-init-workspace" type="button" style="flex:1;background:var(--accent);color:#000000;border:none;border-radius:12px;padding:16px;font:inherit;font-size:16px;font-weight:600;cursor:pointer;">Matey Workspace</button>
               </div>
-              <button class="byok-add-btn" id="fs-clear-workspace" type="button" style="margin-top:8px;width:100%">Disconnect</button>
+              <button class="byok-add-btn" id="fs-clear-workspace" type="button" style="margin-top:8px;width:100%;background:transparent;color:var(--danger);border:1px solid var(--border-card);border-radius:12px;padding:16px;font:inherit;font-size:16px;cursor:pointer;">Disconnect</button>
             </div>
           </div>
 
@@ -188,16 +188,16 @@
             <div class="settings-section-header" data-toggle="sec-applock">
               <div class="settings-section-left">
                 <div>
-                  <div class="settings-section-title">App Lock</div>
-                  <div class="settings-section-desc">PIN or biometric lock for the entire app</div>
+                  <div class="settings-section-title" style="font-size:15px;font-weight:600;color:var(--text-primary);margin:0;">App Lock</div>
+                  <div class="settings-section-desc" style="font-size:13px;color:var(--text-muted);margin-top:2px;">PIN or biometric lock for the entire app</div>
                 </div>
               </div>
               <span class="settings-section-arrow"></span>
             </div>
-            <div class="settings-section-body">
+            <div class="settings-section-body" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:16px;margin-top:8px;">
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="byok-add-btn" id="applock-enable" type="button" style="flex:1">Enable App PIN</button>
-                <button class="byok-add-btn" id="applock-disable" type="button" style="flex:1">Disable</button>
+                <button class="byok-add-btn" id="applock-enable" type="button" style="flex:1;background:var(--accent);color:#000000;border:none;border-radius:12px;padding:16px;font:inherit;font-size:16px;font-weight:600;cursor:pointer;">Enable App PIN</button>
+                <button class="byok-add-btn" id="applock-disable" type="button" style="flex:1;background:transparent;color:var(--text-muted);border:1px solid var(--border-card);border-radius:12px;padding:16px;font:inherit;font-size:16px;cursor:pointer;">Disable</button>
               </div>
               <p class="settings-placeholder" style="margin-top:8px;font-size:12px;">
                 Your PIN is stored locally and hashed with SHA-256. Biometric support requires native Capacitive plugins.
@@ -209,36 +209,36 @@
              <div class="settings-section-header" data-toggle="sec-privacy">
                <div class="settings-section-left">
                  <div>
-                   <div class="settings-section-title">Privacy</div>
-                   <div class="settings-section-desc">Network activity & data</div>
+                   <div class="settings-section-title" style="font-size:15px;font-weight:600;color:var(--text-primary);margin:0;">Privacy</div>
+                   <div class="settings-section-desc" style="font-size:13px;color:var(--text-muted);margin-top:2px;">Network activity & data</div>
                  </div>
                </div>
                <span class="settings-section-arrow"></span>
              </div>
-             <div class="settings-section-body">
+             <div class="settings-section-body" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:16px;margin-top:8px;">
                <div class="setting-row">
-                 <div class="setting-row-left">
+                 <div class="setting-row-left" style="flex:1;min-width:0;">
                    <div class="setting-row-label">Cold Start</div>
                    <div class="setting-row-desc" id="cold-start-value">measuring…</div>
                  </div>
                </div>
-               <div class="setting-row" id="network-activity-row">
-                 <div class="setting-row-left">
-                   <div class="setting-row-label">Network Activity</div>
-                   <div class="setting-row-desc" id="network-activity-summary">No outbound calls logged yet</div>
+               <div class="setting-row" id="network-activity-row" style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;cursor:pointer;">
+                 <div class="setting-row-left" style="flex:1;min-width:0;">
+                   <div class="setting-row-label" style="font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">Network Activity</div>
+                   <div class="setting-row-desc" id="network-activity-summary" style="font-size:13px;color:var(--text-muted);">No outbound calls logged yet</div>
                  </div>
-                 <span class="setting-row-arrow">&rsaquo;</span>
+                 <span class="setting-row-arrow" style="flex-shrink:0;color:var(--text-muted);font-size:20px;">&rsaquo;</span>
                </div>
-                <div class="setting-row" id="network-activity-clear" style="border-top:1px solid var(--app-border);">
-                  <div class="setting-row-left">
-                    <div class="setting-row-label" style="color:#f87171;">Clear Network Log</div>
-                    <div class="setting-row-desc">Remove all recorded entries</div>
+                <div class="setting-row" id="network-activity-clear" style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;cursor:pointer;border-top:1px solid var(--border-card);">
+                  <div class="setting-row-left" style="flex:1;min-width:0;">
+                    <div class="setting-row-label" style="font-size:15px;font-weight:500;color:var(--danger);margin-bottom:4px;">Clear Network Log</div>
+                    <div class="setting-row-desc" style="font-size:13px;color:var(--text-muted);">Remove all recorded entries</div>
                   </div>
                 </div>
-                <div class="setting-row" id="brain-state-row" style="border-top:1px solid var(--app-border);">
-                  <div class="setting-row-left">
-                    <div class="setting-row-label">Brain State</div>
-                    <div class="setting-row-desc" id="brain-state-summary">Loading…</div>
+                <div class="setting-row" id="brain-state-row" style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;border-top:1px solid var(--border-card);">
+                  <div class="setting-row-left" style="flex:1;min-width:0;">
+                    <div class="setting-row-label" style="font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">Brain State</div>
+                    <div class="setting-row-desc" id="brain-state-summary" style="font-size:13px;color:var(--text-muted);">Loading…</div>
                   </div>
                 </div>
               </div>
@@ -248,18 +248,18 @@
             <div class="settings-section-header" data-toggle="sec-about">
               <div class="settings-section-left">
                 <div>
-                  <div class="settings-section-title">About</div>
-                  <div class="settings-section-desc">App info & legal</div>
+                  <div class="settings-section-title" style="font-size:15px;font-weight:600;color:var(--text-primary);margin:0;">About</div>
+                  <div class="settings-section-desc" style="font-size:13px;color:var(--text-muted);margin-top:2px;">App info & legal</div>
                 </div>
               </div>
               <span class="settings-section-arrow"></span>
             </div>
-            <div class="settings-section-body">
-              <div class="settings-about-card">
+            <div class="settings-section-body" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:16px;margin-top:8px;">
+              <div class="settings-about-card" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:24px;">
                 <div class="settings-about-brand">
                   <img class="matey-logo-sm" src="./images/matey-logo.png" alt="Matey" />
                 </div>
-                <div class="settings-about-version">Version 0.1.0 · Build 1</div>
+                <div class="settings-about-version" style="font-size:13px;color:var(--text-muted);margin:16px 0;">Version 0.1.0 · Build 1</div>
                 <div class="settings-about-links">
                    <a class="settings-about-link" href="./privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
                   <a class="settings-about-link" href="#">Terms of Service </a>
@@ -272,50 +272,50 @@
        </div>
       </aside>`;
 
-  var BYOK_HTML = `<div class="byok-dialog" id="byok-dialog">
-  <div class="byok-dialog-panel">
-    <h3 class="byok-dialog-title">Provider Configuration</h3>
+  var BYOK_HTML = `<div class="byok-dialog" id="byok-dialog" style="position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);padding:20px;">
+  <div class="byok-dialog-panel" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:24px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;">
+    <h3 class="byok-dialog-title" style="font-size:18px;font-weight:600;color:var(--text-primary);margin:0 0 24px;">Provider Configuration</h3>
     <form id="byok-form">
-       <div class="byok-field" style="position:relative;">
-         <label class="byok-label" for="byok-key">API Key</label>
-         <input class="byok-input" id="byok-key" type="password" placeholder="sk-ant-..., sk-..., AIza..., gsk_..., xai-..." autocomplete="off" />
-         <div class="byok-detected" id="byok-detected" style="display:none;font-size:11px;color:var(--accent);margin-top:4px;"></div>
+       <div class="byok-field" style="position:relative;margin-bottom:20px;">
+         <label class="byok-label" for="byok-key" style="display:block;font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:8px;">API Key</label>
+         <input class="byok-input" id="byok-key" type="password" placeholder="sk-ant-..., sk-..., AIza..., gsk_..., xai-..." autocomplete="off" style="width:100%;background:var(--bg-main);border:1px solid var(--border-card);border-radius:12px;padding:16px;font:inherit;font-size:15px;color:var(--text-primary);outline:none;" />
+         <div class="byok-detected" id="byok-detected" style="display:none;font-size:11px;color:var(--accent-green);margin-top:4px;"></div>
         </div>
-       <div class="byok-field" style="display:none;">
+       <div class="byok-field" style="display:none;margin-bottom:20px;">
          <label class="byok-label" for="byok-name">Provider Name</label>
          <input class="byok-input" id="byok-name" type="text" placeholder="auto-detected from key" autocomplete="off" />
        </div>
-       <div class="byok-field" style="display:none;">
+       <div class="byok-field" style="display:none;margin-bottom:20px;">
          <label class="byok-label" for="byok-url">Base URL</label>
          <input class="byok-input" id="byok-url" type="url" placeholder="auto-detected from key" autocomplete="off" />
        </div>
-       <div class="byok-field" style="display:none;">
+       <div class="byok-field" style="display:none;margin-bottom:20px;">
          <label class="byok-label" for="byok-model">Model</label>
-         <select class="byok-input" id="byok-model-select" style="display:none;"></select>
-         <input class="byok-input" id="byok-model" type="text" placeholder="auto-detect if empty" autocomplete="off" />
+         <select class="byok-input" id="byok-model-select" style="display:none;width:100%;background:var(--bg-main);border:1px solid var(--border-card);border-radius:12px;padding:16px;font:inherit;font-size:15px;color:var(--text-primary);outline:none;"></select>
+         <input class="byok-input" id="byok-model" type="text" placeholder="auto-detect if empty" autocomplete="off" style="width:100%;background:var(--bg-main);border:1px solid var(--border-card);border-radius:12px;padding:16px;font:inherit;font-size:15px;color:var(--text-primary);outline:none;" />
          <div class="byok-model-loading" id="byok-model-loading" style="display:none;font-size:11px;color:var(--text-dim);margin-top:4px;">Fetching models…</div>
        </div>
-      <div class="byok-field byok-capabilities-section">
-        <label class="byok-capabilities-label">Capabilities <span style="font-weight:400;color:var(--text-dim);">(auto-detected from your API key)</span></label>
-        <div class="byok-capabilities">
-          <div class="byok-capabilities-row">
-            <label class="byok-cap"><input type="checkbox" id="cap_text" name="cap_text" value="text" /> Text generation</label>
-            <label class="byok-cap"><input type="checkbox" id="cap_vision" name="cap_vision" value="vision" /> Vision / image</label>
+      <div class="byok-field byok-capabilities-section" style="margin-bottom:20px;">
+        <label class="byok-capabilities-label" style="display:block;font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:12px;">Capabilities <span style="font-weight:400;color:var(--text-muted);">(auto-detected from your API key)</span></label>
+        <div class="byok-capabilities" style="display:flex;flex-direction:column;gap:12px;">
+          <div class="byok-capabilities-row" style="display:flex;gap:16px;flex-wrap:wrap;">
+            <label class="byok-cap" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="cap_text" name="cap_text" value="text" style="width:18px;height:18px;accent-color:var(--accent);" /> <span style="font-size:14px;color:var(--text-primary);">Text generation</span></label>
+            <label class="byok-cap" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="cap_vision" name="cap_vision" value="vision" style="width:18px;height:18px;accent-color:var(--accent);" /> <span style="font-size:14px;color:var(--text-primary);">Vision / image</span></label>
           </div>
-          <div class="byok-capabilities-row">
-            <label class="byok-cap"><input type="checkbox" id="cap_stt" name="cap_stt" value="stt" /> Speech-to-text</label>
-            <label class="byok-cap"><input type="checkbox" id="cap_imagegen" name="cap_imagegen" value="imagegen" /> Image generation</label>
+          <div class="byok-capabilities-row" style="display:flex;gap:16px;flex-wrap:wrap;">
+            <label class="byok-cap" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="cap_stt" name="cap_stt" value="stt" style="width:18px;height:18px;accent-color:var(--accent);" /> <span style="font-size:14px;color:var(--text-primary);">Speech-to-text</span></label>
+            <label class="byok-cap" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="cap_imagegen" name="cap_imagegen" value="imagegen" style="width:18px;height:18px;accent-color:var(--accent);" /> <span style="font-size:14px;color:var(--text-primary);">Image generation</span></label>
           </div>
         </div>
       </div>
       <div class="byok-field">
-         <button class="byok-btn byok-btn-secondary" id="byok-test" type="button" style="width:100%;">Test Connection</button>
-         <div class="byok-status" id="byok-status" role="status" aria-live="polite"></div>
+         <button class="byok-btn byok-btn-secondary" id="byok-test" type="button" style="width:100%;background:transparent;color:var(--accent);border:1px solid var(--border-card);border-radius:12px;padding:16px;font:inherit;font-size:16px;cursor:pointer;margin-bottom:12px;">Test Connection</button>
+         <div class="byok-status" id="byok-status" role="status" aria-live="polite" style="font-size:13px;color:var(--text-muted);margin-bottom:16px;min-height:20px;"></div>
       </div>
-      <div class="byok-dialog-actions">
-         <button class="byok-btn byok-btn-secondary" id="byok-clear-credentials" type="button">Clear Credentials</button>
-         <button class="byok-btn byok-btn-secondary" id="byok-cancel" type="button">Cancel</button>
-         <button class="byok-btn byok-btn-primary" type="submit">Save</button>
+      <div class="byok-dialog-actions" style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">
+         <button class="byok-btn byok-btn-secondary" id="byok-clear-credentials" type="button" style="background:transparent;color:var(--danger);border:1px solid var(--border-card);border-radius:12px;padding:12px 20px;font:inherit;font-size:14px;cursor:pointer;">Clear Credentials</button>
+         <button class="byok-btn byok-btn-secondary" id="byok-cancel" type="button" style="background:transparent;color:var(--text-muted);border:1px solid var(--border-card);border-radius:12px;padding:12px 20px;font:inherit;font-size:14px;cursor:pointer;">Cancel</button>
+         <button class="byok-btn byok-btn-primary" type="submit" style="background:var(--accent);color:#000000;border:none;border-radius:12px;padding:12px 20px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;">Save</button>
       </div>
     </form>
   </div>
@@ -353,6 +353,8 @@
     var trigger = document.querySelector('[aria-label="Settings"]');
     if (trigger) trigger.addEventListener('click', function () {
       var willOpen = !settings.classList.contains('open');
+        if (willOpen) settings.style.transform = "translateX(0)";
+        else settings.style.transform = "translateX(100%)";
        settings.classList[willOpen ? 'add' : 'remove']('open');
       if (willOpen) {
         if (window.MateyThemes) MateyThemes.build(settings);
@@ -556,7 +558,7 @@
      if (hosts.length) {
        body += '<div style="font-weight:600;margin-bottom:8px;font-size:13px;">Hosts (' + hosts.length + ')</div>';
        hosts.forEach(function (h) {
-         body += '<div style="display:flex;justify-content:space-between;background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:6px 10px;margin-bottom:4px;font-size:12px;">' +
+         body += '<div style="display:flex;justify-content:space-between;background:#16161a;border:1px solid #23232a;border-radius:8px;padding:6px 10px;margin-bottom:4px;font-size:12px;">' +
            '<span style="font-family:monospace;color:#a5b4fc;">' + esc(h.hostname) + '</span>' +
            '<span style="color:var(--text-dim);">' + h.count + ' call' + (h.count > 1 ? 's' : '') + '</span></div>';
        });
@@ -564,7 +566,7 @@
        entries.slice(-50).reverse().forEach(function (e) {
          var ts = new Date(e.ts);
          var timeStr = ts.getHours().toString().padStart(2, '0') + ':' + ts.getMinutes().toString().padStart(2, '0') + ':' + ts.getSeconds().toString().padStart(2, '0');
-         body += '<div style="display:flex;justify-content:space-between;background:#111;border:1px solid #262626;border-radius:6px;padding:5px 10px;margin-bottom:3px;font-size:11px;">' +
+         body += '<div style="display:flex;justify-content:space-between;background:#0e0e11;border:1px solid #23232a;border-radius:6px;padding:5px 10px;margin-bottom:3px;font-size:11px;">' +
            '<span style="font-family:monospace;color:#ccc;">' + esc(e.hostname) + '</span>' +
            '<span style="color:var(--text-dim);">' + e.method + ' · ' + timeStr + '</span></div>';
        });
