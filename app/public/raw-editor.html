@@ -1,99 +1,17 @@
 <!doctype html>
 <html lang="en">
-  <head>
+    <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
     <style>
-      html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
+      html, body { margin: 0; width: 100%; height: 100%; background: #000000; overflow: hidden; }
       .app-shell { position: fixed; inset: 0; width: 100%; max-width: none; display: flex; flex-direction: column; }
       .edit-page { flex: 1; display: flex; flex-direction: column; min-height: 0; height: 100%; }
-
-      /* File Explorer State */
-      .file-explorer { flex: 1; min-height: 0; display: flex; flex-direction: column; height: 100%; overflow-y: auto; }
-      .explorer-header { display: flex; justify-content: space-between; align-items: center; padding: 0 16px 6px 16px; margin: 16px 0 12px; border: none; background: transparent; }
-      .explorer-header h1 { font-family: inherit; font-size: 0.95rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--app-fg); margin: 0; font-weight: 600; }
-      .explorer-header .icon-btn { background: none; border: none; color: var(--app-fg); font-size: 1.25rem; padding: 8px; cursor: pointer; }
-
-      .action-bar { display: flex; gap: 6px; align-items: center; padding: 6px 16px; }
-      .btn-main { flex: 1; height: 32px; padding: 0 12px; background: var(--app-surface, var(--app-bg)); color: var(--app-fg); border: 1px solid var(--app-border); border-radius: 6px; font-size: 12px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
-      .btn-square { width: 32px; height: 32px; background: var(--app-surface, var(--app-bg)); color: var(--app-fg); border: 1px solid var(--app-border); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1rem; cursor: pointer; }
-
-      .file-list { display: flex; flex-direction: column; gap: 6px; padding: 8px 16px; }
-      .file-card { background: var(--surface-main, #1E1E24); border: 1px solid var(--border-subtle, #2A2A32); border-radius: 14px; padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
-      .file-card-top { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-      .file-info { display: flex; align-items: center; gap: 12px; overflow: hidden; }
-      .ext-badge { font-family: monospace; font-size: 0.68rem; font-weight: 600; padding: 4px 8px; border-radius: 999px; min-width: 40px; text-align: center; background: var(--tile-bg, rgba(255,255,255,0.08)); color: var(--text-primary, #F0F0F0); border: 1px solid var(--tile-border, rgba(255,255,255,0.1)); }
-      .file-name { font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary, #F0F0F0); }
-      .chevron-icon { color: var(--text-muted, var(--app-muted)); font-size: 0.9rem; }
-      .card-divider { height: 1px; background-color: var(--border-subtle, #2A2A32); width: 100%; }
-      .file-card-actions { display: flex; gap: 16px; align-items: center; }
-      .action-item { background: none; border: none; color: var(--text-muted, #8E8E93); font-size: 14px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
-      .action-link { color: var(--text-muted, #8E8E93); font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
-      .action-link:hover { color: var(--text-primary, #F0F0F0); }
-      .action-link:active { opacity: 0.6; }
-      .action-item:hover { color: var(--text-primary, #F0F0F0); }
-      .action-item:active { opacity: 0.6; }
-
-      /* Extension Badge Colors — dark-tinted pills over the Lifestyle card surface */
-      .ext-badge.txt { background: rgba(255,255,255,0.1); color: #d1d5db; }
-      .ext-badge.gradle { background: rgba(139,92,246,0.15); color: #a78bfa; }
-      .ext-badge.md { background: rgba(6,182,212,0.15); color: #67e8f9; }
-      .ext-badge.json { background: rgba(249,115,22,0.15); color: #fdba74; }
-      .ext-badge.csv { background: rgba(34,197,94,0.15); color: #86efac; }
-      .ext-badge.xml, .ext-badge.html { background: rgba(59,130,246,0.15); color: #93c5fd; }
-      .ext-badge.js, .ext-badge.jsx, .ext-badge.ts, .ext-badge.tsx { background: rgba(253,186,47,0.15); color: #facc15; }
-      .ext-badge.css, .ext-badge.scss, .ext-badge.sass { background: rgba(252,143,76,0.15); color: #fdba74; }
-      .ext-badge.yaml, .ext-badge.yml { background: rgba(34,197,94,0.15); color: #86efac; }
-      .ext-badge.sh { background: rgba(107,114,128,0.15); color: #9ca3af; }
-      .ext-badge.py { background: rgba(57,151,214,0.15); color: #60a5fa; }
-      .ext-badge.go { background: rgba(93,122,255,0.15); color: #84a4f4; }
-      .ext-badge.rs { background: rgba(224,100,187,0.15); color: #f7729e; }
-
-      /* Supported Extensions Modal */
-      .overlay-view { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg); z-index: 100; display: none; flex-direction: column; padding: max(16px, env(safe-area-inset-top)) 16px 16px 16px; overflow-y: auto; }
-      .overlay-view.active { display: flex; }
-      .view-header { display: flex; align-items: center; gap: 16px; padding-bottom: 20px; }
-      .view-title { font-family: monospace; font-size: 1.25rem; font-weight: 700; }
-      .section-label { font-family: monospace; font-size: 1.2rem; font-weight: 700; margin: 16px 0 4px 0; }
-      .section-sub { color: var(--text-dim); font-size: 0.8rem; margin-bottom: 12px; }
-      .handler-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-      .handler-icon { font-size: 1.5rem; width: 40px; display: flex; justify-content: center; }
-      .handler-info h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 2px; }
-      .handler-info p { font-size: 0.75rem; color: var(--text-dim); }
-      .pill-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-      .pill { background: rgba(139,92,246,0.15); color: #c084fc; font-family: monospace; font-size: 0.7rem; font-weight: 700; padding: 8px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
-
-      /* Editor State */
-      .editor-view { flex: 1; display: flex; flex-direction: column; min-height: 0; height: 100%; }
-      .edit-header { display: flex; align-items: center; justify-content: space-between; padding: 0 !important; border: none !important; background: transparent !important; }
-      .edit-header .file-path { color: var(--text-dim); font-family: monospace; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
-      .edit-header .lang-badge { background: #312e81; color: #a5b4fc; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; white-space: nowrap; }
-      .edit-header .actions { display: flex; gap: 6px; flex-shrink: 0; }
-.edit-header button { background: transparent; color: var(--text); border: none; padding: 4px 6px; font-size: inherit; cursor: pointer; }
-.edit-header button.secondary { color: var(--text-dim); }
-.edit-header button.danger { color: #ef4444; }
-      .edit-viewport { flex: 1; min-height: 0; overflow: hidden; position: relative; }
-      .edit-viewport .cm-editor { height: 100% !important; }
-      .edit-footer { display: flex; align-items: center; justify-content: space-between; padding: 0 !important; border: none !important; background: transparent !important; }
-      .edit-footer .status { color: var(--text-dim); font-size: 12px; font-family: monospace; }
-      .edit-footer .voice-controls { display: flex; align-items: center; gap: 8px; }
-      .edit-footer .voice-controls button { background: #262626; color: var(--text); border: 1px solid #404040; border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
-      .edit-footer .voice-controls button.recording { background: #ef4444; color: #fff; }
-
-      /* Card BG fallback */
-      :root { --bg: var(--app-bg); --card-bg: var(--app-surface-raised, var(--app-surface)); --card-border: var(--app-border); --text: var(--app-fg); --text-dim: var(--app-muted); --border: var(--app-border); --surface: var(--app-surface); }
-
-      /* === >edit Hyper-Compact Header === */
-      .tabs-wrap { padding: 0 !important; margin: 0 !important; border-bottom: none !important; }
-      .tabs { border-bottom: none !important; }
-      .tab { padding: 10px 4px !important; }
-      .text-editor-header { background: transparent !important; border: none !important; padding: 0 !important; margin: 0 !important; }
-      .action-bar-container { margin-top: 4px !important; }
     </style>
     <meta name="description" content="Matey - >edit — Raw text editor with file explorer, voice input, and language routing" />
     <link rel="icon" href="./images/matey-logo.png" type="image/png" />
     <meta name="theme-color" content="#000000" />
-    <title>Matey - &gt;edit</title>
+    <title>Matey - >edit</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -105,19 +23,19 @@
     <script src="./matey-sentry.js?v=101"></script>
   </head>
   <body>
-
-      <header class="header">
+    <div class="app-shell">
+            <header class="header">
         <div class="header-left">
           <img src="images/matey-logo.png" class="matey-logo" alt="Matey" />
-          <button id="workspace-folder-btn" class="workspace-plug-box" title="Select Workspace">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9h6"></path><path d="M9 13h6"></path></svg>
+          <button id="workspace-folder-btn" class="header-icon-btn workspace-plug-box" title="Select Workspace" aria-label="Select Workspace">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9h6"></path><path d="M9 13h6"></path></svg>
           </button>
-          <button class="ide-text-badge" type="button" title="IDE">IDE</button>
+          <button class="header-icon-btn ide-text-badge" type="button" title="IDE" aria-label="IDE">IDE</button>
         </div>
         <div class="header-actions">
           <div class="status-circle" title="Token Meter"></div>
-          <button class="incognito-btn" type="button" title="Incognito" aria-label="Incognito">
+          <button class="header-icon-btn" type="button" title="Incognito" aria-label="Incognito">
             <svg width="22" height="22" viewBox="0 0 100 120" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M50 4 C20 4 5 28 5 52 L5 92 C5 105 15 105 20 98 C25 105 35 105 40 98 C45 105 55 105 60 98 C65 105 75 105 80 98 C85 105 95 105 95 92 L95 52 C95 28 80 4 50 4 Z"/>
               <ellipse cx="35" cy="50" rx="10" ry="15"/>
@@ -128,7 +46,7 @@
               <path d="M40 80 L43 85 L46 80 L49 85 L52 80 L55 85 L58 80 L60 82"/>
             </svg>
           </button>
-          <button class="burger-menu-btn" type="button" title="Menu" aria-label="Menu">
+          <button class="header-icon-btn burger-menu-btn" type="button" title="Menu" aria-label="Menu">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="4" y1="6" x2="20" y2="6"></line>
               <line x1="4" y1="12" x2="20" y2="12"></line>
@@ -139,13 +57,96 @@
       </header>
 
     <nav class="tabs-wrap" id="tabs-wrap">
-      <div class="tabs">
-        <a class="tab active" href="./lifestyle.html">Lifestyle</a>
-        <a class="tab" href="./vots.html">My-VOTS</a>
-        <a class="tab" href="./raw-editor.html">>edit</a>
-        <a class="tab" href="./journal.html">Journal</a>
-        <a class="tab" href="./preview.html#agent">>agent</a>
+                  <div class="tabs">
+        <a class="tab" href="./preview.html#agent">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          <span>~AGENT</span>
+        </a>
+        <a class="tab" href="./lifestyle.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg>
+          <span>LIFESTYLE</span>
+        </a>
+        <a class="tab" href="./vots.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span>MY VOTS</span>
+        </a>
+        <a class="tab" href="./journal.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>JOURNAL</span>
+        </a>
+        <a class="tab active" href="./raw-editor.html" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>IDE</span>
+        </a>
       </div>
+    </nav>
+
+        <!-- File Explorer (shown by default) -->
+        <div id="file-explorer" class="file-explorer" style="display: flex; flex-direction: column; height: 100%;">
+          <div class="explorer-header" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border-card); background: var(--bg-main);">
+            <h2 class="explorer-title" style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0;">Files</h2>
+            <div class="explorer-actions" style="display: flex; gap: 8px;">
+              <button class="icon-btn" id="btn-info" title="Supported Extensions" aria-label="Supported Extensions" style="width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--bg-card); border: 1px solid var(--border-card); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><circle cx="12" cy="16" r="1"/></svg>
+              </button>
+              <button class="icon-btn" id="btn-import" title="Import File" aria-label="Import File" style="width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--bg-card); border: 1px solid var(--border-card); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="file-list-container" class="file-list-container" style="flex: 1; overflow-y: auto; padding: 16px; -webkit-overflow-scrolling: touch;">
+          <div class="file-card">
+            <div class="file-card-top" onclick="window.openFile('README.md')">
+              <div class="file-info">
+                <span class="ext-badge md">.md</span>
+                <span class="file-name">README.md</span>
+              </div>
+              <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>
+          <div class="file-card">
+            <div class="file-card-top" onclick="window.openFile('build.gradle')">
+              <div class="file-info">
+                <span class="ext-badge gradle">.gradle</span>
+                <span class="file-name">build.gradle</span>
+              </div>
+              <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>
+          <div class="file-card">
+            <div class="file-card-top" onclick="window.openFile('config.json')">
+              <div class="file-info">
+                <span class="ext-badge json">.json</span>
+                <span class="file-name">config.json</span>
+              </div>
+              <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>
+          <div class="file-card">
+            <div class="file-card-top" onclick="window.openFile('data.csv')">
+              <div class="file-info">
+                <span class="ext-badge csv">.csv</span>
+                <span class="file-name">data.csv</span>
+              </div>
+              <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>
+          <div class="file-card">
+            <div class="file-card-top" onclick="window.openFile('notes.txt')">
+              <div class="file-info">
+                <span class="ext-badge txt">.txt</span>
+                <span class="file-name">notes.txt</span>
+              </div>
+              <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>
+        </div>
+          <div id="file-explorer-empty" class="file-explorer-empty" style="display: none; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; color: var(--text-muted); text-align: center;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 16px; opacity: 0.5;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <p style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0 0 8px;">No files yet</p>
+            <p style="font-size: 14px; margin: 0;">Tap + to create or import a file</p>
+          </div>
+        </div>
 
         <!-- Editor State (hidden by default) -->
         <div id="editor-view" class="editor-view" style="display: none;">
@@ -171,7 +172,6 @@
           </div>
         </div>
       </div>
-    </div>
 
     <!-- Supported Extensions Overlay Modal -->
     <div class="overlay-view" id="supported-extensions-view">
@@ -200,7 +200,7 @@
       </div>
 
       <div class="handler-card">
-        <div class="handler-icon" style="color: var(--accent-green);"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7l4 4h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/></svg></div>
+        <div class="handler-icon" style="color: var(--accent);"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7l4 4h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/></svg></div>
         <div class="handler-info">
           <h4>CSV</h4>
           <p>Table view for data manipulation</p>
@@ -402,10 +402,11 @@
         }
 
         function renderFileList(files) {
-          if (!fileListEl) return;
-          fileListEl.innerHTML = '';
+          var listEl = document.getElementById('file-list-container');
+          if (!listEl) return;
+          listEl.innerHTML = '';
           if (!files || !files.length) {
-            fileListEl.innerHTML = '<div style="padding:16px; color:var(--text-dim);">No files available. Create one using + Create.</div>';
+            listEl.innerHTML = '<div style="padding:16px; color:var(--text-dim);">No files available. Create one using + Create.</div>';
             return;
           }
 
@@ -430,7 +431,7 @@
                 '<a class="action-link" href="#" onclick="window.renameFile(\'' + file.name + '\');return false;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><path d="M12 20h9"/><path d="M15.41 3.76l5.83 5.83a2 2 0 0 1 0 2.82l-.72.72a.75.75 0 0 1-1.06 0L7.8 8.15a.75.75 0 0 1 0-1.06l.72-.72h0a2 2 0 0 1 2.82 0Z"/><path d="M9 16l-1.29-1.29a6 6 0 0 1 2.29-3.71L17 8l3 3-7 7-3 1v1a1 1 0 0 1-1 1z"/></svg>Rename</a>' +
                 '<a class="action-link" href="#" onclick="window.removeFile(\'' + file.name + '\');return false;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Remove</a>' +
               '</div>';
-            fileListEl.appendChild(card);
+            listEl.appendChild(card);
           });
         }
 
@@ -528,8 +529,9 @@
           });
         };
 
-        function createPlaceholderCard(filePath) {
-          if (!fileListEl) return;
+function createPlaceholderCard(filePath) {
+          var listEl = document.getElementById('file-list-container');
+          if (!listEl) return;
           var ext = filePath.split('.').pop().toLowerCase();
           var badgeClass = getExtensionBadgeClass(ext);
           var card = document.createElement('div');
@@ -545,10 +547,10 @@
             '<div class="card-divider"></div>' +
             '<div class="file-card-actions">' +
               '<a class="action-link" href="#" onclick="window.shareFile(\'' + filePath + '\');return false;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.72 19.72 0 0 1-8.63-3 19.72 19.72 0 0 1-8.63 3 2 2 0 0 1-2.18-2v-3M8 12l4-4 4 4m0 0-4 4-4-4"/></svg>Share</a>' +
-              '<a class="action-link" href="#" onclick="window.renameFile(\'' + filePath + '\');return false;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><path d="M12 20h9"/><path d="M15.41 3.76l5.83 5.83a2 2 0 0 1 0 2.82l-.72.72a.75.75 0 0 1-1.06 0L7.8 8.15a.75.75 0 0 1 0-1.06l.72-.72h0a2 2 0 0 1 2.82 0Z"/><path d="M9 16l-1.29-1.29a6 6 0 0 1 2.29-3.71L17 8l3 3-7 7-3 1v1a1 1 0 0 1-1 1z"/></svg>Rename</a>' +
+              '<a class="action-link" href="#" onclick="window.renameFile(\'' + filePath + '\');return false;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><path d="M12 20h9"/><path d="M15.41 3.76l5.83 5.83a2 2 0 0 1 0 2.82l-.72.72a.75.75 0 0 1-1.06 0L7.8 8.15a.75.75 0 0 1 0-1.06l.72-.72h0a2 2 0 0 1 2.82 0Z"/><path d="M9 16l-1.29-1.29a6 6 0 0 1 2.29-3.71L17 8l3 3-7 7-3 1v1a1 1 0 0 1-1.1z"/></svg>Rename</a>' +
               '<a class="action-link" href="#" onclick="window.removeFile(\'' + filePath + '\');return false;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Remove</a>' +
             '</div>';
-          fileListEl.appendChild(card);
+          listEl.appendChild(card);
         }
 
         function attachButtonHandlers() {
@@ -814,7 +816,7 @@
             });
           } catch (e) {
             console.error('[>edit] Bootstrap error:', e);
-            if (fileListEl) {
+            if (document.getElementById('file-list-container')) {
               renderSampleFiles();
             }
           }
@@ -851,6 +853,10 @@
           setupKeyboardShortcuts();
           setupClipboardBridge();
           bootstrap();
+          window.renderSampleFiles = renderSampleFiles;
+          window.renderFileList = renderFileList;
+          window.loadFiles = loadFiles;
+          window.openFile = openFile;
         });
 
         // Fallback if DOMContentLoaded already fired
@@ -860,6 +866,10 @@
           setupKeyboardShortcuts();
           setupClipboardBridge();
           bootstrap();
+          window.renderSampleFiles = renderSampleFiles;
+          window.renderFileList = renderFileList;
+          window.loadFiles = loadFiles;
+          window.openFile = openFile;
         }
       })();
     </script>
@@ -936,5 +946,71 @@
       });
     })();
   </script>
-  </body>
+  <script>
+    // Global exposure for probe/test access
+    (function() {
+      // Re-implement minimal openFile that works with the DOM
+      window.openFile = function(filePath) {
+        var ext = filePath.split('.').pop().toLowerCase();
+        var badgeClass = (function(ext) {
+          ext = ext.toLowerCase();
+          if (['json', 'jsonl', 'arb', 'ndjson'].includes(ext)) return 'json';
+          if (['xml', 'html', 'xhtml', 'svg', 'rss', 'atom', 'xjb', 'xsd', 'xsl', 'plist', 'wsf'].includes(ext)) return 'xml';
+          if (['csv'].includes(ext)) return 'csv';
+          if (['md', 'markdown', 'mkd'].includes(ext)) return 'md';
+          if (['js', 'jsx', 'ts', 'tsx'].includes(ext)) return 'js';
+          if (['css', 'scss', 'sass', 'less'].includes(ext)) return 'css';
+          if (['yaml', 'yml'].includes(ext)) return 'yaml';
+          if (['go'].includes(ext)) return 'go';
+          if (['rs'].includes(ext)) return 'rs';
+          if (['sh', 'bash', 'zsh'].includes(ext)) return 'sh';
+          if (['py', 'pyw'].includes(ext)) return 'py';
+          if (['gradle'].includes(ext)) return 'gradle';
+          return 'txt';
+        })(ext);
+        var editorView = document.getElementById('editor-view');
+        var explorerEl = document.getElementById('file-explorer');
+        var container = document.getElementById('edit-editor-container');
+        if (editorView) editorView.style.display = 'flex';
+        if (explorerEl) explorerEl.style.display = 'none';
+        if (container && window.MateyIDE) {
+          if (!window.mateyIDE || !window.mateyIDE.ide) {
+            var provider = {};
+            if (window.MateyByok) { provider = window.MateyByok.getProvider('text') || {}; }
+            window.mateyIDE = window.mateyIDE || {};
+            try { window.mateyIDE.ide = new window.MateyIDE('edit-editor-container', provider); } catch(e) { console.error('[>edit] IDE init failed:', e); }
+          }
+          if (window.mateyIDE && window.mateyIDE.ide) {
+            try { window.mateyIDE.ide.openFile(filePath); } catch(e) { console.error('[>edit] openFile failed:', e); }
+          }
+        }
+        document.getElementById('edit-file-path').innerText = filePath;
+        document.getElementById('edit-lang-badge').innerText = ext.toUpperCase().slice(0, 4);
+      };
+
+      // Global handler for editor back button
+      document.addEventListener('click', function(e) {
+        var btn = e.target.closest('#edit-btn-back');
+        if (btn) {
+          var explorer = document.getElementById('file-explorer');
+          var editor = document.getElementById('editor-view');
+          if (explorer) explorer.style.display = 'flex';
+          if (editor) editor.style.display = 'none';
+        }
+        // Extensions info button
+        var infoBtn = e.target.closest('#btn-info');
+        if (infoBtn) {
+          var ov = document.getElementById('supported-extensions-view');
+          if (ov) ov.classList.add('active');
+        }
+        // Extensions close button
+        var closeBtn = e.target.closest('#btn-close-info');
+        if (closeBtn) {
+          var ov = document.getElementById('supported-extensions-view');
+          if (ov) ov.classList.remove('active');
+        }
+      });
+    })();
+  </script>
+</body>
 </html>
